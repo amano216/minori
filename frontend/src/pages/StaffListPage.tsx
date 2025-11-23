@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchStaffs, deleteStaff, type Staff } from '../api/client';

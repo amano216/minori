@@ -11,7 +11,7 @@ class Staff < ApplicationRecord
   validate :validate_available_hours
 
   scope :active, -> { where(status: "active") }
-  scope :with_qualification, ->(qual) { where("qualifications @> ?", [qual].to_json) }
+  scope :with_qualification, ->(qual) { where("qualifications @> ?", [ qual ].to_json) }
 
   def active?
     status == "active"
