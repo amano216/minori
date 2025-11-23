@@ -55,6 +55,32 @@ export function LoginPage() {
         <button type="submit" disabled={isLoading}>
           {isLoading ? 'ログイン中...' : 'ログイン'}
         </button>
+
+        <div style={{ marginTop: '2rem', borderTop: '1px solid #ccc', paddingTop: '1rem' }}>
+          <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>開発用アカウント</h3>
+          <div style={{ display: 'flex', gap: '0.5rem', flexDirection: 'column' }}>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('admin@example.com');
+                setPassword('password123');
+              }}
+              style={{ fontSize: '0.9rem', padding: '0.4rem' }}
+            >
+              管理者 (admin@example.com)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('staff@example.com');
+                setPassword('password123');
+              }}
+              style={{ fontSize: '0.9rem', padding: '0.4rem' }}
+            >
+              スタッフ (staff@example.com)
+            </button>
+          </div>
+        </div>
       </form>
     </div>
   );
