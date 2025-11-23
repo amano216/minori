@@ -8,5 +8,10 @@ Rails.application.routes.draw do
   # API routes
   namespace :api do
     get "health", to: "health#show"
+
+    # Auth routes
+    post "auth/login", to: "auth#login"
+    delete "auth/logout", to: "auth#logout"
+    get "auth/me", to: "auth#me"
   end
 end
