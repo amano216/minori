@@ -61,4 +61,7 @@ test:
 #
 production:
   <<: *default
-  url: <%= ENV["DATABASE_URL"] %>
+  database: <%= ENV.fetch("DB_NAME", "minori_production") %>
+  username: <%= ENV.fetch("DB_USER", "postgres") %>
+  password: <%= ENV["DB_PASSWORD"] %>
+  host: <%= ENV.fetch("DB_HOST", "/cloudsql/minori-477714:asia-northeast1:minori-prod-db") %>
