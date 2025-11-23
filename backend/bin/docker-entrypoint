@@ -2,10 +2,11 @@
 
 # If running the rails server then create or migrate existing database
 # Skip if DATABASE_URL is not set (for testing without DB)
-if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
+if [[ "$*" == *"server"* ]]; then
   if [ -n "$DATABASE_URL" ]; then
     echo "Running db:prepare..."
-    ./bin/rails db:prepare || echo "Warning: db:prepare failed, continuing anyway"
+    ./bin/rails db:prepare
+    echo "db:prepare completed successfully"
   fi
 fi
 
