@@ -47,6 +47,7 @@ export function DashboardPage() {
       <nav className="nav-menu">
         <Link to="/">ダッシュボード</Link>
         <Link to="/staffs">スタッフ管理</Link>
+        <Link to="/patients">患者管理</Link>
       </nav>
       <main className="dashboard-content">
         <div className="card">
