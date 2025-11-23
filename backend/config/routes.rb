@@ -16,5 +16,8 @@ Rails.application.routes.draw do
 
     # Staff routes
     resources :staffs
+
+    # Patient routes
+    resources :patients
   end
 end

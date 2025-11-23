@@ -6,6 +6,9 @@ import { DashboardPage } from './pages/DashboardPage'
 import { StaffListPage } from './pages/StaffListPage'
 import { StaffDetailPage } from './pages/StaffDetailPage'
 import { StaffFormPage } from './pages/StaffFormPage'
+import { PatientListPage } from './pages/PatientListPage'
+import { PatientDetailPage } from './pages/PatientDetailPage'
+import { PatientFormPage } from './pages/PatientFormPage'
 import { LoginPage } from './pages/LoginPage'
 
 function App() {
@@ -19,6 +22,10 @@ function App() {
           <Route path="/staffs/new" element={<PrivateRoute><StaffFormPage /></PrivateRoute>} />
           <Route path="/staffs/:id" element={<PrivateRoute><StaffDetailPage /></PrivateRoute>} />
           <Route path="/staffs/:id/edit" element={<PrivateRoute><StaffFormPage /></PrivateRoute>} />
+          <Route path="/patients" element={<PrivateRoute><PatientListPage /></PrivateRoute>} />
+          <Route path="/patients/new" element={<PrivateRoute><PatientFormPage /></PrivateRoute>} />
+          <Route path="/patients/:id" element={<PrivateRoute><PatientDetailPage /></PrivateRoute>} />
+          <Route path="/patients/:id/edit" element={<PrivateRoute><PatientFormPage /></PrivateRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>

@@ -135,3 +135,55 @@ export async function updateStaff(id: number, staff: Partial<StaffInput>): Promi
 export async function deleteStaff(id: number): Promise<void> {
   return apiRequest(`/api/staffs/${id}`, { method: 'DELETE' });
 }
+
+// Patient API
+export interface Patient {
+  id: number;
+  name: string;
+  address: string;
+  phone: string;
+  care_requirements: string[];
+  notes: string;
+  status: 'active' | 'inactive' | 'discharged';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PatientInput {
+  name: string;
+  address?: string;
+  phone?: string;
+  care_requirements?: string[];
+  notes?: string;
+  status?: string;
+}
+
+export async function fetchPatients(params?: { status?: string; care_requirement?: string }): Promise<Patient[]> {
+  const query = new URLSearchParams();
+  if (params?.status) query.append('status', params.status);
+  if (params?.care_requirement) query.append('care_requirement', params.care_requirement);
+  const queryString = query.toString();
+  return apiRequest(`/api/patients${queryString ? `?${queryString}` : ''}`);
+}
+
+export async function fetchPatient(id: number): Promise<Patient> {
+  return apiRequest(`/api/patients/${id}`);
+}
+
+export async function createPatient(patient: PatientInput): Promise<Patient> {
+  return apiRequest('/api/patients', {
+    method: 'POST',
+    body: JSON.stringify({ patient }),
+  });
+}
+
+export async function updatePatient(id: number, patient: Partial<PatientInput>): Promise<Patient> {
+  return apiRequest(`/api/patients/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ patient }),
+  });
+}
+
+export async function deletePatient(id: number): Promise<void> {
+  return apiRequest(`/api/patients/${id}`, { method: 'DELETE' });
+}
