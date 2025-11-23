@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchHealth } from '../api/client';
 
 export function DashboardPage() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [apiStatus, setApiStatus] = useState<string>('checking...');
   const [apiTimestamp, setApiTimestamp] = useState<string>('');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -23,6 +25,7 @@ export function DashboardPage() {
     setIsLoggingOut(true);
     try {
       await logout();
+      navigate('/login');
     } catch (error) {
       console.error('Logout failed:', error);
     } finally {
@@ -41,6 +44,10 @@ export function DashboardPage() {
           </button>
         </div>
       </header>
+      <nav className="nav-menu">
+        <Link to="/">ダッシュボード</Link>
+        <Link to="/staffs">スタッフ管理</Link>
+      </nav>
       <main className="dashboard-content">
         <div className="card">
           <h2>API Status</h2>

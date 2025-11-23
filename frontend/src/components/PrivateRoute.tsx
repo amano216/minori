@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LoginPage } from '../pages/LoginPage';
 
 interface PrivateRouteProps {
   children: ReactNode;
@@ -14,7 +14,7 @@ export function PrivateRoute({ children }: PrivateRouteProps) {
   }
 
   if (!isAuthenticated) {
-    return <LoginPage />;
+    return <Navigate to="/login" replace />;
   }
 
   return <>{children}</>;
