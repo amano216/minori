@@ -1,8 +1,11 @@
 #!/bin/bash -e
 
 # If running the rails server then create or migrate existing database
+# Skip if DATABASE_URL is not set (for testing without DB)
 if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
-  ./bin/rails db:prepare
+  if [ -n "$DATABASE_URL" ]; then
+    ./bin/rails db:prepare
+  fi
 fi
 
 exec "${@}"

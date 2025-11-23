@@ -1,0 +1,15 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/minori/frontend:latest'
+      - '-f'
+      - 'Dockerfile.prod'
+      - '--build-arg'
+      - 'VITE_API_URL=${_VITE_API_URL}'
+      - '.'
+images:
+  - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/minori/frontend:latest'
+substitutions:
+  _VITE_API_URL: 'https://minori-backend-336192862447.asia-northeast1.run.app'
