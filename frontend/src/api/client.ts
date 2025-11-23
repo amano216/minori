@@ -256,3 +256,89 @@ export async function cancelVisit(id: number): Promise<Visit> {
 export async function completeVisit(id: number): Promise<Visit> {
   return apiRequest(`/api/visits/${id}/complete`, { method: 'PATCH' });
 }
+
+// Schedule API
+export interface ScheduleVisit extends Visit {
+  patient: { id: number; name: string; address?: string };
+}
+
+export interface DailySchedule {
+  date: string;
+  visits: ScheduleVisit[];
+}
+
+export interface WeeklySchedule {
+  start_date: string;
+  end_date: string;
+  days: Record<string, ScheduleVisit[]>;
+}
+
+export interface StaffSchedule {
+  staff: {
+    id: number;
+    name: string;
+    qualifications: string[];
+    available_hours: Record<string, { start: string; end: string }>;
+  };
+  start_date: string;
+  end_date: string;
+  visits: ScheduleVisit[];
+}
+
+export interface ScheduleSummary {
+  start_date: string;
+  end_date: string;
+  total_visits: number;
+  by_status: {
+    scheduled: number;
+    in_progress: number;
+    completed: number;
+    cancelled: number;
+    unassigned: number;
+  };
+  unassigned_visits: number;
+}
+
+export async function fetchDailySchedule(params?: {
+  date?: string;
+  staff_id?: number;
+}): Promise<DailySchedule> {
+  const query = new URLSearchParams();
+  if (params?.date) query.append('date', params.date);
+  if (params?.staff_id) query.append('staff_id', params.staff_id.toString());
+  const queryString = query.toString();
+  return apiRequest(`/api/schedules/daily${queryString ? `?${queryString}` : ''}`);
+}
+
+export async function fetchWeeklySchedule(params?: {
+  start_date?: string;
+  staff_id?: number;
+}): Promise<WeeklySchedule> {
+  const query = new URLSearchParams();
+  if (params?.start_date) query.append('start_date', params.start_date);
+  if (params?.staff_id) query.append('staff_id', params.staff_id.toString());
+  const queryString = query.toString();
+  return apiRequest(`/api/schedules/weekly${queryString ? `?${queryString}` : ''}`);
+}
+
+export async function fetchStaffSchedule(
+  staffId: number,
+  params?: { start_date?: string; end_date?: string }
+): Promise<StaffSchedule> {
+  const query = new URLSearchParams();
+  if (params?.start_date) query.append('start_date', params.start_date);
+  if (params?.end_date) query.append('end_date', params.end_date);
+  const queryString = query.toString();
+  return apiRequest(`/api/schedules/staff/${staffId}${queryString ? `?${queryString}` : ''}`);
+}
+
+export async function fetchScheduleSummary(params?: {
+  start_date?: string;
+  end_date?: string;
+}): Promise<ScheduleSummary> {
+  const query = new URLSearchParams();
+  if (params?.start_date) query.append('start_date', params.start_date);
+  if (params?.end_date) query.append('end_date', params.end_date);
+  const queryString = query.toString();
+  return apiRequest(`/api/schedules/summary${queryString ? `?${queryString}` : ''}`);
+}
