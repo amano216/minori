@@ -12,6 +12,8 @@ class Patient < ApplicationRecord
     meal_assistance
   ].freeze
 
+  has_many :visits, dependent: :destroy
+
   validates :name, presence: true
   validates :status, inclusion: { in: STATUSES }
   validates :phone, format: { with: /\A[\d\-+() ]+\z/, allow_blank: true }

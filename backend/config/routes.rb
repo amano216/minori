@@ -19,5 +19,13 @@ Rails.application.routes.draw do
 
     # Patient routes
     resources :patients
+
+    # Visit routes
+    resources :visits do
+      member do
+        patch :cancel
+        patch :complete
+      end
+    end
   end
 end
