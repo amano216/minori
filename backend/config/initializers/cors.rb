@@ -8,11 +8,13 @@
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
   allow do
     # In production, set FRONTEND_URL env variable
-    # In development, allow all origins
+    # In development, allow all origins including Codespaces
     if Rails.env.production?
       origins ENV.fetch("FRONTEND_URL", "")
     else
-      origins "*"
+      origins do |source, _env|
+        true # Allow all origins in development
+      end
     end
 
     resource "*",

@@ -1,15 +1,10 @@
-// Auto-detect API URL for Codespaces or local development
+// API URL - use proxy in development, explicit URL in production
 function getApiUrl(): string {
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
-
-  // Codespaces: replace frontend port with backend port
-  if (window.location.hostname.includes('.app.github.dev')) {
-    return window.location.origin.replace('-5173.', '-3000.');
-  }
-
-  return 'http://localhost:3000';
+  // In development, Vite proxy handles /api requests
+  return '';
 }
 
 const API_URL = getApiUrl();
@@ -89,4 +84,54 @@ export async function logout(): Promise<void> {
 
 export async function fetchCurrentUser(): Promise<{ user: User }> {
   return apiRequest('/api/auth/me');
+}
+
+// Staff API
+export interface Staff {
+  id: number;
+  name: string;
+  email: string;
+  qualifications: string[];
+  available_hours: Record<string, { start: string; end: string }>;
+  status: 'active' | 'inactive' | 'on_leave';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StaffInput {
+  name: string;
+  email: string;
+  qualifications?: string[];
+  available_hours?: Record<string, { start: string; end: string }>;
+  status?: string;
+}
+
+export async function fetchStaffs(params?: { status?: string; qualification?: string }): Promise<Staff[]> {
+  const query = new URLSearchParams();
+  if (params?.status) query.append('status', params.status);
+  if (params?.qualification) query.append('qualification', params.qualification);
+  const queryString = query.toString();
+  return apiRequest(`/api/staffs${queryString ? `?${queryString}` : ''}`);
+}
+
+export async function fetchStaff(id: number): Promise<Staff> {
+  return apiRequest(`/api/staffs/${id}`);
+}
+
+export async function createStaff(staff: StaffInput): Promise<Staff> {
+  return apiRequest('/api/staffs', {
+    method: 'POST',
+    body: JSON.stringify({ staff }),
+  });
+}
+
+export async function updateStaff(id: number, staff: Partial<StaffInput>): Promise<Staff> {
+  return apiRequest(`/api/staffs/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ staff }),
+  });
+}
+
+export async function deleteStaff(id: number): Promise<void> {
+  return apiRequest(`/api/staffs/${id}`, { method: 'DELETE' });
 }
