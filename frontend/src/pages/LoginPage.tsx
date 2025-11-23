@@ -82,6 +82,13 @@ export function LoginPage() {
           </div>
         </div>
       </form>
+      <div className="test-accounts">
+        <p>テストアカウント:</p>
+        <ul>
+          <li>admin@example.com / password123</li>
+          <li>staff@example.com / password123</li>
+        </ul>
+      </div>
     </div>
   );
 }
