@@ -4,6 +4,8 @@ class Staff < ApplicationRecord
   STATUSES = %w[active inactive on_leave].freeze
   QUALIFICATIONS = %w[nurse physical_therapist occupational_therapist speech_therapist care_worker].freeze
 
+  has_many :visits, dependent: :nullify
+
   validates :name, presence: true
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :status, inclusion: { in: STATUSES }

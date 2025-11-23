@@ -187,3 +187,72 @@ export async function updatePatient(id: number, patient: Partial<PatientInput>):
 export async function deletePatient(id: number): Promise<void> {
   return apiRequest(`/api/patients/${id}`, { method: 'DELETE' });
 }
+
+// Visit API
+export interface Visit {
+  id: number;
+  scheduled_at: string;
+  duration: number;
+  staff_id: number | null;
+  patient_id: number;
+  staff: { id: number; name: string } | null;
+  patient: { id: number; name: string };
+  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'unassigned';
+  notes: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VisitInput {
+  scheduled_at: string;
+  duration?: number;
+  staff_id?: number | null;
+  patient_id: number;
+  status?: string;
+  notes?: string;
+}
+
+export async function fetchVisits(params?: {
+  status?: string;
+  staff_id?: number;
+  patient_id?: number;
+  date?: string;
+}): Promise<Visit[]> {
+  const query = new URLSearchParams();
+  if (params?.status) query.append('status', params.status);
+  if (params?.staff_id) query.append('staff_id', params.staff_id.toString());
+  if (params?.patient_id) query.append('patient_id', params.patient_id.toString());
+  if (params?.date) query.append('date', params.date);
+  const queryString = query.toString();
+  return apiRequest(`/api/visits${queryString ? `?${queryString}` : ''}`);
+}
+
+export async function fetchVisit(id: number): Promise<Visit> {
+  return apiRequest(`/api/visits/${id}`);
+}
+
+export async function createVisit(visit: VisitInput): Promise<Visit> {
+  return apiRequest('/api/visits', {
+    method: 'POST',
+    body: JSON.stringify({ visit }),
+  });
+}
+
+export async function updateVisit(id: number, visit: Partial<VisitInput>): Promise<Visit> {
+  return apiRequest(`/api/visits/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ visit }),
+  });
+}
+
+export async function deleteVisit(id: number): Promise<void> {
+  return apiRequest(`/api/visits/${id}`, { method: 'DELETE' });
+}
+
+export async function cancelVisit(id: number): Promise<Visit> {
+  return apiRequest(`/api/visits/${id}/cancel`, { method: 'PATCH' });
+}
+
+export async function completeVisit(id: number): Promise<Visit> {
+  return apiRequest(`/api/visits/${id}/complete`, { method: 'PATCH' });
+}
