@@ -1,15 +1,10 @@
-// Auto-detect API URL for Codespaces or local development
+// API URL - use proxy in development, explicit URL in production
 function getApiUrl(): string {
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
-
-  // Codespaces: replace frontend port with backend port
-  if (window.location.hostname.includes('.app.github.dev')) {
-    return window.location.origin.replace('-5173.', '-3000.');
-  }
-
-  return 'http://localhost:3000';
+  // In development, Vite proxy handles /api requests
+  return '';
 }
 
 const API_URL = getApiUrl();
