@@ -399,3 +399,225 @@
 .nav-menu a.active {
   color: #646cff;
 }
+
+/* Visit Status Colors */
+.status-scheduled {
+  background: #cce5ff;
+  color: #004085;
+}
+
+.status-in-progress {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-completed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-cancelled {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.status-unassigned {
+  background: #e2e3e5;
+  color: #383d41;
+}
+
+/* Button variants */
+.btn-success {
+  background: #28a745;
+  border-color: #28a745;
+  color: #fff;
+}
+
+.btn-success:hover {
+  background: #218838;
+}
+
+.btn-warning {
+  background: #ffc107;
+  border-color: #ffc107;
+  color: #212529;
+}
+
+.btn-warning:hover {
+  background: #e0a800;
+}
+
+/* Form row */
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+/* Form textarea */
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+/* Filter input */
+.filter-input {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.filters {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Schedule Page */
+.schedule-page {
+  max-width: 100%;
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.summary-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.summary-card.warning {
+  background: #fff3cd;
+}
+
+.summary-value {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #333;
+}
+
+.summary-label {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.schedule-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.week-nav {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.week-display {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.staff-filter {
+  min-width: 150px;
+}
+
+/* Weekly Calendar */
+.weekly-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+  background: #f5f5f5;
+  padding: 0.5rem;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.day-column {
+  background: #fff;
+  border-radius: 4px;
+  min-width: 140px;
+}
+
+.day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 4px 4px 0 0;
+  border-bottom: 1px solid #eee;
+}
+
+.day-name {
+  font-weight: 600;
+}
+
+.visit-count {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.day-visits {
+  padding: 0.5rem;
+  min-height: 200px;
+}
+
+.no-visits {
+  text-align: center;
+  color: #999;
+  padding: 1rem;
+  font-size: 0.9rem;
+}
+
+.visit-card {
+  display: block;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-radius: 4px;
+  text-decoration: none;
+  color: inherit;
+  font-size: 0.85rem;
+}
+
+.visit-card:hover {
+  opacity: 0.9;
+}
+
+.visit-time {
+  font-weight: 600;
+}
+
+.visit-patient {
+  margin: 0.25rem 0;
+}
+
+.visit-staff {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.visit-duration {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}

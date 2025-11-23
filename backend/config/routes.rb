@@ -27,5 +27,11 @@ Rails.application.routes.draw do
         patch :complete
       end
     end
+
+    # Schedule routes
+    get "schedules/daily", to: "schedules#daily"
+    get "schedules/weekly", to: "schedules#weekly"
+    get "schedules/staff/:id", to: "schedules#staff"
+    get "schedules/summary", to: "schedules#summary"
   end
 end

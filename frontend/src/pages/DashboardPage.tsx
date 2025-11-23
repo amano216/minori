@@ -46,6 +46,7 @@ export function DashboardPage() {
       </header>
       <nav className="nav-menu">
         <Link to="/">ダッシュボード</Link>
+        <Link to="/schedule">スケジュール</Link>
         <Link to="/staffs">スタッフ管理</Link>
         <Link to="/patients">患者管理</Link>
         <Link to="/visits">訪問予定</Link>
