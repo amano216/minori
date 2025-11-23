@@ -1,9 +1,9 @@
 #!/bin/bash -e
 
 # If running the rails server then create or migrate existing database
-# Skip if DATABASE_URL is not set (for testing without DB)
+# Skip if no database config is available (for testing without DB)
 if [[ "$*" == *"server"* ]]; then
-  if [ -n "$DATABASE_URL" ]; then
+  if [ -n "$DATABASE_URL" ] || [ -n "$DB_PASSWORD" ]; then
     echo "Running db:prepare..."
     ./bin/rails db:prepare
     echo "db:prepare completed successfully"
