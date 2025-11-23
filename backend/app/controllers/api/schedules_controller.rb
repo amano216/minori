@@ -2,7 +2,7 @@
 
 module Api
   class SchedulesController < ApplicationController
-    before_action :authenticate_user!
+    # authenticate_request is inherited from ApplicationController
 
     # GET /api/schedules/daily?date=2025-11-25
     def daily
