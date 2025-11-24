@@ -1,247 +1,63 @@
 @import "tailwindcss";
 
-/* SmartHR Design System + VSCode Webview UI Toolkit 風テーマ */
+/* SmartHR Design System カスタムテーマ */
 @theme {
   /* SmartHR カラーパレット */
-  --color-brand: #0077c7;
-  --color-brand-dark: #005999;
-
-  /* テキストカラー（SmartHR準拠） */
-  --color-text-black: #23221f;
-  --color-text-grey: #706d65;
-  --color-text-disabled: #c1bdb7;
-  --color-text-white: #ffffff;
-  --color-text-link: #0077c7;
-
-  /* 背景カラー */
-  --color-bg-white: #ffffff;
-  --color-bg-base: #f8f7f6;
-  --color-bg-column: #f2f1f0;
-  --color-bg-over: #d6d3d0;
-
-  /* ボーダーカラー */
-  --color-border: #d6d3d0;
-  --color-border-dark: #c1bdb7;
-
-  /* アクセントカラー */
   --color-main: #0077c7;
   --color-danger: #e01e5a;
   --color-warning: #ff8800;
   --color-success: #00c853;
 
-  /* プライマリ（SmartHR Blue） */
+  /* テキストカラー */
+  --color-text-black: #23221f;
+  --color-text-grey: #706d65;
+
+  /* 背景カラー */
+  --color-bg-base: #f8f7f6;
+  --color-bg-white: #ffffff;
+
+  /* ボーダーカラー */
+  --color-border: #d6d3d0;
+  --color-border-dark: #c1bdb7;
+
+  /* プライマリ */
   --color-primary-50: #e6f3fb;
   --color-primary-100: #b3dcf3;
-  --color-primary-200: #80c5eb;
-  --color-primary-300: #4daee3;
-  --color-primary-400: #2699db;
-  --color-primary-500: #0077c7;
   --color-primary-600: #005999;
-  --color-primary-700: #004477;
-  --color-primary-800: #002f55;
-  --color-primary-900: #001a33;
 
-  /* セカンダリ（グレースケール） */
-  --color-secondary-50: #f8f7f6;
+  /* セカンダリ */
   --color-secondary-100: #f2f1f0;
-  --color-secondary-200: #e6e4e1;
-  --color-secondary-300: #d6d3d0;
   --color-secondary-400: #c1bdb7;
-  --color-secondary-500: #a9a49c;
-  --color-secondary-600: #8c8680;
   --color-secondary-700: #706d65;
-  --color-secondary-800: #4a4742;
   --color-secondary-900: #23221f;
 
-  /* ステータスカラー */
+  /* ステータス */
   --color-success-50: #e6f9f0;
-  --color-success-500: #00c853;
   --color-success-600: #00a843;
-
   --color-warning-50: #fff5e6;
-  --color-warning-500: #ff8800;
   --color-warning-600: #e67700;
-
   --color-danger-50: #fce6ed;
-  --color-danger-500: #e01e5a;
+  --color-danger-100: #fce4ec;
+  --color-danger-300: #f5a5c0;
   --color-danger-600: #c0194d;
-
-  /* フォーカスリング */
-  --color-focus-ring: rgba(0, 119, 199, 0.4);
-
-  /* シャドウ（SmartHR風、控えめ） */
-  --shadow-sm: 0 1px 2px rgba(35, 34, 31, 0.04);
-  --shadow-md: 0 2px 4px rgba(35, 34, 31, 0.08);
-  --shadow-lg: 0 4px 8px rgba(35, 34, 31, 0.12);
-  --shadow-dropdown: 0 4px 16px rgba(35, 34, 31, 0.16);
-
-  /* ボーダー半径（SmartHR風、小さめ） */
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-
-  /* スペーシング（8px基準） */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
 }
 
 /* ベーススタイル */
 @layer base {
   html {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", sans-serif;
-    font-size: 14px;
-    line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    color: var(--color-text-black);
   }
 
   body {
-    background-color: var(--color-bg-base);
+    @apply bg-bg-base text-text-black;
     margin: 0;
   }
 
-  /* フォーカススタイル（アクセシビリティ重視） */
-  *:focus-visible {
-    outline: 2px solid var(--color-main);
-    outline-offset: 2px;
-  }
-
-  /* リンク */
   a {
-    color: var(--color-text-link);
-    text-decoration: none;
+    @apply text-main;
   }
 
   a:hover {
-    text-decoration: underline;
-  }
-}
-
-/* コンポーネントスタイル */
-@layer components {
-  /* SmartHR風ボタン */
-  .shr-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 8px 16px;
-    font-size: 14px;
-    font-weight: 700;
-    line-height: 1;
-    border-radius: var(--radius-md);
-    border: 1px solid transparent;
-    cursor: pointer;
-    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
-    min-height: 40px;
-  }
-
-  .shr-button-primary {
-    background-color: var(--color-main);
-    color: var(--color-text-white);
-    border-color: var(--color-main);
-  }
-
-  .shr-button-primary:hover {
-    background-color: var(--color-primary-600);
-    border-color: var(--color-primary-600);
-  }
-
-  .shr-button-secondary {
-    background-color: var(--color-bg-white);
-    color: var(--color-text-black);
-    border-color: var(--color-border-dark);
-  }
-
-  .shr-button-secondary:hover {
-    background-color: var(--color-bg-column);
-  }
-
-  .shr-button-danger {
-    background-color: var(--color-danger);
-    color: var(--color-text-white);
-    border-color: var(--color-danger);
-  }
-
-  .shr-button-danger:hover {
-    background-color: var(--color-danger-600);
-    border-color: var(--color-danger-600);
-  }
-
-  /* SmartHR風カード */
-  .shr-card {
-    background-color: var(--color-bg-white);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-  }
-
-  /* SmartHR風テーブル */
-  .shr-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
-  }
-
-  .shr-table th {
-    background-color: var(--color-bg-column);
-    color: var(--color-text-grey);
-    font-weight: 700;
-    font-size: 12px;
-    text-align: left;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .shr-table td {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--color-border);
-    color: var(--color-text-black);
-  }
-
-  .shr-table tr:hover td {
-    background-color: var(--color-bg-base);
-  }
-
-  /* SmartHR風インプット */
-  .shr-input {
-    width: 100%;
-    padding: 8px 12px;
-    font-size: 14px;
-    line-height: 1.5;
-    color: var(--color-text-black);
-    background-color: var(--color-bg-white);
-    border: 1px solid var(--color-border-dark);
-    border-radius: var(--radius-sm);
-    transition: border-color 0.15s, box-shadow 0.15s;
-    min-height: 40px;
-  }
-
-  .shr-input:hover {
-    border-color: var(--color-secondary-500);
-  }
-
-  .shr-input:focus {
-    border-color: var(--color-main);
-    box-shadow: 0 0 0 2px var(--color-focus-ring);
-    outline: none;
-  }
-
-  .shr-input::placeholder {
-    color: var(--color-text-disabled);
-  }
-
-  /* SmartHR風バッジ */
-  .shr-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 2px 8px;
-    font-size: 12px;
-    font-weight: 700;
-    border-radius: 10px;
-    white-space: nowrap;
+    @apply underline;
   }
 }
