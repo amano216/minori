@@ -1,17 +1,19 @@
 import type { ReactNode } from 'react';
 
-interface ListLayoutProps {
+export interface ListLayoutProps {
   title: string;
+  description?: string;
   children: ReactNode;
-  action?: ReactNode;
+  actions?: ReactNode;
   filters?: ReactNode;
   className?: string;
 }
 
 export function ListLayout({
   title,
+  description,
   children,
-  action,
+  actions,
   filters,
   className = '',
 }: ListLayoutProps) {
@@ -19,8 +21,13 @@ export function ListLayout({
     <div className={className}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-secondary-900">{title}</h1>
-        {action && <div className="flex-shrink-0">{action}</div>}
+        <div>
+          <h1 className="text-2xl font-bold text-text-black">{title}</h1>
+          {description && (
+            <p className="mt-1 text-sm text-text-grey">{description}</p>
+          )}
+        </div>
+        {actions && <div className="flex-shrink-0">{actions}</div>}
       </div>
 
       {/* Filters */}
@@ -52,19 +59,19 @@ export function PageHeader({
   return (
     <div className="mb-6">
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <nav className="text-sm text-secondary-500 mb-2">
+        <nav className="text-sm text-text-grey mb-2">
           {breadcrumbs.map((crumb, index) => (
             <span key={index}>
               {index > 0 && <span className="mx-2">/</span>}
               {crumb.href ? (
                 <a
                   href={crumb.href}
-                  className="hover:text-secondary-700 transition-colors"
+                  className="hover:text-text-black transition-colors"
                 >
                   {crumb.label}
                 </a>
               ) : (
-                <span className="text-secondary-700">{crumb.label}</span>
+                <span className="text-text-black">{crumb.label}</span>
               )}
             </span>
           ))}
@@ -72,9 +79,9 @@ export function PageHeader({
       )}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-secondary-900">{title}</h1>
+          <h1 className="text-2xl font-bold text-text-black">{title}</h1>
           {subtitle && (
-            <p className="mt-1 text-sm text-secondary-500">{subtitle}</p>
+            <p className="mt-1 text-sm text-text-grey">{subtitle}</p>
           )}
         </div>
         {action && <div className="flex-shrink-0">{action}</div>}

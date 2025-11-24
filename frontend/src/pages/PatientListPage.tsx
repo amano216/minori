@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { fetchPatients, deletePatient, type Patient } from '../api/client';
+import { Button } from '../components/atoms/Button';
+import { Badge } from '../components/atoms/Badge';
+import { Spinner } from '../components/atoms/Spinner';
+import { DataTable } from '../components/organisms/DataTable';
+import { ListLayout } from '../components/templates/ListLayout';
+import { Modal } from '../components/molecules/Modal';
 
 const CARE_REQUIREMENT_LABELS: Record<string, string> = {
   nursing_care: '看護ケア',
@@ -18,11 +24,19 @@ const STATUS_LABELS: Record<string, string> = {
   discharged: '退所',
 };
 
+const STATUS_VARIANTS: Record<string, 'success' | 'warning' | 'error' | 'default'> = {
+  active: 'success',
+  inactive: 'warning',
+  discharged: 'error',
+};
+
 export function PatientListPage() {
+  const navigate = useNavigate();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<Patient | null>(null);
 
   const loadPatients = async () => {
     try {
@@ -40,91 +54,167 @@ export function PatientListPage() {
     loadPatients();
   }, [statusFilter]);
 
-  const handleDelete = async (id: number, name: string) => {
-    if (!confirm(`${name}を削除しますか？`)) return;
-
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await deletePatient(id);
-      setPatients(patients.filter((p) => p.id !== id));
+      await deletePatient(deleteTarget.id);
+      setPatients(patients.filter((p) => p.id !== deleteTarget.id));
+      setDeleteTarget(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : '削除に失敗しました');
     }
   };
 
-  if (loading) return <div className="loading">読み込み中...</div>;
+  const columns = [
+    {
+      key: 'name',
+      header: '名前',
+      render: (patient: Patient) => (
+        <Link to={`/patients/${patient.id}`} className="text-main hover:underline font-medium">
+          {patient.name}
+        </Link>
+      ),
+    },
+    {
+      key: 'address',
+      header: '住所',
+      render: (patient: Patient) => (
+        <span className="text-text-grey">{patient.address || '-'}</span>
+      ),
+    },
+    {
+      key: 'phone',
+      header: '電話番号',
+      render: (patient: Patient) => (
+        <span className="text-text-grey">{patient.phone || '-'}</span>
+      ),
+    },
+    {
+      key: 'care_requirements',
+      header: 'ケア内容',
+      render: (patient: Patient) => (
+        <div className="flex flex-wrap gap-1">
+          {patient.care_requirements.length > 0 ? (
+            patient.care_requirements.slice(0, 2).map((r) => (
+              <Badge key={r} variant="default" size="sm">
+                {CARE_REQUIREMENT_LABELS[r] || r}
+              </Badge>
+            ))
+          ) : (
+            <span className="text-text-grey">-</span>
+          )}
+          {patient.care_requirements.length > 2 && (
+            <Badge variant="default" size="sm">
+              +{patient.care_requirements.length - 2}
+            </Badge>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'ステータス',
+      render: (patient: Patient) => (
+        <Badge variant={STATUS_VARIANTS[patient.status] || 'default'}>
+          {STATUS_LABELS[patient.status] || patient.status}
+        </Badge>
+      ),
+    },
+    {
+      key: 'actions',
+      header: '操作',
+      render: (patient: Patient) => (
+        <div className="flex gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => navigate(`/patients/${patient.id}/edit`)}
+          >
+            編集
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={() => setDeleteTarget(patient)}
+          >
+            削除
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  const filterContent = (
+    <select
+      value={statusFilter}
+      onChange={(e) => setStatusFilter(e.target.value)}
+      className="px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
+    >
+      <option value="">すべてのステータス</option>
+      <option value="active">利用中</option>
+      <option value="inactive">休止中</option>
+      <option value="discharged">退所</option>
+    </select>
+  );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
 
   return (
-    <div className="patient-list">
-      <div className="page-header">
-        <h1>患者/利用者管理</h1>
-        <Link to="/patients/new" className="btn btn-primary">
-          新規登録
-        </Link>
-      </div>
+    <>
+      <ListLayout
+        title="患者/利用者管理"
+        description={`${patients.length}件の患者が登録されています`}
+        actions={
+          <Button variant="primary" onClick={() => navigate('/patients/new')}>
+            新規登録
+          </Button>
+        }
+        filters={filterContent}
+      >
+        {error && (
+          <div className="bg-danger-100 border border-danger-300 text-danger rounded-md p-3 text-sm mb-4">
+            {error}
+          </div>
+        )}
 
-      {error && <div className="error-message">{error}</div>}
+        {patients.length === 0 ? (
+          <div className="text-center py-12 text-text-grey">
+            患者が登録されていません
+          </div>
+        ) : (
+          <DataTable
+            data={patients}
+            columns={columns}
+            keyExtractor={(patient) => patient.id}
+          />
+        )}
+      </ListLayout>
 
-      <div className="filters">
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="filter-select"
-        >
-          <option value="">すべてのステータス</option>
-          <option value="active">利用中</option>
-          <option value="inactive">休止中</option>
-          <option value="discharged">退所</option>
-        </select>
-      </div>
-
-      {patients.length === 0 ? (
-        <p className="no-data">患者が登録されていません</p>
-      ) : (
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>名前</th>
-              <th>住所</th>
-              <th>電話番号</th>
-              <th>ケア内容</th>
-              <th>ステータス</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {patients.map((patient) => (
-              <tr key={patient.id}>
-                <td>
-                  <Link to={`/patients/${patient.id}`}>{patient.name}</Link>
-                </td>
-                <td>{patient.address || '-'}</td>
-                <td>{patient.phone || '-'}</td>
-                <td>
-                  {patient.care_requirements
-                    .map((r) => CARE_REQUIREMENT_LABELS[r] || r)
-                    .join(', ') || '-'}
-                </td>
-                <td>
-                  <span className={`status-badge status-${patient.status}`}>
-                    {STATUS_LABELS[patient.status] || patient.status}
-                  </span>
-                </td>
-                <td className="actions">
-                  <Link to={`/patients/${patient.id}/edit`} className="btn btn-small">
-                    編集
-                  </Link>
-                  <button
-                    onClick={() => handleDelete(patient.id, patient.name)}
-                    className="btn btn-small btn-danger"
-                  >
-                    削除
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title="患者の削除"
+      >
+        <p className="text-text-grey mb-6">
+          <span className="font-medium text-text-black">{deleteTarget?.name}</span>
+          を削除しますか？この操作は取り消せません。
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
+            キャンセル
+          </Button>
+          <Button variant="danger" onClick={handleDelete}>
+            削除する
+          </Button>
+        </div>
+      </Modal>
+    </>
   );
 }

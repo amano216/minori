@@ -2,6 +2,10 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { Button } from '../components/atoms/Button';
+import { Input } from '../components/atoms/Input';
+import { Label } from '../components/atoms/Label';
+import { Card } from '../components/molecules/Card';
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -26,71 +30,99 @@ export function LoginPage() {
     }
   };
 
-  return (
-    <div className="login-container">
-      <h1>Minori</h1>
-      <h2>訪問看護スケジュール管理</h2>
-      <form onSubmit={handleSubmit} className="login-form">
-        {error && <div className="error-message">{error}</div>}
-        <div className="form-group">
-          <label htmlFor="email">メールアドレス</label>
-          <input
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            disabled={isLoading}
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="password">パスワード</label>
-          <input
-            type="password"
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            disabled={isLoading}
-            minLength={8}
-          />
-        </div>
-        <button type="submit" disabled={isLoading}>
-          {isLoading ? 'ログイン中...' : 'ログイン'}
-        </button>
+  const fillTestAccount = (testEmail: string, testPassword: string) => {
+    setEmail(testEmail);
+    setPassword(testPassword);
+  };
 
-        <div style={{ marginTop: '2rem', borderTop: '1px solid #ccc', paddingTop: '1rem' }}>
-          <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>開発用アカウント</h3>
-          <div style={{ display: 'flex', gap: '0.5rem', flexDirection: 'column' }}>
-            <button
-              type="button"
-              onClick={() => {
-                setEmail('admin@example.com');
-                setPassword('password123');
-              }}
-              style={{ fontSize: '0.9rem', padding: '0.4rem' }}
-            >
-              管理者 (admin@example.com)
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setEmail('staff@example.com');
-                setPassword('password123');
-              }}
-              style={{ fontSize: '0.9rem', padding: '0.4rem' }}
-            >
-              スタッフ (staff@example.com)
-            </button>
-          </div>
+  return (
+    <div className="min-h-screen bg-bg-base flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Logo & Title */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-main mb-2">Minori</h1>
+          <p className="text-text-grey">訪問看護スケジュール管理</p>
         </div>
-      </form>
-      <div className="test-accounts">
-        <p>テストアカウント:</p>
-        <ul>
-          <li>admin@example.com / password123</li>
-          <li>staff@example.com / password123</li>
-        </ul>
+
+        {/* Login Form */}
+        <Card>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div className="bg-danger-100 border border-danger-300 text-danger rounded-md p-3 text-sm">
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <Label htmlFor="email">メールアドレス</Label>
+              <Input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="example@email.com"
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="password">パスワード</Label>
+              <Input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="8文字以上"
+                required
+                disabled={isLoading}
+                minLength={8}
+              />
+            </div>
+
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              disabled={isLoading}
+              className="w-full"
+            >
+              {isLoading ? 'ログイン中...' : 'ログイン'}
+            </Button>
+          </form>
+
+          {/* Dev Account Quick Fill */}
+          <div className="mt-6 pt-6 border-t border-border">
+            <p className="text-sm text-text-grey mb-3">開発用アカウント</p>
+            <div className="flex flex-col gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => fillTestAccount('admin@example.com', 'password123')}
+              >
+                管理者 (admin@example.com)
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => fillTestAccount('staff@example.com', 'password123')}
+              >
+                スタッフ (staff@example.com)
+              </Button>
+            </div>
+          </div>
+        </Card>
+
+        {/* Test Account Info */}
+        <div className="mt-4 p-4 bg-primary-100 rounded-lg text-sm">
+          <p className="font-medium text-text-black mb-2">テストアカウント:</p>
+          <ul className="text-text-grey space-y-1 list-disc list-inside">
+            <li>admin@example.com / password123</li>
+            <li>staff@example.com / password123</li>
+          </ul>
+        </div>
       </div>
     </div>
   );

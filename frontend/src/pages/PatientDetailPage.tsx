@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { fetchPatient, deletePatient, type Patient } from '../api/client';
+import { Button } from '../components/atoms/Button';
+import { Badge } from '../components/atoms/Badge';
+import { Spinner } from '../components/atoms/Spinner';
+import { Card } from '../components/molecules/Card';
+import { Modal } from '../components/molecules/Modal';
+import { PageHeader } from '../components/templates/ListLayout';
 
 const CARE_REQUIREMENT_LABELS: Record<string, string> = {
   nursing_care: '看護ケア',
@@ -18,12 +24,19 @@ const STATUS_LABELS: Record<string, string> = {
   discharged: '退所',
 };
 
+const STATUS_VARIANTS: Record<string, 'success' | 'warning' | 'error'> = {
+  active: 'success',
+  inactive: 'warning',
+  discharged: 'error',
+};
+
 export function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [patient, setPatient] = useState<Patient | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     const loadPatient = async () => {
@@ -41,8 +54,7 @@ export function PatientDetailPage() {
   }, [id]);
 
   const handleDelete = async () => {
-    if (!patient || !confirm(`${patient.name}を削除しますか？`)) return;
-
+    if (!patient) return;
     try {
       await deletePatient(patient.id);
       navigate('/patients');
@@ -51,60 +63,117 @@ export function PatientDetailPage() {
     }
   };
 
-  if (loading) return <div className="loading">読み込み中...</div>;
-  if (error) return <div className="error-message">{error}</div>;
-  if (!patient) return <div className="error-message">患者が見つかりません</div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-danger-100 border border-danger-300 text-danger rounded-md p-4">
+        {error}
+      </div>
+    );
+  }
+
+  if (!patient) {
+    return (
+      <div className="bg-danger-100 border border-danger-300 text-danger rounded-md p-4">
+        患者が見つかりません
+      </div>
+    );
+  }
 
   return (
-    <div className="patient-detail">
-      <div className="page-header">
-        <h1>{patient.name}</h1>
-        <div className="header-actions">
-          <Link to={`/patients/${patient.id}/edit`} className="btn btn-primary">
-            編集
-          </Link>
-          <button onClick={handleDelete} className="btn btn-danger">
-            削除
-          </button>
-        </div>
-      </div>
+    <>
+      <PageHeader
+        title={patient.name}
+        breadcrumbs={[
+          { label: '患者一覧', href: '/patients' },
+          { label: patient.name },
+        ]}
+        action={
+          <div className="flex gap-2">
+            <Button variant="primary" onClick={() => navigate(`/patients/${patient.id}/edit`)}>
+              編集
+            </Button>
+            <Button variant="danger" onClick={() => setShowDeleteModal(true)}>
+              削除
+            </Button>
+          </div>
+        }
+      />
 
-      <div className="detail-card">
-        <dl className="detail-list">
-          <div className="detail-item">
-            <dt>住所</dt>
-            <dd>{patient.address || '-'}</dd>
+      <Card>
+        <dl className="divide-y divide-border">
+          <div className="py-4 flex flex-col sm:flex-row sm:gap-4">
+            <dt className="text-sm font-medium text-text-grey sm:w-40">住所</dt>
+            <dd className="mt-1 sm:mt-0 text-text-black">{patient.address || '-'}</dd>
           </div>
-          <div className="detail-item">
-            <dt>電話番号</dt>
-            <dd>{patient.phone || '-'}</dd>
+          <div className="py-4 flex flex-col sm:flex-row sm:gap-4">
+            <dt className="text-sm font-medium text-text-grey sm:w-40">電話番号</dt>
+            <dd className="mt-1 sm:mt-0 text-text-black">{patient.phone || '-'}</dd>
           </div>
-          <div className="detail-item">
-            <dt>ステータス</dt>
-            <dd>
-              <span className={`status-badge status-${patient.status}`}>
+          <div className="py-4 flex flex-col sm:flex-row sm:gap-4">
+            <dt className="text-sm font-medium text-text-grey sm:w-40">ステータス</dt>
+            <dd className="mt-1 sm:mt-0">
+              <Badge variant={STATUS_VARIANTS[patient.status] || 'default'}>
                 {STATUS_LABELS[patient.status] || patient.status}
-              </span>
+              </Badge>
             </dd>
           </div>
-          <div className="detail-item">
-            <dt>ケア内容</dt>
-            <dd>
-              {patient.care_requirements.length > 0
-                ? patient.care_requirements.map((r) => CARE_REQUIREMENT_LABELS[r] || r).join(', ')
-                : '-'}
+          <div className="py-4 flex flex-col sm:flex-row sm:gap-4">
+            <dt className="text-sm font-medium text-text-grey sm:w-40">ケア内容</dt>
+            <dd className="mt-1 sm:mt-0">
+              {patient.care_requirements.length > 0 ? (
+                <div className="flex flex-wrap gap-1">
+                  {patient.care_requirements.map((r) => (
+                    <Badge key={r} variant="primary">
+                      {CARE_REQUIREMENT_LABELS[r] || r}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <span className="text-text-grey">-</span>
+              )}
             </dd>
           </div>
-          <div className="detail-item">
-            <dt>備考</dt>
-            <dd style={{ whiteSpace: 'pre-wrap' }}>{patient.notes || '-'}</dd>
+          <div className="py-4 flex flex-col sm:flex-row sm:gap-4">
+            <dt className="text-sm font-medium text-text-grey sm:w-40">備考</dt>
+            <dd className="mt-1 sm:mt-0 text-text-black whitespace-pre-wrap">
+              {patient.notes || '-'}
+            </dd>
           </div>
         </dl>
+      </Card>
+
+      <div className="mt-6">
+        <Link to="/patients" className="text-main hover:underline text-sm">
+          ← 患者一覧に戻る
+        </Link>
       </div>
 
-      <div className="back-link">
-        <Link to="/patients">← 患者一覧に戻る</Link>
-      </div>
-    </div>
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="患者の削除"
+      >
+        <p className="text-text-grey mb-6">
+          <span className="font-medium text-text-black">{patient.name}</span>
+          を削除しますか？この操作は取り消せません。
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+            キャンセル
+          </Button>
+          <Button variant="danger" onClick={handleDelete}>
+            削除する
+          </Button>
+        </div>
+      </Modal>
+    </>
   );
 }

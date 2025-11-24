@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   DndContext,
   DragOverlay,
@@ -22,6 +22,10 @@ import {
 } from '../api/client';
 import { VisitModal } from '../components/VisitModal';
 import { ContextMenu, type ContextMenuItem } from '../components/ContextMenu';
+import { Button } from '../components/atoms/Button';
+import { Spinner } from '../components/atoms/Spinner';
+import { Card } from '../components/molecules/Card';
+import { PageHeader } from '../components/templates/ListLayout';
 
 const TIME_SLOTS = Array.from({ length: 21 }, (_, i) => {
   const hour = Math.floor(i / 2) + 8;
@@ -30,11 +34,11 @@ const TIME_SLOTS = Array.from({ length: 21 }, (_, i) => {
 });
 
 const STATUS_COLORS: Record<string, string> = {
-  scheduled: '#cce5ff',
-  in_progress: '#fff3cd',
-  completed: '#d4edda',
-  cancelled: '#f8d7da',
-  unassigned: '#e2e3e5',
+  scheduled: '#e6f1f8',
+  in_progress: '#fff4e5',
+  completed: '#e3f5e8',
+  cancelled: '#fce4ec',
+  unassigned: '#f0efed',
 };
 
 function formatTime(dateString: string): string {
@@ -47,12 +51,11 @@ function getVisitPosition(scheduledAt: string, duration: number) {
   const hours = date.getHours();
   const minutes = date.getMinutes();
   const startMinutes = (hours - 8) * 60 + minutes;
-  const left = (startMinutes / 30) * 60; // 60px per 30min slot
+  const left = (startMinutes / 30) * 60;
   const width = (duration / 30) * 60;
   return { left: Math.max(0, left), width: Math.max(30, width) };
 }
 
-// Draggable Visit Bar Component
 function VisitBar({
   visit,
   onClick,
@@ -87,7 +90,8 @@ function VisitBar({
     opacity: isDragging ? 0.5 : 1,
     transform: transform ? `translate(${transform.x}px, ${transform.y}px)` : undefined,
     zIndex: isDragging ? 100 : 1,
-    boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+    borderLeft: '3px solid #0077c7',
   };
 
   return (
@@ -112,7 +116,6 @@ function VisitBar({
   );
 }
 
-// Droppable Staff Row Component
 function StaffRow({
   staffId,
   staffName,
@@ -137,7 +140,7 @@ function StaffRow({
 
   const handleRowClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left - 120; // Subtract staff name column width
+    const x = e.clientX - rect.left - 120;
     const slotIndex = Math.floor(x / 60);
     if (slotIndex >= 0 && slotIndex < TIME_SLOTS.length) {
       onEmptyClick(staffId, TIME_SLOTS[slotIndex]);
@@ -170,6 +173,7 @@ function StaffRow({
 }
 
 export function GanttSchedulePage() {
+  const navigate = useNavigate();
   const [schedule, setSchedule] = useState<GanttSchedule | null>(null);
   const [summary, setSummary] = useState<ScheduleSummary | null>(null);
   const [selectedDate, setSelectedDate] = useState(() => {
@@ -180,12 +184,10 @@ export function GanttSchedulePage() {
   const [error, setError] = useState('');
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [editingVisit, setEditingVisit] = useState<GanttVisit | null>(null);
   const [defaultStaffId, setDefaultStaffId] = useState<number | null>(null);
 
-  // Context menu state
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -299,7 +301,7 @@ export function GanttSchedulePage() {
         label: '進行中にする',
         onClick: async () => {
           try {
-            await reassignVisit(visit.id, visit.staff_id); // triggers status update if needed
+            await reassignVisit(visit.id, visit.staff_id);
             await loadData();
           } catch (err) {
             setError(err instanceof Error ? err.message : '更新に失敗しました');
@@ -346,66 +348,76 @@ export function GanttSchedulePage() {
   };
 
   if (loading && !schedule) {
-    return <div className="loading">読み込み中...</div>;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Spinner size="lg" />
+      </div>
+    );
   }
 
   return (
-    <div className="gantt-page">
-      <div className="page-header">
-        <h1>スケジュール</h1>
-        <div className="header-actions">
-          <Link to="/schedule" className="btn">
-            週間表示
-          </Link>
-          <button className="btn btn-primary" onClick={() => { setEditingVisit(null); setDefaultStaffId(null); setModalOpen(true); }}>
-            新規訪問
-          </button>
-        </div>
-      </div>
+    <>
+      <PageHeader
+        title="ガントチャート"
+        action={
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => navigate('/schedule')}>
+              週間表示
+            </Button>
+            <Button variant="primary" onClick={() => { setEditingVisit(null); setDefaultStaffId(null); setModalOpen(true); }}>
+              新規訪問
+            </Button>
+          </div>
+        }
+      />
 
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div className="bg-danger-100 border border-danger-300 text-danger rounded-md p-3 text-sm mb-4">
+          {error}
+        </div>
+      )}
 
       {/* Summary Cards */}
       {summary && (
-        <div className="summary-cards">
-          <div className="summary-card">
-            <div className="summary-value">{summary.total_visits}</div>
-            <div className="summary-label">総訪問数</div>
-          </div>
-          <div className="summary-card">
-            <div className="summary-value">{summary.by_status.scheduled}</div>
-            <div className="summary-label">予定</div>
-          </div>
-          <div className="summary-card">
-            <div className="summary-value">{summary.by_status.completed}</div>
-            <div className="summary-label">完了</div>
-          </div>
-          <div className="summary-card warning">
-            <div className="summary-value">{summary.unassigned_visits}</div>
-            <div className="summary-label">未割当</div>
-          </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+          <Card className="text-center">
+            <div className="text-3xl font-bold text-text-black">{summary.total_visits}</div>
+            <div className="text-sm text-text-grey">総訪問数</div>
+          </Card>
+          <Card className="text-center">
+            <div className="text-3xl font-bold text-main">{summary.by_status.scheduled}</div>
+            <div className="text-sm text-text-grey">予定</div>
+          </Card>
+          <Card className="text-center">
+            <div className="text-3xl font-bold text-success">{summary.by_status.completed}</div>
+            <div className="text-sm text-text-grey">完了</div>
+          </Card>
+          <Card className="text-center bg-warning-50">
+            <div className="text-3xl font-bold text-warning-600">{summary.unassigned_visits}</div>
+            <div className="text-sm text-text-grey">未割当</div>
+          </Card>
         </div>
       )}
 
       {/* Date Navigation */}
-      <div className="schedule-controls">
-        <div className="week-nav">
-          <button onClick={goToPreviousDay} className="btn btn-small">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={goToPreviousDay}>
             &lt; 前日
-          </button>
-          <button onClick={goToToday} className="btn btn-small">
+          </Button>
+          <Button variant="secondary" size="sm" onClick={goToToday}>
             今日
-          </button>
-          <button onClick={goToNextDay} className="btn btn-small">
+          </Button>
+          <Button variant="secondary" size="sm" onClick={goToNextDay}>
             翌日 &gt;
-          </button>
+          </Button>
         </div>
-        <div className="week-display">{formatDisplayDate(selectedDate)}</div>
+        <div className="text-lg font-semibold text-text-black">{formatDisplayDate(selectedDate)}</div>
         <input
           type="date"
           value={selectedDate}
           onChange={(e) => setSelectedDate(e.target.value)}
-          className="filter-input"
+          className="px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
         />
       </div>
 
@@ -413,7 +425,6 @@ export function GanttSchedulePage() {
       {schedule && (
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="gantt-container">
-            {/* Time Header */}
             <div className="gantt-header">
               <div className="gantt-staff-name">スタッフ</div>
               <div className="gantt-timeline">
@@ -425,7 +436,6 @@ export function GanttSchedulePage() {
               </div>
             </div>
 
-            {/* Staff Rows */}
             {schedule.staff_rows.map((row) => (
               <StaffRow
                 key={row.staff.id}
@@ -439,7 +449,6 @@ export function GanttSchedulePage() {
               />
             ))}
 
-            {/* Unassigned Row */}
             {schedule.unassigned_visits.length > 0 && (
               <StaffRow
                 staffId={null}
@@ -455,16 +464,7 @@ export function GanttSchedulePage() {
 
           <DragOverlay>
             {activeId && schedule && (
-              <div
-                style={{
-                  padding: '4px 8px',
-                  backgroundColor: '#646cff',
-                  color: 'white',
-                  borderRadius: 4,
-                  fontSize: '0.8rem',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                }}
-              >
+              <div className="px-3 py-2 bg-main text-white rounded text-sm shadow-lg">
                 移動中...
               </div>
             )}
@@ -479,8 +479,10 @@ export function GanttSchedulePage() {
         <span className="legend-item"><span className="legend-color" style={{ background: STATUS_COLORS.unassigned }}></span> 未割当</span>
       </div>
 
-      <div className="back-link">
-        <Link to="/">ダッシュボードへ</Link>
+      <div className="mt-6">
+        <Link to="/" className="text-main hover:underline text-sm">
+          ダッシュボードへ
+        </Link>
       </div>
 
       <VisitModal
@@ -500,6 +502,6 @@ export function GanttSchedulePage() {
           onClose={() => setContextMenu(null)}
         />
       )}
-    </div>
+    </>
   );
 }

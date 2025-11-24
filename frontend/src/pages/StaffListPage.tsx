@@ -134,7 +134,7 @@ export function StaffListPage() {
   return (
     <ListLayout
       title="スタッフ管理"
-      action={
+      actions={
         <Link to="/staffs/new">
           <Button variant="primary">新規登録</Button>
         </Link>
