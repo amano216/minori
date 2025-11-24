@@ -36,29 +36,29 @@ export function Header({ onLogout }: HeaderProps) {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <header className="bg-white border-b border-secondary-200 sticky top-0 z-40">
+    <header className="bg-white border-b border-border sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-14">
           {/* Brand */}
           <Link
             to="/"
-            className="text-xl font-bold text-primary-600 hover:text-primary-700 transition-colors"
+            className="text-lg font-bold text-main hover:text-primary-600 transition-colors no-underline"
           >
             みのり
           </Link>
 
           {/* Navigation - Desktop */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-0.5">
             {navItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
                 className={`
-                  px-4 py-2 rounded-lg text-sm font-medium transition-colors
-                  min-h-[44px] flex items-center
+                  px-3 py-2 rounded text-sm font-medium transition-colors no-underline
+                  min-h-[40px] flex items-center
                   ${isActive(item.path)
-                    ? 'bg-primary-50 text-primary-700'
-                    : 'text-secondary-600 hover:bg-secondary-50 hover:text-secondary-900'
+                    ? 'bg-primary-50 text-main'
+                    : 'text-secondary-700 hover:bg-secondary-100 hover:text-secondary-900'
                   }
                 `}
               >
@@ -70,7 +70,7 @@ export function Header({ onLogout }: HeaderProps) {
           {/* Actions */}
           <div className="flex items-center gap-2">
             <Button
-              variant="ghost"
+              variant="text"
               size="sm"
               onClick={handleLogout}
             >
@@ -80,17 +80,17 @@ export function Header({ onLogout }: HeaderProps) {
         </div>
 
         {/* Navigation - Mobile */}
-        <nav className="md:hidden flex items-center gap-1 pb-3 overflow-x-auto">
+        <nav className="md:hidden flex items-center gap-0.5 pb-2 overflow-x-auto -mx-4 px-4">
           {navItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
               className={`
-                px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors
-                min-h-[44px] flex items-center
+                px-3 py-2 rounded text-sm font-medium whitespace-nowrap transition-colors no-underline
+                min-h-[40px] flex items-center
                 ${isActive(item.path)
-                  ? 'bg-primary-50 text-primary-700'
-                  : 'text-secondary-600 hover:bg-secondary-50'
+                  ? 'bg-primary-50 text-main'
+                  : 'text-secondary-700 hover:bg-secondary-100'
                 }
               `}
             >

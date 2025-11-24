@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Header } from './Header';
+import { DashboardLayout } from './templates/DashboardLayout';
 import { useAuth } from '../contexts/AuthContext';
 
 interface LayoutProps {
@@ -10,11 +10,8 @@ export function Layout({ children }: LayoutProps) {
   const { logout } = useAuth();
 
   return (
-    <div className="app-layout">
-      <Header onLogout={logout} />
-      <main className="app-main">
-        {children}
-      </main>
-    </div>
+    <DashboardLayout onLogout={logout}>
+      {children}
+    </DashboardLayout>
   );
 }

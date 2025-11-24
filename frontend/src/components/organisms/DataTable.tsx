@@ -37,7 +37,7 @@ export function DataTable<T>({
 
   if (data.length === 0) {
     return (
-      <div className="text-center py-12 text-secondary-500">
+      <div className="text-center py-12 text-secondary-600">
         {emptyMessage}
       </div>
     );
@@ -45,14 +45,15 @@ export function DataTable<T>({
 
   return (
     <div className={`overflow-x-auto ${className}`}>
-      <table className="w-full">
+      <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-secondary-200">
+          <tr>
             {columns.map((column) => (
               <th
                 key={column.key}
                 className={`
-                  px-4 py-3 text-left text-sm font-semibold text-secondary-700
+                  px-4 py-3 text-left text-xs font-bold text-secondary-700
+                  bg-secondary-100 border-b border-border
                   ${column.className || ''}
                 `}
               >
@@ -61,12 +62,13 @@ export function DataTable<T>({
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-secondary-100">
+        <tbody>
           {data.map((item) => (
             <tr
               key={keyExtractor(item)}
               onClick={() => onRowClick?.(item)}
               className={`
+                border-b border-border
                 hover:bg-secondary-50 transition-colors
                 ${onRowClick ? 'cursor-pointer' : ''}
               `}
@@ -75,7 +77,7 @@ export function DataTable<T>({
                 <td
                   key={column.key}
                   className={`
-                    px-4 py-3 text-sm text-secondary-900
+                    px-4 py-3 text-secondary-900
                     ${column.className || ''}
                   `}
                 >
@@ -115,11 +117,11 @@ export function TableCard<T>({
   action,
 }: TableCardProps<T>) {
   return (
-    <div className="bg-white rounded-lg border border-secondary-200 shadow-sm">
+    <div className="bg-white rounded-md border border-border">
       {(title || action) && (
-        <div className="flex items-center justify-between px-4 py-3 border-b border-secondary-200">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           {title && (
-            <h3 className="text-lg font-semibold text-secondary-900">{title}</h3>
+            <h3 className="text-base font-bold text-secondary-900">{title}</h3>
           )}
           {action && <div>{action}</div>}
         </div>
