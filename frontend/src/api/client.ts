@@ -342,3 +342,41 @@ export async function fetchScheduleSummary(params?: {
   const queryString = query.toString();
   return apiRequest(`/api/schedules/summary${queryString ? `?${queryString}` : ''}`);
 }
+
+// Gantt Schedule API
+export interface GanttVisit {
+  id: number;
+  scheduled_at: string;
+  duration: number;
+  status: string;
+  notes: string;
+  patient: { id: number; name: string; address?: string };
+  staff_id: number | null;
+}
+
+export interface StaffRow {
+  staff: { id: number; name: string; status: string };
+  visits: GanttVisit[];
+}
+
+export interface GanttSchedule {
+  date: string;
+  staff_rows: StaffRow[];
+  unassigned_visits: GanttVisit[];
+}
+
+export async function fetchGanttSchedule(params?: {
+  date?: string;
+}): Promise<GanttSchedule> {
+  const query = new URLSearchParams();
+  if (params?.date) query.append('date', params.date);
+  const queryString = query.toString();
+  return apiRequest(`/api/schedules/gantt${queryString ? `?${queryString}` : ''}`);
+}
+
+export async function reassignVisit(id: number, staffId: number | null): Promise<Visit> {
+  return apiRequest(`/api/visits/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ visit: { staff_id: staffId } }),
+  });
+}

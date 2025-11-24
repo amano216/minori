@@ -96,10 +96,15 @@ export function SchedulePage() {
   return (
     <div className="schedule-page">
       <div className="page-header">
-        <h1>スケジュール</h1>
-        <Link to="/visits/new" className="btn btn-primary">
-          訪問予定を追加
-        </Link>
+        <h1>週間スケジュール</h1>
+        <div className="header-actions">
+          <Link to="/schedule" className="btn">
+            日別表示
+          </Link>
+          <Link to="/visits/new" className="btn btn-primary">
+            訪問予定を追加
+          </Link>
+        </div>
       </div>
 
       {error && <div className="error-message">{error}</div>}

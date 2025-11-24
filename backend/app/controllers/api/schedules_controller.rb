@@ -95,5 +95,52 @@ module Api
         unassigned_visits: visits.where(staff_id: nil).count
       }
     end
+
+    # GET /api/schedules/gantt?date=2025-11-25
+    # Returns data structured for gantt chart (staff rows with their visits)
+    def gantt
+      date = params[:date].present? ? Date.parse(params[:date]) : Date.current
+
+      staffs = Staff.where(status: "active").order(:name)
+      visits = Visit.includes(:staff, :patient)
+                    .on_date(date)
+                    .where.not(status: "cancelled")
+                    .order(:scheduled_at)
+
+      # Group visits by staff
+      visits_by_staff = visits.group_by(&:staff_id)
+
+      # Build staff rows with their visits
+      staff_rows = staffs.map do |staff|
+        staff_visits = visits_by_staff[staff.id] || []
+        {
+          staff: staff.as_json(only: [ :id, :name, :status ]),
+          visits: staff_visits.map { |v| visit_json(v) }
+        }
+      end
+
+      # Unassigned visits
+      unassigned_visits = visits_by_staff[nil] || []
+
+      render json: {
+        date: date.to_s,
+        staff_rows: staff_rows,
+        unassigned_visits: unassigned_visits.map { |v| visit_json(v) }
+      }
+    end
+
+    private
+
+    def visit_json(visit)
+      {
+        id: visit.id,
+        scheduled_at: visit.scheduled_at,
+        duration: visit.duration,
+        status: visit.status,
+        notes: visit.notes,
+        patient: visit.patient.as_json(only: [ :id, :name, :address ]),
+        staff_id: visit.staff_id
+      }
+    end
   end
 end

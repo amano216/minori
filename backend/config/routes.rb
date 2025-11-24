@@ -31,6 +31,7 @@ Rails.application.routes.draw do
     # Schedule routes
     get "schedules/daily", to: "schedules#daily"
     get "schedules/weekly", to: "schedules#weekly"
+    get "schedules/gantt", to: "schedules#gantt"
     get "schedules/staff/:id", to: "schedules#staff"
     get "schedules/summary", to: "schedules#summary"
   end

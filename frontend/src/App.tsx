@@ -13,6 +13,7 @@ import { VisitListPage } from './pages/VisitListPage'
 import { VisitDetailPage } from './pages/VisitDetailPage'
 import { VisitFormPage } from './pages/VisitFormPage'
 import { SchedulePage } from './pages/SchedulePage'
+import { GanttSchedulePage } from './pages/GanttSchedulePage'
 import { LoginPage } from './pages/LoginPage'
 
 function App() {
@@ -34,7 +35,8 @@ function App() {
           <Route path="/visits/new" element={<PrivateRoute><VisitFormPage /></PrivateRoute>} />
           <Route path="/visits/:id" element={<PrivateRoute><VisitDetailPage /></PrivateRoute>} />
           <Route path="/visits/:id/edit" element={<PrivateRoute><VisitFormPage /></PrivateRoute>} />
-          <Route path="/schedule" element={<PrivateRoute><SchedulePage /></PrivateRoute>} />
+          <Route path="/schedule" element={<PrivateRoute><GanttSchedulePage /></PrivateRoute>} />
+          <Route path="/schedule/weekly" element={<PrivateRoute><SchedulePage /></PrivateRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
