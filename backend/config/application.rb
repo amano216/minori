@@ -32,6 +32,8 @@ module Backend
     config.autoload_paths += %W[
       #{config.root}/app/concepts/organization/models
       #{config.root}/app/concepts/authorization/models
+      #{config.root}/app/concepts/authorization/services
+      #{config.root}/app/synchronizations
     ]
 
     # Configuration for the application, engines, and railties goes here.
