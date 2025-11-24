@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   DndContext,
   DragOverlay,
@@ -477,12 +477,6 @@ export function GanttSchedulePage() {
         <span className="legend-item"><span className="legend-color" style={{ background: STATUS_COLORS.in_progress }}></span> 進行中</span>
         <span className="legend-item"><span className="legend-color" style={{ background: STATUS_COLORS.completed }}></span> 完了</span>
         <span className="legend-item"><span className="legend-color" style={{ background: STATUS_COLORS.unassigned }}></span> 未割当</span>
-      </div>
-
-      <div className="mt-6">
-        <Link to="/" className="text-main hover:underline text-sm">
-          ダッシュボードへ
-        </Link>
       </div>
 
       <VisitModal
