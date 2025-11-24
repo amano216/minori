@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { PrivateRoute } from './components/PrivateRoute'
 import { Layout } from './components/Layout'
-import { DashboardPage } from './pages/DashboardPage'
 import { StaffListPage } from './pages/StaffListPage'
 import { StaffDetailPage } from './pages/StaffDetailPage'
 import { StaffFormPage } from './pages/StaffFormPage'
@@ -23,7 +22,7 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/" element={<PrivateRoute><Layout><DashboardPage /></Layout></PrivateRoute>} />
+          <Route path="/" element={<Navigate to="/schedule" replace />} />
           <Route path="/staffs" element={<PrivateRoute><Layout><StaffListPage /></Layout></PrivateRoute>} />
           <Route path="/staffs/new" element={<PrivateRoute><Layout><StaffFormPage /></Layout></PrivateRoute>} />
           <Route path="/staffs/:id" element={<PrivateRoute><Layout><StaffDetailPage /></Layout></PrivateRoute>} />
@@ -38,7 +37,7 @@ function App() {
           <Route path="/visits/:id/edit" element={<PrivateRoute><Layout><VisitFormPage /></Layout></PrivateRoute>} />
           <Route path="/schedule" element={<PrivateRoute><Layout><GanttSchedulePage /></Layout></PrivateRoute>} />
           <Route path="/schedule/weekly" element={<PrivateRoute><Layout><SchedulePage /></Layout></PrivateRoute>} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/schedule" replace />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
