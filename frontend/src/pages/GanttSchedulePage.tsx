@@ -14,11 +14,14 @@ import {
   fetchGanttSchedule,
   fetchScheduleSummary,
   reassignVisit,
+  cancelVisit,
+  completeVisit,
   type GanttSchedule,
   type GanttVisit,
   type ScheduleSummary,
 } from '../api/client';
 import { VisitModal } from '../components/VisitModal';
+import { ContextMenu, type ContextMenuItem } from '../components/ContextMenu';
 
 const TIME_SLOTS = Array.from({ length: 21 }, (_, i) => {
   const hour = Math.floor(i / 2) + 8;
@@ -53,10 +56,12 @@ function getVisitPosition(scheduledAt: string, duration: number) {
 function VisitBar({
   visit,
   onClick,
+  onContextMenu,
   isDragging,
 }: {
   visit: GanttVisit;
   onClick: () => void;
+  onContextMenu: (e: React.MouseEvent) => void;
   isDragging?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
@@ -95,6 +100,11 @@ function VisitBar({
         e.stopPropagation();
         onClick();
       }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onContextMenu(e);
+      }}
       title={`${visit.patient.name} - ${formatTime(visit.scheduled_at)} (${visit.duration}分)`}
     >
       <strong>{formatTime(visit.scheduled_at)}</strong> {visit.patient.name}
@@ -108,6 +118,7 @@ function StaffRow({
   staffName,
   visits,
   onVisitClick,
+  onVisitContextMenu,
   onEmptyClick,
   activeId,
 }: {
@@ -115,6 +126,7 @@ function StaffRow({
   staffName: string;
   visits: GanttVisit[];
   onVisitClick: (visit: GanttVisit) => void;
+  onVisitContextMenu: (visit: GanttVisit, e: React.MouseEvent) => void;
   onEmptyClick: (staffId: number | null, time: string) => void;
   activeId: string | null;
 }) {
@@ -148,6 +160,7 @@ function StaffRow({
             key={visit.id}
             visit={visit}
             onClick={() => onVisitClick(visit)}
+            onContextMenu={(e) => onVisitContextMenu(visit, e)}
             isDragging={activeId === `visit-${visit.id}`}
           />
         ))}
@@ -171,6 +184,13 @@ export function GanttSchedulePage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingVisit, setEditingVisit] = useState<GanttVisit | null>(null);
   const [defaultStaffId, setDefaultStaffId] = useState<number | null>(null);
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    visit: GanttVisit;
+  } | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -238,6 +258,69 @@ export function GanttSchedulePage() {
 
   const handleModalSave = () => {
     loadData();
+  };
+
+  const handleVisitContextMenu = (visit: GanttVisit, e: React.MouseEvent) => {
+    setContextMenu({ x: e.clientX, y: e.clientY, visit });
+  };
+
+  const handleCancelVisit = async (visit: GanttVisit) => {
+    try {
+      await cancelVisit(visit.id);
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'キャンセルに失敗しました');
+    }
+  };
+
+  const handleCompleteVisit = async (visit: GanttVisit) => {
+    try {
+      await completeVisit(visit.id);
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '完了処理に失敗しました');
+    }
+  };
+
+  const getContextMenuItems = (visit: GanttVisit): ContextMenuItem[] => {
+    const items: ContextMenuItem[] = [
+      {
+        label: '編集',
+        onClick: () => {
+          setEditingVisit(visit);
+          setDefaultStaffId(null);
+          setModalOpen(true);
+        },
+      },
+    ];
+
+    if (visit.status === 'scheduled') {
+      items.push({
+        label: '進行中にする',
+        onClick: async () => {
+          try {
+            await reassignVisit(visit.id, visit.staff_id); // triggers status update if needed
+            await loadData();
+          } catch (err) {
+            setError(err instanceof Error ? err.message : '更新に失敗しました');
+          }
+        },
+      });
+    }
+
+    if (visit.status !== 'completed' && visit.status !== 'cancelled') {
+      items.push({
+        label: '完了にする',
+        onClick: () => handleCompleteVisit(visit),
+      });
+      items.push({
+        label: 'キャンセル',
+        onClick: () => handleCancelVisit(visit),
+        danger: true,
+      });
+    }
+
+    return items;
   };
 
   const goToPreviousDay = () => {
@@ -350,6 +433,7 @@ export function GanttSchedulePage() {
                 staffName={row.staff.name}
                 visits={row.visits}
                 onVisitClick={handleVisitClick}
+                onVisitContextMenu={handleVisitContextMenu}
                 onEmptyClick={handleEmptyClick}
                 activeId={activeId}
               />
@@ -362,6 +446,7 @@ export function GanttSchedulePage() {
                 staffName="未割当"
                 visits={schedule.unassigned_visits}
                 onVisitClick={handleVisitClick}
+                onVisitContextMenu={handleVisitContextMenu}
                 onEmptyClick={handleEmptyClick}
                 activeId={activeId}
               />
@@ -406,6 +491,15 @@ export function GanttSchedulePage() {
         defaultDate={selectedDate}
         defaultStaffId={defaultStaffId}
       />
+
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={getContextMenuItems(contextMenu.visit)}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
     </div>
   );
 }
