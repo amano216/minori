@@ -187,6 +187,7 @@ export function GanttSchedulePage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingVisit, setEditingVisit] = useState<GanttVisit | null>(null);
   const [defaultStaffId, setDefaultStaffId] = useState<number | null>(null);
+  const [defaultTime, setDefaultTime] = useState<string | null>(null);
 
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -252,9 +253,10 @@ export function GanttSchedulePage() {
     setModalOpen(true);
   };
 
-  const handleEmptyClick = (staffId: number | null, _time: string) => {
+  const handleEmptyClick = (staffId: number | null, time: string) => {
     setEditingVisit(null);
     setDefaultStaffId(staffId);
+    setDefaultTime(time);
     setModalOpen(true);
   };
 
@@ -485,6 +487,7 @@ export function GanttSchedulePage() {
         onSave={handleModalSave}
         visit={editingVisit}
         defaultDate={selectedDate}
+        defaultTime={defaultTime ?? undefined}
         defaultStaffId={defaultStaffId}
       />
 

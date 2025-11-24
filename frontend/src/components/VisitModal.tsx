@@ -15,6 +15,7 @@ interface VisitModalProps {
   onSave: () => void;
   visit?: GanttVisit | null;
   defaultDate?: string;
+  defaultTime?: string;
   defaultStaffId?: number | null;
 }
 
@@ -24,6 +25,7 @@ export function VisitModal({
   onSave,
   visit,
   defaultDate,
+  defaultTime,
   defaultStaffId,
 }: VisitModalProps) {
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -56,12 +58,13 @@ export function VisitModal({
       } else {
         setPatientId('');
         setStaffId(defaultStaffId ?? '');
-        setScheduledAt(defaultDate ? `${defaultDate}T09:00` : '');
+        const time = defaultTime || '09:00';
+        setScheduledAt(defaultDate ? `${defaultDate}T${time}` : '');
         setDuration(60);
         setNotes('');
       }
     }
-  }, [isOpen, visit, defaultDate, defaultStaffId]);
+  }, [isOpen, visit, defaultDate, defaultTime, defaultStaffId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
