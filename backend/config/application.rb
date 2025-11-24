@@ -28,6 +28,12 @@ module Backend
     # Common ones are `templates`, `generators`, or `middleware`, for example.
     config.autoload_lib(ignore: %w[assets tasks])
 
+    # Autoload Concepts
+    config.autoload_paths += %W[
+      #{config.root}/app/concepts/organization/models
+      #{config.root}/app/concepts/authorization/models
+    ]
+
     # Configuration for the application, engines, and railties goes here.
     #
     # These settings can be overridden in specific environments using the files

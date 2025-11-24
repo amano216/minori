@@ -10,20 +10,72 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_23_212057) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_24_211505) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "group_memberships", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "group_id", null: false
+    t.integer "role", default: 0
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["group_id", "user_id"], name: "index_group_memberships_on_group_id_and_user_id", unique: true
+    t.index ["group_id"], name: "index_group_memberships_on_group_id"
+    t.index ["user_id"], name: "index_group_memberships_on_user_id"
+  end
+
+  create_table "groups", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.integer "group_type", default: 0
+    t.string "name", null: false
+    t.bigint "organization_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["organization_id"], name: "index_groups_on_organization_id"
+  end
+
+  create_table "organization_memberships", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "organization_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["organization_id"], name: "index_organization_memberships_on_organization_id"
+    t.index ["user_id", "organization_id"], name: "index_organization_memberships_on_user_id_and_organization_id", unique: true
+    t.index ["user_id"], name: "index_organization_memberships_on_user_id"
+  end
+
+  create_table "organizations", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.string "plan", default: "free"
+    t.jsonb "settings", default: {}
+    t.string "subdomain", null: false
+    t.datetime "updated_at", null: false
+    t.index ["subdomain"], name: "index_organizations_on_subdomain", unique: true
+  end
 
   create_table "patients", force: :cascade do |t|
     t.string "address"
     t.jsonb "care_requirements", default: []
     t.datetime "created_at", null: false
+    t.bigint "group_id"
     t.string "name", null: false
     t.text "notes"
+    t.bigint "organization_id"
     t.string "phone"
     t.string "status", default: "active", null: false
     t.datetime "updated_at", null: false
+    t.index ["group_id"], name: "index_patients_on_group_id"
+    t.index ["organization_id"], name: "index_patients_on_organization_id"
     t.index ["status"], name: "index_patients_on_status"
+  end
+
+  create_table "roles", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.string "name"
+    t.datetime "updated_at", null: false
   end
 
   create_table "staffs", force: :cascade do |t|
@@ -38,24 +90,42 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_23_212057) do
     t.index ["status"], name: "index_staffs_on_status"
   end
 
+  create_table "user_roles", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "group_id"
+    t.bigint "organization_id"
+    t.bigint "role_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["group_id"], name: "index_user_roles_on_group_id"
+    t.index ["organization_id"], name: "index_user_roles_on_organization_id"
+    t.index ["role_id"], name: "index_user_roles_on_role_id"
+    t.index ["user_id", "role_id", "organization_id"], name: "idx_user_role_org", unique: true
+    t.index ["user_id"], name: "index_user_roles_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "email", null: false
+    t.bigint "organization_id"
     t.string "password_digest", null: false
     t.string "role", default: "staff", null: false
     t.datetime "updated_at", null: false
     t.index ["email"], name: "index_users_on_email", unique: true
+    t.index ["organization_id"], name: "index_users_on_organization_id"
   end
 
   create_table "visits", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "duration", default: 60, null: false
     t.text "notes"
+    t.bigint "organization_id"
     t.bigint "patient_id", null: false
     t.datetime "scheduled_at", null: false
     t.bigint "staff_id"
     t.string "status", default: "scheduled", null: false
     t.datetime "updated_at", null: false
+    t.index ["organization_id"], name: "index_visits_on_organization_id"
     t.index ["patient_id"], name: "index_visits_on_patient_id"
     t.index ["scheduled_at"], name: "index_visits_on_scheduled_at"
     t.index ["staff_id", "scheduled_at"], name: "index_visits_on_staff_id_and_scheduled_at"
@@ -63,6 +133,19 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_23_212057) do
     t.index ["status"], name: "index_visits_on_status"
   end
 
+  add_foreign_key "group_memberships", "groups"
+  add_foreign_key "group_memberships", "users"
+  add_foreign_key "groups", "organizations"
+  add_foreign_key "organization_memberships", "organizations"
+  add_foreign_key "organization_memberships", "users"
+  add_foreign_key "patients", "groups"
+  add_foreign_key "patients", "organizations"
+  add_foreign_key "user_roles", "groups"
+  add_foreign_key "user_roles", "organizations"
+  add_foreign_key "user_roles", "roles"
+  add_foreign_key "user_roles", "users"
+  add_foreign_key "users", "organizations"
+  add_foreign_key "visits", "organizations"
   add_foreign_key "visits", "patients"
   add_foreign_key "visits", "staffs"
 end
