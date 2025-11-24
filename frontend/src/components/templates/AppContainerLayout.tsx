@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
+import { AppIconSidebar } from "../organisms/AppIconSidebar";
 import { AppSidebar } from "../organisms/AppSidebar";
-import { AppSwitcher } from "../molecules/AppSwitcher";
 import { useAuth } from "../../contexts/AuthContext";
 import type { AppMetadata, AppRoute } from "../../types/apps";
 
@@ -11,15 +11,14 @@ interface AppContainerLayoutProps {
 }
 
 export function AppContainerLayout({ app, routes, children }: AppContainerLayoutProps) {
-  const { user, logout } = useAuth();
-
-  const handleLogout = async () => {
-    await logout();
-  };
+  const { user } = useAuth();
 
   return (
     <div className="flex h-screen bg-bg-base">
-      {/* Sidebar */}
+      {/* App Icon Sidebar (左端) */}
+      <AppIconSidebar />
+
+      {/* App Navigation Sidebar (アプリ内ルート) */}
       <AppSidebar routes={routes} appName={app.name} appColor={app.color} />
 
       {/* Main Content */}
@@ -28,20 +27,15 @@ export function AppContainerLayout({ app, routes, children }: AppContainerLayout
         <header className="bg-white border-b border-border flex-shrink-0">
           <div className="h-14 px-6 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <AppSwitcher currentApp={app} />
+              <h1 className="text-lg font-semibold text-text-primary">{app.name}</h1>
             </div>
 
             <div className="flex items-center gap-4">
               <span className="text-sm text-text-grey">{user?.email}</span>
-              <button
-                onClick={handleLogout}
-                className="text-sm text-text-grey hover:text-text-primary transition-colors"
-              >
-                ログアウト
-              </button>
             </div>
           </div>
         </header>
+
 
         {/* Content Area */}
         <main className="flex-1 overflow-auto">
