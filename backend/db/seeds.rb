@@ -76,7 +76,7 @@ patients_data.each do |patient_data|
     patient.care_requirements = patient_data[:care_requirements]
     patient.notes = patient_data[:notes]
     patient.status = patient_data[:status]
-    patient.organization = default_org
+    patient.organization_id = default_org.id
   end
 end
 
