@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   DndContext,
   DragOverlay,
@@ -187,6 +187,7 @@ export function GanttSchedulePage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingVisit, setEditingVisit] = useState<GanttVisit | null>(null);
   const [defaultStaffId, setDefaultStaffId] = useState<number | null>(null);
+  const [defaultTime, setDefaultTime] = useState<string | null>(null);
 
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -252,9 +253,10 @@ export function GanttSchedulePage() {
     setModalOpen(true);
   };
 
-  const handleEmptyClick = (staffId: number | null, _time: string) => {
+  const handleEmptyClick = (staffId: number | null, time: string) => {
     setEditingVisit(null);
     setDefaultStaffId(staffId);
+    setDefaultTime(time);
     setModalOpen(true);
   };
 
@@ -479,18 +481,13 @@ export function GanttSchedulePage() {
         <span className="legend-item"><span className="legend-color" style={{ background: STATUS_COLORS.unassigned }}></span> 未割当</span>
       </div>
 
-      <div className="mt-6">
-        <Link to="/" className="text-main hover:underline text-sm">
-          ダッシュボードへ
-        </Link>
-      </div>
-
       <VisitModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         onSave={handleModalSave}
         visit={editingVisit}
         defaultDate={selectedDate}
+        defaultTime={defaultTime ?? undefined}
         defaultStaffId={defaultStaffId}
       />
 
