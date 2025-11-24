@@ -1,0 +1,18 @@
+import * as LucideIcons from 'lucide-react';
+
+interface IconProps {
+  name: string;
+  className?: string;
+  size?: number;
+}
+
+export function Icon({ name, className = '', size = 20 }: IconProps) {
+  const IconComponent = (LucideIcons as Record<string, React.ComponentType<{ className?: string; size?: number }>>)[name];
+
+  if (!IconComponent) {
+    console.warn(`Icon "${name}" not found in lucide-react`);
+    return null;
+  }
+
+  return <IconComponent className={className} size={size} />;
+}
