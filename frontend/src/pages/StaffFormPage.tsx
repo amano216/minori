@@ -2,6 +2,12 @@ import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { fetchStaff, createStaff, updateStaff, type StaffInput } from '../api/client';
+import { Button } from '../components/atoms/Button';
+import { Input } from '../components/atoms/Input';
+import { Label } from '../components/atoms/Label';
+import { Spinner } from '../components/atoms/Spinner';
+import { Card } from '../components/molecules/Card';
+import { PageHeader } from '../components/templates/ListLayout';
 
 const QUALIFICATIONS = [
   { value: 'nurse', label: '看護師' },
@@ -104,115 +110,145 @@ export function StaffFormPage() {
     }
   };
 
-  if (loading) return <div className="loading">読み込み中...</div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
 
   return (
-    <div className="staff-form">
-      <h1>{isEdit ? 'スタッフ編集' : 'スタッフ登録'}</h1>
+    <>
+      <PageHeader
+        title={isEdit ? 'スタッフ編集' : 'スタッフ登録'}
+        breadcrumbs={[
+          { label: 'スタッフ一覧', href: '/staffs' },
+          { label: isEdit ? '編集' : '新規登録' },
+        ]}
+      />
 
-      {error && <div className="error-message">{error}</div>}
-
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label htmlFor="name">名前 *</label>
-          <input
-            type="text"
-            id="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            disabled={submitting}
-          />
+      {error && (
+        <div className="bg-danger-100 border border-danger-300 text-danger rounded-md p-3 text-sm mb-4">
+          {error}
         </div>
+      )}
 
-        <div className="form-group">
-          <label htmlFor="email">メールアドレス *</label>
-          <input
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            disabled={submitting}
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="status">ステータス</label>
-          <select
-            id="status"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            disabled={submitting}
-          >
-            <option value="active">在籍</option>
-            <option value="inactive">退職</option>
-            <option value="on_leave">休職</option>
-          </select>
-        </div>
-
-        <div className="form-group">
-          <label>資格</label>
-          <div className="checkbox-group">
-            {QUALIFICATIONS.map((qual) => (
-              <label key={qual.value} className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={qualifications.includes(qual.value)}
-                  onChange={() => handleQualificationChange(qual.value)}
-                  disabled={submitting}
-                />
-                {qual.label}
-              </label>
-            ))}
+      <Card>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-1.5">
+            <Label htmlFor="name" required>名前</Label>
+            <Input
+              type="text"
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              disabled={submitting}
+              placeholder="例: 山田 太郎"
+            />
           </div>
-        </div>
 
-        <div className="form-group">
-          <label>勤務可能時間</label>
-          <div className="hours-grid">
-            {DAYS.map((day) => (
-              <div key={day.value} className="hours-row">
-                <label className="checkbox-label">
+          <div className="space-y-1.5">
+            <Label htmlFor="email" required>メールアドレス</Label>
+            <Input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={submitting}
+              placeholder="例: yamada@example.com"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="status">ステータス</Label>
+            <select
+              id="status"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              disabled={submitting}
+              className="w-full px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
+            >
+              <option value="active">在籍</option>
+              <option value="inactive">退職</option>
+              <option value="on_leave">休職</option>
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>資格</Label>
+            <div className="flex flex-wrap gap-3">
+              {QUALIFICATIONS.map((qual) => (
+                <label
+                  key={qual.value}
+                  className="flex items-center gap-2 cursor-pointer text-sm text-text-black"
+                >
                   <input
                     type="checkbox"
-                    checked={Boolean(availableHours[day.value])}
-                    onChange={() => toggleDay(day.value)}
+                    checked={qualifications.includes(qual.value)}
+                    onChange={() => handleQualificationChange(qual.value)}
                     disabled={submitting}
+                    className="w-4 h-4 text-main border-border rounded focus:ring-main"
                   />
-                  {day.label}
+                  {qual.label}
                 </label>
-                {availableHours[day.value] && (
-                  <div className="hours-inputs">
-                    <input
-                      type="time"
-                      value={availableHours[day.value]?.start || '09:00'}
-                      onChange={(e) => handleHoursChange(day.value, 'start', e.target.value)}
-                      disabled={submitting}
-                    />
-                    <span>〜</span>
-                    <input
-                      type="time"
-                      value={availableHours[day.value]?.end || '17:00'}
-                      onChange={(e) => handleHoursChange(day.value, 'end', e.target.value)}
-                      disabled={submitting}
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
 
-        <div className="form-actions">
-          <button type="submit" className="btn btn-primary" disabled={submitting}>
-            {submitting ? '保存中...' : '保存'}
-          </button>
-          <Link to="/staffs" className="btn">
-            キャンセル
-          </Link>
-        </div>
-      </form>
-    </div>
+          <div className="space-y-2">
+            <Label>勤務可能時間</Label>
+            <div className="space-y-3">
+              {DAYS.map((day) => (
+                <div key={day.value} className="flex items-center gap-4 flex-wrap">
+                  <label className="flex items-center gap-2 cursor-pointer text-sm text-text-black w-24">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(availableHours[day.value])}
+                      onChange={() => toggleDay(day.value)}
+                      disabled={submitting}
+                      className="w-4 h-4 text-main border-border rounded focus:ring-main"
+                    />
+                    {day.label}
+                  </label>
+                  {availableHours[day.value] && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="time"
+                        value={availableHours[day.value]?.start || '09:00'}
+                        onChange={(e) => handleHoursChange(day.value, 'start', e.target.value)}
+                        disabled={submitting}
+                        className="px-2 py-1.5 border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-main"
+                      />
+                      <span className="text-text-grey">〜</span>
+                      <input
+                        type="time"
+                        value={availableHours[day.value]?.end || '17:00'}
+                        onChange={(e) => handleHoursChange(day.value, 'end', e.target.value)}
+                        disabled={submitting}
+                        className="px-2 py-1.5 border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-main"
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-4 border-t border-border">
+            <Button type="submit" variant="primary" disabled={submitting}>
+              {submitting ? '保存中...' : '保存'}
+            </Button>
+            <Link to="/staffs">
+              <Button type="button" variant="secondary" disabled={submitting}>
+                キャンセル
+              </Button>
+            </Link>
+          </div>
+        </form>
+      </Card>
+    </>
   );
 }

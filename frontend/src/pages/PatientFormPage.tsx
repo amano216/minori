@@ -2,6 +2,12 @@ import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { fetchPatient, createPatient, updatePatient, type PatientInput } from '../api/client';
+import { Button } from '../components/atoms/Button';
+import { Input } from '../components/atoms/Input';
+import { Label } from '../components/atoms/Label';
+import { Spinner } from '../components/atoms/Spinner';
+import { Card } from '../components/molecules/Card';
+import { PageHeader } from '../components/templates/ListLayout';
 
 const CARE_REQUIREMENTS = [
   { value: 'nursing_care', label: '看護ケア' },
@@ -82,100 +88,130 @@ export function PatientFormPage() {
     }
   };
 
-  if (loading) return <div className="loading">読み込み中...</div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
 
   return (
-    <div className="patient-form">
-      <h1>{isEdit ? '患者編集' : '患者登録'}</h1>
+    <>
+      <PageHeader
+        title={isEdit ? '患者編集' : '患者登録'}
+        breadcrumbs={[
+          { label: '患者一覧', href: '/patients' },
+          { label: isEdit ? '編集' : '新規登録' },
+        ]}
+      />
 
-      {error && <div className="error-message">{error}</div>}
-
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label htmlFor="name">名前 *</label>
-          <input
-            type="text"
-            id="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            disabled={submitting}
-          />
+      {error && (
+        <div className="bg-danger-100 border border-danger-300 text-danger rounded-md p-3 text-sm mb-4">
+          {error}
         </div>
+      )}
 
-        <div className="form-group">
-          <label htmlFor="address">住所</label>
-          <input
-            type="text"
-            id="address"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            disabled={submitting}
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="phone">電話番号</label>
-          <input
-            type="tel"
-            id="phone"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            disabled={submitting}
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="status">ステータス</label>
-          <select
-            id="status"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            disabled={submitting}
-          >
-            <option value="active">利用中</option>
-            <option value="inactive">休止中</option>
-            <option value="discharged">退所</option>
-          </select>
-        </div>
-
-        <div className="form-group">
-          <label>ケア内容</label>
-          <div className="checkbox-group">
-            {CARE_REQUIREMENTS.map((req) => (
-              <label key={req.value} className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={careRequirements.includes(req.value)}
-                  onChange={() => handleCareRequirementChange(req.value)}
-                  disabled={submitting}
-                />
-                {req.label}
-              </label>
-            ))}
+      <Card>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-1.5">
+            <Label htmlFor="name" required>名前</Label>
+            <Input
+              type="text"
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              disabled={submitting}
+              placeholder="例: 田中 花子"
+            />
           </div>
-        </div>
 
-        <div className="form-group">
-          <label htmlFor="notes">備考</label>
-          <textarea
-            id="notes"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            disabled={submitting}
-            rows={4}
-          />
-        </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="address">住所</Label>
+            <Input
+              type="text"
+              id="address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              disabled={submitting}
+              placeholder="例: 東京都渋谷区..."
+            />
+          </div>
 
-        <div className="form-actions">
-          <button type="submit" className="btn btn-primary" disabled={submitting}>
-            {submitting ? '保存中...' : '保存'}
-          </button>
-          <Link to="/patients" className="btn">
-            キャンセル
-          </Link>
-        </div>
-      </form>
-    </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="phone">電話番号</Label>
+            <Input
+              type="tel"
+              id="phone"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              disabled={submitting}
+              placeholder="例: 03-1234-5678"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="status">ステータス</Label>
+            <select
+              id="status"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              disabled={submitting}
+              className="w-full px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
+            >
+              <option value="active">利用中</option>
+              <option value="inactive">休止中</option>
+              <option value="discharged">退所</option>
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>ケア内容</Label>
+            <div className="flex flex-wrap gap-3">
+              {CARE_REQUIREMENTS.map((req) => (
+                <label
+                  key={req.value}
+                  className="flex items-center gap-2 cursor-pointer text-sm text-text-black"
+                >
+                  <input
+                    type="checkbox"
+                    checked={careRequirements.includes(req.value)}
+                    onChange={() => handleCareRequirementChange(req.value)}
+                    disabled={submitting}
+                    className="w-4 h-4 text-main border-border rounded focus:ring-main"
+                  />
+                  {req.label}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="notes">備考</Label>
+            <textarea
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              disabled={submitting}
+              rows={4}
+              className="w-full px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main resize-y"
+              placeholder="患者に関する補足情報..."
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4 border-t border-border">
+            <Button type="submit" variant="primary" disabled={submitting}>
+              {submitting ? '保存中...' : '保存'}
+            </Button>
+            <Link to="/patients">
+              <Button type="button" variant="secondary" disabled={submitting}>
+                キャンセル
+              </Button>
+            </Link>
+          </div>
+        </form>
+      </Card>
+    </>
   );
 }
