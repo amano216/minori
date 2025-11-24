@@ -2,16 +2,40 @@
 # development, test). The code here should be idempotent so that it can be executed at any point in every environment.
 # The data can then be loaded with the bin/rails db:seed command (or created alongside the database with db:setup).
 
-# Create default users for all environments
-User.find_or_create_by!(email: "admin@example.com") do |user|
-  user.password = "password123"
-  user.role = "admin"
+# Create default organization
+puts "Creating default organization..."
+default_org = Organization.find_or_create_by!(subdomain: "default") do |org|
+  org.name = "デフォルト組織"
+  org.plan = "free"
 end
 
-User.find_or_create_by!(email: "staff@example.com") do |user|
+# Create system roles
+puts "Creating system roles..."
+Role.seed_roles
+
+# Create default users for all environments
+admin_user = User.find_or_create_by!(email: "admin@example.com") do |user|
+  user.password = "password123"
+  user.role = "admin"
+  user.organization = default_org
+end
+
+staff_user = User.find_or_create_by!(email: "staff@example.com") do |user|
   user.password = "password123"
   user.role = "staff"
+  user.organization = default_org
 end
+
+# Create organization memberships
+OrganizationMembership.find_or_create_by!(user: admin_user, organization: default_org)
+OrganizationMembership.find_or_create_by!(user: staff_user, organization: default_org)
+
+# Assign roles
+org_admin_role = Role.find_by(name: Role::ORGANIZATION_ADMIN)
+staff_role = Role.find_by(name: Role::STAFF)
+
+UserRole.find_or_create_by!(user: admin_user, role: org_admin_role, organization: default_org)
+UserRole.find_or_create_by!(user: staff_user, role: staff_role, organization: default_org)
 
 puts "Seed users created:"
 puts "  - admin@example.com (password: password123)"
@@ -52,7 +76,11 @@ patients_data.each do |patient_data|
     patient.care_requirements = patient_data[:care_requirements]
     patient.notes = patient_data[:notes]
     patient.status = patient_data[:status]
+    patient.organization_id = default_org.id
   end
 end
+
+# Update existing patients without organization
+Patient.where(organization_id: nil).update_all(organization_id: default_org.id)
 
 puts "Seed patients created: #{patients_data.size} patients"

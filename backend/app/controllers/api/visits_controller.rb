@@ -2,10 +2,10 @@
 
 module Api
   class VisitsController < ApplicationController
-    before_action :set_visit, only: %i[show update destroy cancel complete]
+    include AuthorizationVisitSync
 
     def index
-      @visits = Visit.includes(:staff, :patient).all
+      @visits = scoped_visits.includes(:staff, :patient)
       @visits = @visits.where(status: params[:status]) if params[:status].present?
       @visits = @visits.for_staff(params[:staff_id]) if params[:staff_id].present?
       @visits = @visits.for_patient(params[:patient_id]) if params[:patient_id].present?
@@ -20,7 +20,7 @@ module Api
     end
 
     def create
-      @visit = Visit.new(visit_params)
+      @visit = Visit.new(visit_params_with_organization)
 
       if @visit.save
         render json: @visit.as_json(include: { staff: { only: [ :id, :name ] }, patient: { only: [ :id, :name ] } }),
