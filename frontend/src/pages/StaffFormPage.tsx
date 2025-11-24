@@ -76,6 +76,7 @@ export function StaffFormPage() {
   const toggleDay = (day: string) => {
     setAvailableHours((prev) => {
       if (prev[day]) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { [day]: _, ...rest } = prev;
         return rest;
       }

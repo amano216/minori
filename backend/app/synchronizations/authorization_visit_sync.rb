@@ -4,10 +4,10 @@ module AuthorizationVisitSync
   extend ActiveSupport::Concern
 
   included do
-    before_action :set_organization_scope, only: [:index, :create]
-    before_action :set_visit, only: [:show, :update, :destroy]
+    before_action :set_organization_scope, only: [ :index, :create ]
+    before_action :set_visit, only: [ :show, :update, :destroy ]
     before_action :authorize_visit_action
-    before_action :validate_cross_organization, only: [:create, :update]
+    before_action :validate_cross_organization, only: [ :create, :update ]
   end
 
   private
@@ -25,7 +25,7 @@ module AuthorizationVisitSync
     resource = @visit || Visit
 
     unless Authorization::Authorize.can?(current_user, action, resource)
-      render json: { error: 'Forbidden' }, status: :forbidden
+      render json: { error: "Forbidden" }, status: :forbidden
     end
   end
 
@@ -39,7 +39,7 @@ module AuthorizationVisitSync
       staff = User.find_by(id: staff_id)
 
       if patient && staff && patient.organization_id != staff.organization_id
-        render json: { error: '異なる組織間の訪問予定は作成できません' }, status: :unprocessable_entity
+        render json: { error: "異なる組織間の訪問予定は作成できません" }, status: :unprocessable_entity
       end
     end
   end

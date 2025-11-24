@@ -28,7 +28,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })
         .finally(() => setIsLoading(false));
     } else {
-      setIsLoading(false);
+      // Set loading to false in next tick to avoid setState during effect
+      Promise.resolve().then(() => setIsLoading(false));
     }
   }, []);
 
@@ -57,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {

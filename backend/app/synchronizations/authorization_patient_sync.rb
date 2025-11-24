@@ -4,8 +4,8 @@ module AuthorizationPatientSync
   extend ActiveSupport::Concern
 
   included do
-    before_action :set_organization_scope, only: [:index, :create]
-    before_action :set_patient, only: [:show, :update, :destroy]
+    before_action :set_organization_scope, only: [ :index, :create ]
+    before_action :set_patient, only: [ :show, :update, :destroy ]
     before_action :authorize_patient_action
   end
 
@@ -24,7 +24,7 @@ module AuthorizationPatientSync
     resource = @patient || Patient
 
     unless Authorization::Authorize.can?(current_user, action, resource)
-      render json: { error: 'Forbidden' }, status: :forbidden
+      render json: { error: "Forbidden" }, status: :forbidden
     end
   end
 

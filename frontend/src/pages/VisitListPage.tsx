@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { fetchVisits, cancelVisit, completeVisit, deleteVisit, type Visit } from '../api/client';
 import { Button } from '../components/atoms/Button';
@@ -44,7 +44,7 @@ export function VisitListPage() {
   const [dateFilter, setDateFilter] = useState('');
   const [actionModal, setActionModal] = useState<{ type: 'complete' | 'cancel' | 'delete'; visit: Visit } | null>(null);
 
-  const loadVisits = async () => {
+  const loadVisits = useCallback(async () => {
     try {
       setLoading(true);
       const params: { status?: string; date?: string } = {};
@@ -57,11 +57,11 @@ export function VisitListPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter, dateFilter]);
 
   useEffect(() => {
     loadVisits();
-  }, [statusFilter, dateFilter]);
+  }, [loadVisits]);
 
   const handleAction = async () => {
     if (!actionModal) return;

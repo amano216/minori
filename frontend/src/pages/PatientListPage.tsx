@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { fetchPatients, deletePatient, type Patient } from '../api/client';
 import { Button } from '../components/atoms/Button';
@@ -38,7 +38,7 @@ export function PatientListPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Patient | null>(null);
 
-  const loadPatients = async () => {
+  const loadPatients = useCallback(async () => {
     try {
       setLoading(true);
       const data = await fetchPatients(statusFilter ? { status: statusFilter } : undefined);
@@ -48,11 +48,11 @@ export function PatientListPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter]);
 
   useEffect(() => {
     loadPatients();
-  }, [statusFilter]);
+  }, [loadPatients]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   fetchWeeklySchedule,
@@ -59,7 +59,7 @@ export function SchedulePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -79,11 +79,11 @@ export function SchedulePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [weekStart, selectedStaffId]);
 
   useEffect(() => {
     loadData();
-  }, [weekStart, selectedStaffId]);
+  }, [loadData]);
 
   const goToPreviousWeek = () => {
     setWeekStart(addDays(weekStart, -7));

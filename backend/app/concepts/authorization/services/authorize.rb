@@ -47,15 +47,15 @@ module Authorization
       org = patient.organization || Current.organization
 
       case action.to_s
-      when 'show', 'index'
+      when "show", "index"
         # Can view patients in same organization or group
         user.organization_id == org&.id ||
           (patient.group && user.groups.include?(patient.group))
-      when 'create'
+      when "create"
         # Organization admin or group admin can create
         user.has_role?(Role::ORGANIZATION_ADMIN, organization: org) ||
           user.has_role?(Role::GROUP_ADMIN, organization: org)
-      when 'update', 'destroy'
+      when "update", "destroy"
         # Organization admin can update/delete
         user.has_role?(Role::ORGANIZATION_ADMIN, organization: org)
       else
@@ -68,15 +68,15 @@ module Authorization
       org = visit.organization || Current.organization
 
       case action.to_s
-      when 'show', 'index'
+      when "show", "index"
         # Can view visits in same organization
         user.organization_id == org&.id
-      when 'create', 'update'
+      when "create", "update"
         # Staff and above can create/update visits
         user.has_role?(Role::STAFF, organization: org) ||
           user.has_role?(Role::GROUP_ADMIN, organization: org) ||
           user.has_role?(Role::ORGANIZATION_ADMIN, organization: org)
-      when 'destroy'
+      when "destroy"
         # Only organization admin can delete visits
         user.has_role?(Role::ORGANIZATION_ADMIN, organization: org)
       else
@@ -89,10 +89,10 @@ module Authorization
       org = target_user.organization || Current.organization
 
       case action.to_s
-      when 'show', 'index'
+      when "show", "index"
         # Can view users in same organization
         user.organization_id == org&.id
-      when 'create', 'update', 'destroy'
+      when "create", "update", "destroy"
         # Only organization admin can manage users
         user.has_role?(Role::ORGANIZATION_ADMIN, organization: org)
       else
@@ -105,10 +105,10 @@ module Authorization
       org = group.organization
 
       case action.to_s
-      when 'show', 'index'
+      when "show", "index"
         # Can view groups in same organization
         user.organization_id == org.id
-      when 'create', 'update', 'destroy'
+      when "create", "update", "destroy"
         # Organization admin or group admin can manage groups
         user.has_role?(Role::ORGANIZATION_ADMIN, organization: org) ||
           user.has_role?(Role::GROUP_ADMIN, group: group)
@@ -120,13 +120,13 @@ module Authorization
     # Organization access control
     def self.can_access_organization?(user, action, organization)
       case action.to_s
-      when 'show'
+      when "show"
         # Can view own organization
         user.organization_id == organization.id
-      when 'update'
+      when "update"
         # Only organization admin can update
         user.has_role?(Role::ORGANIZATION_ADMIN, organization: organization)
-      when 'create', 'destroy'
+      when "create", "destroy"
         # Only super admin can create/destroy organizations
         user.has_role?(Role::SUPER_ADMIN)
       else

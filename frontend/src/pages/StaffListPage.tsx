@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { fetchStaffs, deleteStaff, type Staff } from '../api/client';
 import { Button } from '../components/atoms/Button';
@@ -38,7 +38,7 @@ export function StaffListPage() {
   const [deleteTarget, setDeleteTarget] = useState<Staff | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const loadStaffs = async () => {
+  const loadStaffs = useCallback(async () => {
     try {
       setLoading(true);
       const data = await fetchStaffs(statusFilter ? { status: statusFilter } : undefined);
@@ -48,11 +48,11 @@ export function StaffListPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter]);
 
   useEffect(() => {
     loadStaffs();
-  }, [statusFilter]);
+  }, [loadStaffs]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;

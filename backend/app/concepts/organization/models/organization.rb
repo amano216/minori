@@ -16,10 +16,10 @@ class Organization < ApplicationRecord
 
   def set_default_settings
     self.settings ||= {
-      timezone: 'Asia/Tokyo',
+      timezone: "Asia/Tokyo",
       business_hours: {
-        start: '09:00',
-        end: '18:00'
+        start: "09:00",
+        end: "18:00"
       }
     }
   end
