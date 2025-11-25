@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_25_220005) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_25_230002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -82,27 +82,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_25_220005) do
     t.index ["organization_id"], name: "index_planning_lanes_on_organization_id"
   end
 
-  create_table "roles", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.text "description"
-    t.string "name"
-    t.datetime "updated_at", null: false
-  end
-
-  create_table "user_roles", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.bigint "group_id"
-    t.bigint "organization_id"
-    t.bigint "role_id", null: false
-    t.datetime "updated_at", null: false
-    t.bigint "user_id", null: false
-    t.index ["group_id"], name: "index_user_roles_on_group_id"
-    t.index ["organization_id"], name: "index_user_roles_on_organization_id"
-    t.index ["role_id"], name: "index_user_roles_on_role_id"
-    t.index ["user_id", "role_id", "organization_id"], name: "idx_user_role_org", unique: true
-    t.index ["user_id"], name: "index_user_roles_on_user_id"
-  end
-
   create_table "users", force: :cascade do |t|
     t.jsonb "available_hours", default: {}
     t.string "confirmation_token"
@@ -159,10 +138,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_25_220005) do
   add_foreign_key "patients", "groups"
   add_foreign_key "patients", "organizations"
   add_foreign_key "planning_lanes", "organizations"
-  add_foreign_key "user_roles", "groups"
-  add_foreign_key "user_roles", "organizations"
-  add_foreign_key "user_roles", "roles"
-  add_foreign_key "user_roles", "users"
   add_foreign_key "users", "groups"
   add_foreign_key "users", "organizations"
   add_foreign_key "visits", "organizations"

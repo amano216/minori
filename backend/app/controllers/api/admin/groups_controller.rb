@@ -51,7 +51,7 @@ module Api
       end
 
       def authorize_admin!
-        unless current_user.has_role?("organization_admin") || current_user.has_role?("group_admin") || current_user.has_role?("super_admin")
+        unless current_user.has_role?(User::GROUP_ADMIN)
           render json: { error: "Unauthorized" }, status: :forbidden
         end
       end

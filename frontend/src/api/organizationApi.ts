@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { Organization, User, Role, Group } from '../types/organization';
+import type { Organization, User, Group } from '../types/organization';
 
 export const organizationApi = {
   // Organization
@@ -31,26 +31,6 @@ export const organizationApi = {
 
   deleteUser: async (id: number): Promise<void> => {
     await api.delete(`/admin/users/${id}`);
-  },
-
-  // Roles
-  getRoles: async (): Promise<Role[]> => {
-    const response = await api.get<Role[]>('/admin/roles');
-    return response.data as Role[];
-  },
-
-  createRole: async (data: Partial<Role>): Promise<Role> => {
-    const response = await api.post<Role>('/admin/roles', { role: data });
-    return response.data as Role;
-  },
-
-  updateRole: async (id: number, data: Partial<Role>): Promise<Role> => {
-    const response = await api.put<Role>(`/admin/roles/${id}`, { role: data });
-    return response.data as Role;
-  },
-
-  deleteRole: async (id: number): Promise<void> => {
-    await api.delete(`/admin/roles/${id}`);
   },
 
   // Groups

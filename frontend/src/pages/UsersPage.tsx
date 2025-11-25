@@ -23,6 +23,18 @@ const STATUS_COLORS: Record<string, string> = {
   on_leave: 'bg-yellow-100 text-yellow-800',
 };
 
+const ROLE_OPTIONS = [
+  { value: 'super_admin', label: 'スーパー管理者' },
+  { value: 'organization_admin', label: '組織管理者' },
+  { value: 'group_admin', label: 'グループ管理者' },
+  { value: 'staff', label: 'スタッフ' },
+  { value: 'viewer', label: '閲覧者' },
+];
+
+const getRoleLabel = (role: string): string => {
+  return ROLE_OPTIONS.find(r => r.value === role)?.label || role;
+};
+
 export function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -200,7 +212,7 @@ export function UsersPage() {
                 <td className="px-4 py-4 text-sm text-text-primary">{user.email}</td>
                 <td className="px-4 py-4 text-sm">
                   <span className="px-2 py-1 bg-primary-50 text-main rounded text-xs">
-                    {user.role === 'admin' ? '管理者' : 'スタッフ'}
+                    {getRoleLabel(user.role)}
                   </span>
                 </td>
                 <td className="px-4 py-4 text-sm">
@@ -304,8 +316,9 @@ export function UsersPage() {
                         className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-main"
                         required
                       >
-                        <option value="staff">スタッフ</option>
-                        <option value="admin">管理者</option>
+                        {ROLE_OPTIONS.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
                       </select>
                     </div>
 

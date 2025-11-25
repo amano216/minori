@@ -1,8 +1,23 @@
 class User < ApplicationRecord
   has_secure_password
 
-  # 旧ロールシステム（後方互換性のため残す）
-  ROLES = %w[admin staff].freeze
+  # ロールシステム（シンプル化）
+  SUPER_ADMIN = "super_admin"
+  ORGANIZATION_ADMIN = "organization_admin"
+  GROUP_ADMIN = "group_admin"
+  STAFF = "staff"
+  VIEWER = "viewer"
+
+  ROLES = [ SUPER_ADMIN, ORGANIZATION_ADMIN, GROUP_ADMIN, STAFF, VIEWER ].freeze
+
+  # ロールレベル（権限の強さ）
+  ROLE_LEVELS = {
+    SUPER_ADMIN => 100,
+    ORGANIZATION_ADMIN => 50,
+    GROUP_ADMIN => 30,
+    STAFF => 10,
+    VIEWER => 1
+  }.freeze
 
   # Staff統合: 資格とステータス
   QUALIFICATIONS = %w[nurse physical_therapist occupational_therapist speech_therapist care_worker].freeze
@@ -12,10 +27,6 @@ class User < ApplicationRecord
   belongs_to :organization, optional: true
   has_many :organization_memberships, dependent: :destroy
   has_many :organizations, through: :organization_memberships
-
-  # Authorization Concept
-  has_many :user_roles, dependent: :destroy
-  has_many :roles, through: :user_roles
 
   # Group memberships
   has_many :group_memberships, dependent: :destroy
@@ -39,38 +50,47 @@ class User < ApplicationRecord
   before_save :downcase_email
   before_create :generate_confirmation_token
 
-  # 旧メソッド（後方互換性）
-  def admin?
-    role == "admin"
+  # ロールチェックメソッド
+  def super_admin?
+    role == SUPER_ADMIN
+  end
+
+  def organization_admin?
+    role == ORGANIZATION_ADMIN
+  end
+
+  def group_admin?
+    role == GROUP_ADMIN
   end
 
   def staff?
-    role == "staff"
+    role == STAFF
   end
 
-  # 新しいロールシステムのメソッド
-  def role_in_organization(organization)
-    user_roles.joins(:role).find_by(organization: organization)&.role
+  def viewer?
+    role == VIEWER
   end
 
+  # 後方互換性のためのエイリアス
+  def admin?
+    organization_admin? || super_admin?
+  end
+
+  # ロールレベルを取得
+  def role_level
+    ROLE_LEVELS[role] || 0
+  end
+
+  # 指定したロール以上の権限を持っているか
   def has_role?(role_name, organization: nil, group: nil)
-    query = user_roles.joins(:role).where(roles: { name: role_name })
-    query = query.where(organization: organization) if organization
-    query = query.where(group: group) if group
-    query.exists?
+    # シンプル化: users.role でチェック
+    target_level = ROLE_LEVELS[role_name.to_s] || 0
+    role_level >= target_level
   end
 
-  def max_role_level(organization: nil)
-    query = user_roles.joins(:role)
-    query = query.where(organization: organization) if organization
-
-    query.maximum('CASE
-      WHEN roles.name = ? THEN 100
-      WHEN roles.name = ? THEN 50
-      WHEN roles.name = ? THEN 30
-      WHEN roles.name = ? THEN 10
-      ELSE 0
-    END', Role::SUPER_ADMIN, Role::ORGANIZATION_ADMIN, Role::GROUP_ADMIN, Role::STAFF) || 0
+  # 指定したロールと完全一致するか
+  def is_role?(role_name)
+    role == role_name.to_s
   end
 
   # Email confirmation

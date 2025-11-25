@@ -3,7 +3,6 @@ import { AppContainerLayout } from "../components/templates/AppContainerLayout";
 import { APPS, ADMIN_ROUTES } from "../types/apps";
 import { OrganizationPage } from "../pages/OrganizationPage";
 import { UsersPage } from "../pages/UsersPage";
-import { RolesPage } from "../pages/RolesPage";
 import { GroupsPage } from "../pages/GroupsPage";
 
 const adminApp = APPS.find((app) => app.id === "admin")!;
@@ -15,7 +14,6 @@ export function AdminApp() {
         <Route path="/" element={<Navigate to="/admin/organization" replace />} />
         <Route path="/organization" element={<OrganizationPage />} />
         <Route path="/users" element={<UsersPage />} />
-        <Route path="/roles" element={<RolesPage />} />
         <Route path="/groups" element={<GroupsPage />} />
       </Routes>
     </AppContainerLayout>

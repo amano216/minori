@@ -9,32 +9,24 @@ default_org = Organization.find_or_create_by!(subdomain: "default") do |org|
   org.plan = "free"
 end
 
-# Create system roles
-puts "Creating system roles..."
-[
-  { name: Role::ORGANIZATION_ADMIN, description: "Organization Administrator" },
-  { name: Role::STAFF, description: "Staff Member" },
-  { name: Role::VIEWER, description: "Read-only User" }
-].each do |role_data|
-  Role.find_or_create_by!(name: role_data[:name]) do |role|
-    role.description = role_data[:description]
-  end
-end
-
 # Create default users for all environments
 admin_user = User.find_or_create_by!(email: "admin@example.com") do |user|
   user.password = "password123"
-  user.role = "admin"
+  user.role = User::ORGANIZATION_ADMIN
   user.organization = default_org
   user.email_confirmed_at = Time.current
 end
 
 staff_user = User.find_or_create_by!(email: "staff@example.com") do |user|
   user.password = "password123"
-  user.role = "staff"
+  user.role = User::STAFF
   user.organization = default_org
   user.email_confirmed_at = Time.current
 end
+
+# Ensure existing users have correct roles
+admin_user.update(role: User::ORGANIZATION_ADMIN) if admin_user.role == "admin"
+staff_user.update(role: User::STAFF) if staff_user.role.blank?
 
 # Ensure existing users are confirmed
 [ admin_user, staff_user ].each do |user|
@@ -45,16 +37,9 @@ end
 OrganizationMembership.find_or_create_by!(user: admin_user, organization: default_org)
 OrganizationMembership.find_or_create_by!(user: staff_user, organization: default_org)
 
-# Assign roles
-org_admin_role = Role.find_by(name: Role::ORGANIZATION_ADMIN)
-staff_role = Role.find_by(name: Role::STAFF)
-
-UserRole.find_or_create_by!(user: admin_user, role: org_admin_role, organization: default_org)
-UserRole.find_or_create_by!(user: staff_user, role: staff_role, organization: default_org)
-
 puts "Seed users created:"
-puts "  - admin@example.com (password: password123)"
-puts "  - staff@example.com (password: password123)"
+puts "  - admin@example.com (password: password123, role: #{admin_user.role})"
+puts "  - staff@example.com (password: password123, role: #{staff_user.role})"
 
 # Create sample patients
 patients_data = [

@@ -53,6 +53,5 @@ export const PATIENTS_ROUTES: AppRoute[] = [
 export const ADMIN_ROUTES: AppRoute[] = [
   { path: "/admin/organization", label: "組織設定", icon: "Building" },
   { path: "/admin/users", label: "ユーザー管理", icon: "Users" },
-  { path: "/admin/roles", label: "ロール管理", icon: "Shield" },
   { path: "/admin/groups", label: "グループ管理", icon: "FolderTree" },
 ];
