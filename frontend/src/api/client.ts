@@ -380,3 +380,34 @@ export async function reassignVisit(id: number, staffId: number | null): Promise
     body: JSON.stringify({ visit: { staff_id: staffId } }),
   });
 }
+
+// Axios-like API client for organization API
+export const api = {
+  get: async <T>(endpoint: string): Promise<{ data: T }> => {
+    const data = await apiRequest<T>(`/api${endpoint}`);
+    return { data };
+  },
+
+  post: async <T>(endpoint: string, body?: unknown): Promise<{ data: T }> => {
+    const data = await apiRequest<T>(`/api${endpoint}`, {
+      method: 'POST',
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return { data };
+  },
+
+  put: async <T>(endpoint: string, body?: unknown): Promise<{ data: T }> => {
+    const data = await apiRequest<T>(`/api${endpoint}`, {
+      method: 'PUT',
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return { data };
+  },
+
+  delete: async <T = void>(endpoint: string): Promise<{ data: T }> => {
+    const data = await apiRequest<T>(`/api${endpoint}`, {
+      method: 'DELETE',
+    });
+    return { data };
+  },
+};
