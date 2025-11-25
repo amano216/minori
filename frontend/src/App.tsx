@@ -12,11 +12,16 @@ import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
 import { SignupPage } from './pages/SignupPage'
 import { OnboardingPage } from './pages/OnboardingPage'
+import { EmailConfirmationPage } from './pages/EmailConfirmationPage'
+import { EmailConfirmationSentPage } from './pages/EmailConfirmationSentPage'
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
+import { ResetPasswordPage } from './pages/ResetPasswordPage'
+import { TwoFactorPage } from './pages/TwoFactorPage'
 
 // Authenticated userのルートリダイレクト
 const RootRedirect = () => {
-  const { currentUser } = useAuth()
-  if (currentUser) {
+  const { user } = useAuth()
+  if (user) {
     return <Navigate to="/schedule" replace />
   }
   return <LandingPage />
@@ -32,6 +37,13 @@ function App() {
             <Route path="/" element={<RootRedirect />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
+            
+            {/* Auth Flow Pages */}
+            <Route path="/confirm-email" element={<EmailConfirmationPage />} />
+            <Route path="/email-confirmation-sent" element={<EmailConfirmationSentPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/two-factor" element={<TwoFactorPage />} />
 
             {/* Onboarding Route (認証必須) */}
             <Route

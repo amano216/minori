@@ -22,7 +22,35 @@ export function LoginPage() {
     setIsLoading(true);
 
     try {
-      await login(email, password);
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (data.requires_confirmation) {
+          // Email confirmation required
+          setError(data.error);
+          navigate('/email-confirmation-sent', { state: { email: data.email } });
+          return;
+        }
+        throw new Error(data.error || 'ログインに失敗しました');
+      }
+
+      if (data.requires_otp) {
+        // 2FA required - redirect to OTP page
+        navigate('/two-factor', { state: { email, password } });
+        return;
+      }
+
+      // Normal login - save token and redirect
+      localStorage.setItem('token', data.token);
+      login(data.user);
       navigate('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'ログインに失敗しました');

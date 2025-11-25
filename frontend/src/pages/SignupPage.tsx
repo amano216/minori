@@ -84,11 +84,9 @@ export function SignupPage() {
         throw new Error(data.error || '登録に失敗しました');
       }
 
-      // Save token to localStorage
-      localStorage.setItem('token', data.token);
-      
-      showToast('success', 'アカウントを作成しました！');
-      navigate('/onboarding');
+      // Show success message and redirect to email confirmation page
+      showToast('success', data.message);
+      navigate('/email-confirmation-sent', { state: { email: adminEmail } });
     } catch (err) {
       setError(err instanceof Error ? err.message : '登録に失敗しました');
     } finally {
