@@ -4,7 +4,6 @@ export interface AppMetadata {
   description: string;
   path: string;
   icon: string; // Lucide icon name
-  color: string;
   requiredRoles?: string[];
 }
 
@@ -21,7 +20,6 @@ export const APPS: AppMetadata[] = [
     description: "訪問予定の管理・最適化",
     path: "/schedule",
     icon: "Calendar",
-    color: "blue",
   },
   {
     id: "patients",
@@ -29,7 +27,6 @@ export const APPS: AppMetadata[] = [
     description: "患者・利用者情報の管理",
     path: "/patients",
     icon: "Users",
-    color: "green",
   },
   {
     id: "staff",
@@ -37,7 +34,6 @@ export const APPS: AppMetadata[] = [
     description: "スタッフ情報の管理",
     path: "/staff",
     icon: "UserCog",
-    color: "orange",
     requiredRoles: ["organization_admin", "group_admin"],
   },
   {
@@ -46,16 +42,13 @@ export const APPS: AppMetadata[] = [
     description: "組織・ユーザー・権限の管理",
     path: "/admin",
     icon: "Settings",
-    color: "purple",
     requiredRoles: ["organization_admin", "super_admin"],
   },
 ];
 
 // Schedule App Routes
 export const SCHEDULE_ROUTES: AppRoute[] = [
-  { path: "/schedule/calendar", label: "カレンダー", icon: "Calendar" },
-  { path: "/schedule/gantt", label: "ガントチャート", icon: "GanttChart" },
-  { path: "/schedule/weekly", label: "週間ビュー", icon: "CalendarDays" },
+  { path: "/schedule", label: "スケジュール", icon: "Calendar" },
   { path: "/schedule/visits", label: "訪問一覧", icon: "List" },
 ];
 

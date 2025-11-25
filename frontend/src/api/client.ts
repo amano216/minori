@@ -136,6 +136,22 @@ export async function deleteStaff(id: number): Promise<void> {
   return apiRequest(`/api/staffs/${id}`, { method: 'DELETE' });
 }
 
+// Group API
+export interface Group {
+  id: number;
+  name: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function fetchGroups(params?: { status?: string }): Promise<Group[]> {
+  const query = new URLSearchParams();
+  if (params?.status) query.append('status', params.status);
+  const queryString = query.toString();
+  return apiRequest(`/api/admin/groups${queryString ? `?${queryString}` : ''}`);
+}
+
 // Patient API
 export interface Patient {
   id: number;
