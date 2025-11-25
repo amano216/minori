@@ -47,6 +47,7 @@ export function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPanelVisible, setIsPanelVisible] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({
     email: '',
@@ -62,6 +63,14 @@ export function UsersPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (isModalOpen) {
+      setTimeout(() => setIsPanelVisible(true), 10);
+    } else {
+      setIsPanelVisible(false);
+    }
+  }, [isModalOpen]);
 
   const loadData = async () => {
     try {
@@ -111,9 +120,12 @@ export function UsersPage() {
   };
 
   const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingUser(null);
-    setError(null);
+    setIsPanelVisible(false);
+    setTimeout(() => {
+      setIsModalOpen(false);
+      setEditingUser(null);
+      setError(null);
+    }, 300);
   };
 
   const handleQualificationChange = (qualification: string) => {
@@ -259,170 +271,198 @@ export function UsersPage() {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Side Panel (Replaces Modal) */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
-          <div className="bg-white rounded-lg p-6 w-full max-w-lg my-8">
-            <h2 className="text-xl font-bold text-text-primary mb-4">
-              {editingUser ? 'ユーザー編集' : '新規ユーザー'}
-            </h2>
+        <>
+          {/* Backdrop */}
+          <div 
+            className={`fixed inset-0 bg-black/20 backdrop-blur-[1px] z-40 transition-opacity duration-300 ${
+              isPanelVisible ? 'opacity-100' : 'opacity-0'
+            }`}
+            onClick={handleCloseModal}
+          />
+          
+          {/* Panel */}
+          <div 
+            className={`fixed top-16 right-4 bottom-4 w-96 bg-white shadow-2xl border border-gray-200 rounded-xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${
+              isPanelVisible ? 'translate-x-0' : 'translate-x-[120%]'
+            }`}
+          >
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 rounded-t-xl">
+              <h2 className="text-lg font-bold text-text-primary">
+                {editingUser ? 'ユーザー編集' : '新規ユーザー'}
+              </h2>
+              <button 
+                onClick={handleCloseModal}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
+              >
+                <Icon name="X" size={20} />
+              </button>
+            </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* 基本情報 */}
-              <div className="border-b pb-4">
-                <h3 className="text-sm font-semibold text-text-grey mb-3">基本情報</h3>
-                
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium text-text-primary mb-1">
-                      名前 <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-main"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-text-primary mb-1">
-                      メールアドレス <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-main"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-text-primary mb-1">
-                      パスワード {editingUser && '（変更する場合のみ入力）'}
-                    </label>
-                    <input
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-main"
-                      required={!editingUser}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
+            <div className="flex-1 overflow-y-auto p-6">
+              <form id="user-form" onSubmit={handleSubmit} className="space-y-6">
+                {/* 基本情報 */}
+                <div className="space-y-4">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">基本情報</h3>
+                  
+                  <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-text-primary mb-1">
-                        ロール
+                      <label className="block text-sm font-medium text-text-primary mb-1.5">
+                        名前 <span className="text-red-500">*</span>
                       </label>
-                      <select
-                        value={formData.role}
-                        onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                        className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-main"
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-main/20 focus:border-main transition-all"
+                        placeholder="山田 太郎"
                         required
-                      >
-                        {ROLE_OPTIONS.map(opt => (
-                          <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                      </select>
+                      />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-text-primary mb-1">
-                        ステータス
+                      <label className="block text-sm font-medium text-text-primary mb-1.5">
+                        メールアドレス <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-main/20 focus:border-main transition-all"
+                        placeholder="taro.yamada@example.com"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-text-primary mb-1.5">
+                        パスワード {editingUser && <span className="text-xs text-gray-400 font-normal">（変更時のみ）</span>}
+                      </label>
+                      <input
+                        type="password"
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-main/20 focus:border-main transition-all"
+                        placeholder="••••••••"
+                        required={!editingUser}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-text-primary mb-1.5">
+                          ロール
+                        </label>
+                        <select
+                          value={formData.role}
+                          onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                          className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-main/20 focus:border-main transition-all bg-white"
+                          required
+                        >
+                          {ROLE_OPTIONS.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-text-primary mb-1.5">
+                          ステータス
+                        </label>
+                        <select
+                          value={formData.staff_status}
+                          onChange={(e) => setFormData({ ...formData, staff_status: e.target.value as 'active' | 'inactive' | 'on_leave' })}
+                          className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-main/20 focus:border-main transition-all bg-white"
+                        >
+                          {STATUS_OPTIONS.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-100 my-6"></div>
+
+                {/* スタッフ情報 */}
+                <div className="space-y-4">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">スタッフ情報</h3>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-text-primary mb-2">
+                        資格
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {QUALIFICATION_OPTIONS.map(opt => (
+                          <label
+                            key={opt.value}
+                            className={`px-3 py-1.5 rounded-full border text-xs font-medium cursor-pointer transition-all ${
+                              formData.qualifications.includes(opt.value)
+                                ? 'bg-main text-white border-main shadow-sm'
+                                : 'bg-white text-gray-600 border-gray-200 hover:border-main/50 hover:text-main'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={formData.qualifications.includes(opt.value)}
+                              onChange={() => handleQualificationChange(opt.value)}
+                              className="sr-only"
+                            />
+                            {opt.label}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-text-primary mb-1.5">
+                        所属グループ
                       </label>
                       <select
-                        value={formData.staff_status}
-                        onChange={(e) => setFormData({ ...formData, staff_status: e.target.value as 'active' | 'inactive' | 'on_leave' })}
-                        className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-main"
+                        value={formData.group_id || ''}
+                        onChange={(e) => setFormData({ ...formData, group_id: e.target.value ? Number(e.target.value) : null })}
+                        className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-main/20 focus:border-main transition-all bg-white"
                       >
-                        {STATUS_OPTIONS.map(opt => (
-                          <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
+                        <option value="">未所属</option>
+                        {groups
+                          .map(group => ({
+                            ...group,
+                            label: getGroupHierarchyLabel(group, groups)
+                          }))
+                          .sort((a, b) => a.label.localeCompare(b.label, 'ja'))
+                          .map(group => (
+                            <option key={group.id} value={group.id}>{group.label}</option>
+                          ))
+                        }
                       </select>
                     </div>
                   </div>
                 </div>
-              </div>
+              </form>
+            </div>
 
-              {/* スタッフ情報 */}
-              <div className="border-b pb-4">
-                <h3 className="text-sm font-semibold text-text-grey mb-3">スタッフ情報</h3>
-                
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium text-text-primary mb-2">
-                      資格
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {QUALIFICATION_OPTIONS.map(opt => (
-                        <label
-                          key={opt.value}
-                          className={`px-3 py-1.5 rounded border cursor-pointer text-sm transition-colors ${
-                            formData.qualifications.includes(opt.value)
-                              ? 'bg-main text-white border-main'
-                              : 'bg-white text-text-primary border-border hover:border-main'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={formData.qualifications.includes(opt.value)}
-                            onChange={() => handleQualificationChange(opt.value)}
-                            className="sr-only"
-                          />
-                          {opt.label}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-text-primary mb-1">
-                      所属グループ
-                    </label>
-                    <select
-                      value={formData.group_id || ''}
-                      onChange={(e) => setFormData({ ...formData, group_id: e.target.value ? Number(e.target.value) : null })}
-                      className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-main"
-                    >
-                      <option value="">未所属</option>
-                      {groups
-                        .map(group => ({
-                          ...group,
-                          label: getGroupHierarchyLabel(group, groups)
-                        }))
-                        .sort((a, b) => a.label.localeCompare(b.label, 'ja'))
-                        .map(group => (
-                          <option key={group.id} value={group.id}>{group.label}</option>
-                        ))
-                      }
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* ボタン */}
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 px-4 py-2 bg-main text-white rounded hover:bg-main-dark transition-colors disabled:opacity-50"
-                >
-                  {loading ? '保存中...' : '保存'}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="flex-1 px-4 py-2 bg-bg-base text-text-primary rounded hover:bg-gray-200 transition-colors"
-                >
-                  キャンセル
-                </button>
-              </div>
-            </form>
+            <div className="p-4 border-t border-gray-100 bg-gray-50/50 rounded-b-xl flex gap-3">
+              <button
+                type="button"
+                onClick={handleCloseModal}
+                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+              >
+                キャンセル
+              </button>
+              <button
+                type="submit"
+                form="user-form"
+                disabled={loading}
+                className="flex-1 px-4 py-2.5 bg-main text-white rounded-lg hover:bg-main-dark font-medium transition-colors disabled:opacity-50 shadow-sm"
+              >
+                {loading ? '保存中...' : '保存'}
+              </button>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
