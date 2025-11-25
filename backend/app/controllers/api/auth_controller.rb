@@ -41,11 +41,27 @@ class Api::AuthController < ApplicationController
       # Send confirmation email
       UserMailer.confirmation_email(user).deliver_later
 
-      render json: {
-        message: "アカウントを作成しました。メールアドレスに確認メールを送信しました。",
-        email: user.email,
-        requires_confirmation: true
-      }, status: :created
+      # For development: auto-confirm and return token
+      if Rails.env.development? && ENV["AUTO_CONFIRM_EMAIL"] == "true"
+        user.confirm_email!
+        token = JwtService.encode(user_id: user.id)
+        render json: {
+          token: token,
+          user: user_response(user),
+          organization: {
+            id: organization.id,
+            name: organization.name,
+            subdomain: organization.subdomain
+          },
+          message: "アカウントを作成しました（開発モード: メール確認をスキップ）"
+        }, status: :created
+      else
+        render json: {
+          message: "アカウントを作成しました。メールアドレスに確認メールを送信しました。",
+          email: user.email,
+          requires_confirmation: true
+        }, status: :created
+      end
     end
   rescue ActiveRecord::RecordInvalid => e
     render json: { error: e.message }, status: :unprocessable_entity
@@ -70,7 +86,10 @@ class Api::AuthController < ApplicationController
     end
 
     # Check if OTP is required (1日1回)
-    if user.otp_required?
+    # Skip 2FA in development if AUTO_CONFIRM_EMAIL is enabled
+    skip_2fa = Rails.env.development? && ENV["AUTO_CONFIRM_EMAIL"] == "true"
+    
+    if !skip_2fa && user.otp_required?
       # Generate and send OTP
       otp_code = user.generate_otp
       user.save_otp(otp_code)

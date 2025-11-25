@@ -29,11 +29,21 @@ Rails.application.configure do
   # Action Mailer settings
   config.action_mailer.raise_delivery_errors = true
   config.action_mailer.perform_caching = false
-  config.action_mailer.default_url_options = { host: "localhost", port: 3000 }
   
-  # Use letter_opener for development (emails open in browser)
-  config.action_mailer.delivery_method = :letter_opener
+  # For Docker/Codespaces: use test mode to log emails instead of opening browser
+  config.action_mailer.delivery_method = :test
   config.action_mailer.perform_deliveries = true
+  
+  # Set URL for email links
+  frontend_url = ENV.fetch("FRONTEND_URL", "http://localhost:5174")
+  config.action_mailer.default_url_options = { 
+    host: URI.parse(frontend_url).host,
+    port: URI.parse(frontend_url).port,
+    protocol: URI.parse(frontend_url).scheme
+  }
+  
+  # Log email content
+  config.action_mailer.logger = Logger.new($stdout)
 
   # Print deprecation notices to the Rails logger.
   config.active_support.deprecation = :log

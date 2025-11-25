@@ -84,9 +84,16 @@ export function SignupPage() {
         throw new Error(data.error || '登録に失敗しました');
       }
 
-      // Show success message and redirect to email confirmation page
       showToast('success', data.message);
-      navigate('/email-confirmation-sent', { state: { email: adminEmail } });
+
+      // If token is returned (dev mode with auto-confirm), save and redirect to onboarding
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        navigate('/onboarding');
+      } else {
+        // Otherwise, show email confirmation page
+        navigate('/email-confirmation-sent', { state: { email: adminEmail } });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : '登録に失敗しました');
     } finally {
