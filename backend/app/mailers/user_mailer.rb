@@ -4,7 +4,7 @@ class UserMailer < ApplicationMailer
   def confirmation_email(user)
     @user = user
     @confirmation_url = "#{ENV['FRONTEND_URL']}/confirm-email?token=#{user.confirmation_token}"
-    
+
     mail(
       to: user.email,
       subject: "メールアドレスの確認 - Minori"
@@ -14,7 +14,7 @@ class UserMailer < ApplicationMailer
   def reset_password_email(user)
     @user = user
     @reset_url = "#{ENV['FRONTEND_URL']}/reset-password?token=#{user.reset_password_token}"
-    
+
     mail(
       to: user.email,
       subject: "パスワードリセットのご案内 - Minori"
@@ -24,7 +24,7 @@ class UserMailer < ApplicationMailer
   def otp_email(user, otp_code)
     @user = user
     @otp_code = otp_code
-    
+
     mail(
       to: user.email,
       subject: "ログイン認証コード - Minori"

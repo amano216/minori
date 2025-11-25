@@ -37,7 +37,7 @@ staff_user = User.find_or_create_by!(email: "staff@example.com") do |user|
 end
 
 # Ensure existing users are confirmed
-[admin_user, staff_user].each do |user|
+[ admin_user, staff_user ].each do |user|
   user.update(email_confirmed_at: Time.current) if user.email_confirmed_at.nil?
 end
 

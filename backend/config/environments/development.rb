@@ -30,15 +30,15 @@ Rails.application.configure do
   config.action_mailer.raise_delivery_errors = true
   config.action_mailer.perform_caching = false
   config.action_mailer.perform_deliveries = true
-  
+
   # Set URL for email links
   frontend_url = ENV.fetch("FRONTEND_URL", "http://localhost:5174")
-  config.action_mailer.default_url_options = { 
+  config.action_mailer.default_url_options = {
     host: URI.parse(frontend_url).host,
     port: URI.parse(frontend_url).port,
     protocol: URI.parse(frontend_url).scheme
   }
-  
+
   # Use SMTP if configured, otherwise use test mode (logs only)
   if ENV["SMTP_ADDRESS"].present?
     config.action_mailer.delivery_method = :smtp

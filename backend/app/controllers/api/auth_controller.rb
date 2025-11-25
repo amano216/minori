@@ -9,7 +9,7 @@ class Api::AuthController < ApplicationController
       # Create organization
       # If subdomain is blank, set it to nil to avoid uniqueness constraint issues
       subdomain = params[:subdomain].presence
-      
+
       # If subdomain is provided and already exists, make it unique
       if subdomain && Organization.exists?(subdomain: subdomain)
         base_subdomain = subdomain
@@ -19,7 +19,7 @@ class Api::AuthController < ApplicationController
           counter += 1
         end
       end
-      
+
       organization = Organization.create!(
         name: params[:organization_name],
         subdomain: subdomain
@@ -101,7 +101,7 @@ class Api::AuthController < ApplicationController
     # Check if OTP is required (1日1回)
     # Skip 2FA in development if AUTO_CONFIRM_EMAIL is enabled
     skip_2fa = Rails.env.development? && ENV["AUTO_CONFIRM_EMAIL"] == "true"
-    
+
     if !skip_2fa && user.otp_required?
       # Generate and send OTP
       otp_code = user.generate_otp

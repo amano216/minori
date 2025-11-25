@@ -50,7 +50,7 @@ Rails.application.configure do
   config.action_mailer.raise_delivery_errors = true
   config.action_mailer.perform_caching = false
   config.action_mailer.perform_deliveries = true
-  
+
   # Set host from environment variable
   frontend_url = ENV.fetch("FRONTEND_URL", "https://minori.app")
   config.action_mailer.default_url_options = {

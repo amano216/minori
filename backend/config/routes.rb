@@ -14,15 +14,15 @@ Rails.application.routes.draw do
     post "auth/login", to: "auth#login"
     delete "auth/logout", to: "auth#logout"
     get "auth/me", to: "auth#me"
-    
+
     # Email confirmation
     post "auth/confirm-email", to: "auth#confirm_email"
     post "auth/resend-confirmation", to: "auth#resend_confirmation"
-    
+
     # Password reset
     post "auth/forgot-password", to: "auth#forgot_password"
     post "auth/reset-password", to: "auth#reset_password"
-    
+
     # OTP / 2FA
     post "auth/verify-otp", to: "auth#verify_otp"
     post "auth/toggle-2fa", to: "auth#toggle_2fa"
