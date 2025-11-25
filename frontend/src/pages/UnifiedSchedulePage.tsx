@@ -107,16 +107,20 @@ export function UnifiedSchedulePage() {
   useEffect(() => {
     const loadMasterData = async () => {
       try {
+        console.log('Loading master data...');
         const [groupsData, staffsData, patientsData] = await Promise.all([
           fetchGroups(),
           fetchStaffs({ status: 'active' }),
           fetchPatients({ status: 'active' }),
         ]);
+        console.log('Master data loaded:', { groups: groupsData.length, staffs: staffsData.length, patients: patientsData.length });
         setGroups(groupsData);
         setStaffs(staffsData);
         setPatients(patientsData);
       } catch (err) {
         console.error('Failed to load master data:', err);
+        setError('マスターデータの取得に失敗しました');
+        setLoading(false);
       }
     };
     loadMasterData();
@@ -125,6 +129,7 @@ export function UnifiedSchedulePage() {
   // Load schedule data
   const loadScheduleData = useCallback(async () => {
     try {
+      console.log('Loading schedule data...', { viewMode, currentDate, filtersCount: filters.staffIds.length });
       setLoading(true);
       setError('');
 
@@ -142,7 +147,9 @@ export function UnifiedSchedulePage() {
         startDate = monthStart.toISOString().split('T')[0];
       }
 
+      console.log('Fetching weekly schedule for:', startDate);
       const scheduleData = await fetchWeeklySchedule({ start_date: startDate });
+      console.log('Schedule data received:', scheduleData);
 
       // Convert ScheduleVisit[] to Visit[]
       const allVisits: Visit[] = [];
@@ -175,15 +182,19 @@ export function UnifiedSchedulePage() {
         );
       }
 
+      console.log('Filtered visits:', filteredVisits.length);
       setVisits(filteredVisits);
     } catch (err) {
+      console.error('Failed to load schedule:', err);
       setError(err instanceof Error ? err.message : 'スケジュールの取得に失敗しました');
     } finally {
+      console.log('Loading complete');
       setLoading(false);
     }
   }, [currentDate, viewMode, filters, staffs]);
 
   useEffect(() => {
+    console.log('Effect triggered:', { staffsLength: staffs.length, currentDate, viewMode });
     if (staffs.length > 0) {
       loadScheduleData();
     }
