@@ -6,7 +6,7 @@ class Group < ApplicationRecord
 
   validates :name, presence: true
 
-  enum group_type: {
+  enum :group_type, {
     team: 0,
     region: 1,
     department: 2
