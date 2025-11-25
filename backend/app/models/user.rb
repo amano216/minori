@@ -8,7 +8,7 @@ class User < ApplicationRecord
   STAFF = "staff"
   VIEWER = "viewer"
 
-  ROLES = [SUPER_ADMIN, ORGANIZATION_ADMIN, GROUP_ADMIN, STAFF, VIEWER].freeze
+  ROLES = [ SUPER_ADMIN, ORGANIZATION_ADMIN, GROUP_ADMIN, STAFF, VIEWER ].freeze
 
   # ロールレベル（権限の強さ）
   ROLE_LEVELS = {

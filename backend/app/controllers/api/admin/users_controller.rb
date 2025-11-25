@@ -53,10 +53,22 @@ module Api
       end
 
       def user_params
-        params.require(:user).permit(
-          :email, :password, :password_confirmation, :name, :role,
+        permitted = params.require(:user).permit(
+          :email, :password, :password_confirmation, :name,
           :staff_status, :group_id, qualifications: [], available_hours: {}
         )
+        # roleの変更は管理者のみ許可し、自分より高いロールへの変更は禁止
+        if params.dig(:user, :role).present? && can_assign_role?(params[:user][:role])
+          permitted[:role] = params[:user][:role]
+        end
+        permitted
+      end
+
+      def can_assign_role?(target_role)
+        return false unless User::ROLES.include?(target_role)
+        # 自分より高いロールは割り当て不可
+        target_level = User::ROLE_LEVELS[target_role] || 0
+        current_user.role_level >= target_level
       end
 
       def authorize_admin!
