@@ -35,4 +35,7 @@ export interface Group {
   users?: User[];
   created_at: string;
   updated_at: string;
+  parent_id?: number | null;
+  group_type?: 'office' | 'team';
+  children?: Group[];
 }
