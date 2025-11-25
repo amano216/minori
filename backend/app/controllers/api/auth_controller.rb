@@ -28,10 +28,7 @@ class Api::AuthController < ApplicationController
       )
 
       # Create admin role for the user
-      admin_role = Role.find_or_create_by!(
-        name: Role::ORGANIZATION_ADMIN,
-        organization: organization
-      ) do |role|
+      admin_role = Role.find_or_create_by!(name: Role::ORGANIZATION_ADMIN) do |role|
         role.description = "Organization Administrator"
       end
 
