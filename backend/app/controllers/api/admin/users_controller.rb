@@ -1,7 +1,6 @@
 module Api
   module Admin
     class UsersController < ApplicationController
-      before_action :authenticate_request!
       before_action :authorize_admin!
       before_action :set_user, only: [ :show, :update, :destroy ]
 

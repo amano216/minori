@@ -9,16 +9,19 @@ module Authorization
       # Super admin can do everything
       return true if user.has_role?(Role::SUPER_ADMIN)
 
-      case resource
-      when Patient
+      # Determine resource type
+      resource_class = resource.is_a?(Class) ? resource : resource.class
+
+      case resource_class.name
+      when "Patient"
         can_access_patient?(user, action, resource)
-      when Visit
+      when "Visit"
         can_access_visit?(user, action, resource)
-      when User
+      when "User"
         can_access_user?(user, action, resource)
-      when Group
+      when "Group"
         can_access_group?(user, action, resource)
-      when Organization
+      when "Organization"
         can_access_organization?(user, action, resource)
       else
         false
@@ -44,13 +47,19 @@ module Authorization
 
     # Patient access control
     def self.can_access_patient?(user, action, patient)
-      org = patient.organization || Current.organization
+      org = patient.is_a?(Class) ? Current.organization : (patient.organization || Current.organization)
 
       case action.to_s
       when "show", "index"
         # Can view patients in same organization or group
-        user.organization_id == org&.id ||
-          (patient.group && user.groups.include?(patient.group))
+        if patient.is_a?(Class)
+          # For index action, check organization membership
+          user.organization_id == org&.id
+        else
+          # For show action, check specific patient access
+          user.organization_id == org&.id ||
+            (patient.group && user.groups.include?(patient.group))
+        end
       when "create"
         # Organization admin or group admin can create
         user.has_role?(Role::ORGANIZATION_ADMIN, organization: org) ||
@@ -65,7 +74,7 @@ module Authorization
 
     # Visit access control
     def self.can_access_visit?(user, action, visit)
-      org = visit.organization || Current.organization
+      org = visit.is_a?(Class) ? Current.organization : (visit.organization || Current.organization)
 
       case action.to_s
       when "show", "index"
@@ -86,7 +95,7 @@ module Authorization
 
     # User access control
     def self.can_access_user?(user, action, target_user)
-      org = target_user.organization || Current.organization
+      org = target_user.is_a?(Class) ? Current.organization : (target_user.organization || Current.organization)
 
       case action.to_s
       when "show", "index"
@@ -102,16 +111,20 @@ module Authorization
 
     # Group access control
     def self.can_access_group?(user, action, group)
-      org = group.organization
+      org = group.is_a?(Class) ? Current.organization : group.organization
 
       case action.to_s
       when "show", "index"
         # Can view groups in same organization
-        user.organization_id == org.id
+        user.organization_id == org&.id
       when "create", "update", "destroy"
         # Organization admin or group admin can manage groups
-        user.has_role?(Role::ORGANIZATION_ADMIN, organization: org) ||
-          user.has_role?(Role::GROUP_ADMIN, group: group)
+        if group.is_a?(Class)
+          user.has_role?(Role::ORGANIZATION_ADMIN, organization: org)
+        else
+          user.has_role?(Role::ORGANIZATION_ADMIN, organization: org) ||
+            user.has_role?(Role::GROUP_ADMIN, group: group)
+        end
       else
         false
       end

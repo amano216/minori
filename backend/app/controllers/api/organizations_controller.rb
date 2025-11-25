@@ -1,6 +1,5 @@
 module Api
   class OrganizationsController < ApplicationController
-    before_action :authenticate_request!
     before_action :set_organization, only: [ :show, :update ]
     before_action :authorize_organization_admin!, only: [ :update ]
 
