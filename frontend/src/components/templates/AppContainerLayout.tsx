@@ -1,6 +1,8 @@
+import { useState } from "react";
 import type { ReactNode } from "react";
 import { AppIconSidebar } from "../organisms/AppIconSidebar";
 import { AppSidebar } from "../organisms/AppSidebar";
+import { Icon } from "../atoms/Icon";
 import { useAuth } from "../../contexts/AuthContext";
 import type { AppMetadata, AppRoute } from "../../types/apps";
 
@@ -12,6 +14,7 @@ interface AppContainerLayoutProps {
 
 export function AppContainerLayout({ app, routes, children }: AppContainerLayoutProps) {
   const { user } = useAuth();
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
 
   return (
     <div className="flex h-screen bg-bg-base">
@@ -19,7 +22,13 @@ export function AppContainerLayout({ app, routes, children }: AppContainerLayout
       <AppIconSidebar />
 
       {/* App Navigation Sidebar (アプリ内ルート) */}
-      <AppSidebar routes={routes} appName={app.name} appColor={app.color} />
+      <AppSidebar
+        routes={routes}
+        appName={app.name}
+        appColor={app.color}
+        isExpanded={isSidebarExpanded}
+        onExpandChange={setIsSidebarExpanded}
+      />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -27,6 +36,14 @@ export function AppContainerLayout({ app, routes, children }: AppContainerLayout
         <header className="bg-white border-b border-border flex-shrink-0">
           <div className="h-14 px-6 flex items-center justify-between">
             <div className="flex items-center gap-4">
+              {/* サイドバー開閉トグルボタン */}
+              <button
+                onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
+                className="p-2 rounded hover:bg-bg-base text-text-grey hover:text-text-primary transition-colors"
+                title={isSidebarExpanded ? "サイドバーを閉じる" : "サイドバーを開く"}
+              >
+                <Icon name={isSidebarExpanded ? "PanelLeftClose" : "PanelLeft"} size={20} />
+              </button>
               <h1 className="text-lg font-semibold text-text-primary">{app.name}</h1>
             </div>
 
