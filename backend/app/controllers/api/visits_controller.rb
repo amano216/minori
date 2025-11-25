@@ -2,7 +2,6 @@
 
 module Api
   class VisitsController < ApplicationController
-    include AuthorizationVisitSync
     before_action :set_visit, only: [ :show, :update, :destroy, :cancel, :complete ]
 
     def index
@@ -61,6 +60,18 @@ module Api
     end
 
     private
+
+    def scoped_visits
+      if current_user.organization
+        current_user.organization.visits
+      else
+        Visit.none
+      end
+    end
+
+    def visit_params_with_organization
+      visit_params.merge(organization_id: current_user.organization&.id)
+    end
 
     def set_visit
       @visit = Visit.find(params[:id])
