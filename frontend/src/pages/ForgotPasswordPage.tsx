@@ -7,6 +7,7 @@ import { Input } from '../components/atoms/Input';
 import { Label } from '../components/atoms/Label';
 import { Card } from '../components/molecules/Card';
 import { useToast } from '../contexts/ToastContext';
+import { getFullApiUrl } from '../api/client';
 
 export function ForgotPasswordPage() {
   const { showToast } = useToast();
@@ -25,7 +26,7 @@ export function ForgotPasswordPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/auth/forgot-password', {
+      const response = await fetch(getFullApiUrl('/api/auth/forgot-password'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

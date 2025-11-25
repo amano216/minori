@@ -4,6 +4,7 @@ import { CheckCircle, Mail, RefreshCw, Sparkles } from 'lucide-react';
 import { Button } from '../components/atoms/Button';
 import { Card } from '../components/molecules/Card';
 import { useToast } from '../contexts/ToastContext';
+import { getFullApiUrl } from '../api/client';
 
 export function EmailConfirmationPage() {
   const [searchParams] = useSearchParams();
@@ -18,7 +19,7 @@ export function EmailConfirmationPage() {
   useEffect(() => {
     const confirmEmail = async () => {
       try {
-        const response = await fetch('/api/auth/confirm-email', {
+        const response = await fetch(getFullApiUrl('/api/auth/confirm-email'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -66,7 +67,7 @@ export function EmailConfirmationPage() {
     setIsResending(true);
 
     try {
-      const response = await fetch('/api/auth/resend-confirmation', {
+      const response = await fetch(getFullApiUrl('/api/auth/resend-confirmation'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
