@@ -13,21 +13,12 @@ export interface User {
   name?: string;
   role: string;
   organization_id?: number;
-  roles?: Role[];
   groups?: Group[];
   // スタッフ属性（Staffモデル統合後）
   qualifications?: string[];
   available_hours?: Record<string, { start: string; end: string }>;
   staff_status?: 'active' | 'inactive' | 'on_leave';
   group_id?: number | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Role {
-  id: number;
-  name: string;
-  description?: string;
   created_at: string;
   updated_at: string;
 }

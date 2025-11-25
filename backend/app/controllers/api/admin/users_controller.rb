@@ -6,19 +6,18 @@ module Api
 
       def index
         @users = current_user.organization.users
-                             .includes(:roles, :groups)
+                             .includes(:groups)
                              .order(created_at: :desc)
-        render json: @users, include: [ :roles, :groups ]
+        render json: @users, include: [ :groups ]
       end
 
       def show
-        render json: @user, include: [ :roles, :groups, :organization ]
+        render json: @user, include: [ :groups, :organization ]
       end
 
       def create
         @user = User.new(user_params)
         @user.organization = current_user.organization
-        @user.role = params.dig(:user, :role) if params.dig(:user, :role).present?
 
         if @user.save
           render json: @user, status: :created
@@ -28,10 +27,7 @@ module Api
       end
 
       def update
-        update_params = user_params
-        update_params[:role] = params.dig(:user, :role) if params.dig(:user, :role).present?
-
-        if @user.update(update_params)
+        if @user.update(user_params)
           render json: @user
         else
           render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
@@ -57,11 +53,14 @@ module Api
       end
 
       def user_params
-        params.require(:user).permit(:email, :password, :password_confirmation, :name)
+        params.require(:user).permit(
+          :email, :password, :password_confirmation, :name, :role,
+          :staff_status, :group_id, qualifications: [], available_hours: {}
+        )
       end
 
       def authorize_admin!
-        unless current_user.has_role?("organization_admin") || current_user.has_role?("super_admin")
+        unless current_user.admin?
           render json: { error: "Unauthorized" }, status: :forbidden
         end
       end
