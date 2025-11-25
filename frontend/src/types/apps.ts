@@ -48,9 +48,7 @@ export const APPS: AppMetadata[] = [
 
 // Schedule App Routes
 export const SCHEDULE_ROUTES: AppRoute[] = [
-  { path: "/schedule/calendar", label: "カレンダー", icon: "Calendar" },
-  { path: "/schedule/gantt", label: "ガントチャート", icon: "GanttChart" },
-  { path: "/schedule/weekly", label: "週間ビュー", icon: "CalendarDays" },
+  { path: "/schedule", label: "スケジュール", icon: "Calendar" },
   { path: "/schedule/visits", label: "訪問一覧", icon: "List" },
 ];
 
