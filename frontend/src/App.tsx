@@ -2,10 +2,10 @@ import './App.css'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { PrivateRoute } from './components/PrivateRoute'
-import { AppLauncherPage } from './pages/AppLauncherPage'
 import { ScheduleApp } from './apps/ScheduleApp'
 import { PatientsApp } from './apps/PatientsApp'
 import { StaffApp } from './apps/StaffApp'
+import { AdminApp } from './apps/AdminApp'
 import { LoginPage } from './pages/LoginPage'
 
 function App() {
@@ -14,10 +14,9 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route
-            path="/"
-            element={<PrivateRoute><AppLauncherPage /></PrivateRoute>}
-          />
+
+          {/* Redirect root to schedule */}
+          <Route path="/" element={<Navigate to="/schedule" replace />} />
 
           {/* Schedule App */}
           <Route
@@ -37,8 +36,14 @@ function App() {
             element={<PrivateRoute><StaffApp /></PrivateRoute>}
           />
 
-          {/* Fallback to App Launcher */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* Admin App */}
+          <Route
+            path="/admin/*"
+            element={<PrivateRoute><AdminApp /></PrivateRoute>}
+          />
+
+          {/* Fallback to Schedule */}
+          <Route path="*" element={<Navigate to="/schedule" replace />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
