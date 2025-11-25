@@ -81,7 +81,7 @@ jobs:
           bundler-cache: true
 
       - name: Setup database
-        run: bundle exec rails db:setup
+        run: bundle exec rails db:create db:migrate
 
       - name: Run tests
         run: bundle exec rails test
