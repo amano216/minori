@@ -24,15 +24,24 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const ROLE_OPTIONS = [
-  { value: 'super_admin', label: 'スーパー管理者' },
-  { value: 'organization_admin', label: '組織管理者' },
-  { value: 'group_admin', label: 'グループ管理者' },
+  { value: 'super_admin', label: 'システム管理者' },
+  { value: 'organization_admin', label: '法人管理者' },
+  { value: 'group_admin', label: '拠点・チーム管理者' },
   { value: 'staff', label: 'スタッフ' },
   { value: 'viewer', label: '閲覧者' },
 ];
 
 const getRoleLabel = (role: string): string => {
   return ROLE_OPTIONS.find(r => r.value === role)?.label || role;
+};
+
+// グループの階層表示用ヘルパー
+const getGroupHierarchyLabel = (group: Group, allGroups: Group[]) => {
+  if (group.parent_id) {
+    const parent = allGroups.find(g => g.id === group.parent_id);
+    return parent ? `${parent.name} > ${group.name}` : group.name;
+  }
+  return group.name;
 };
 
 export function UsersPage() {
@@ -162,7 +171,8 @@ export function UsersPage() {
 
   const getGroupName = (groupId?: number | null) => {
     if (!groupId) return '-';
-    return groups.find(g => g.id === groupId)?.name || '-';
+    const group = groups.find(g => g.id === groupId);
+    return group ? getGroupHierarchyLabel(group, groups) : '-';
   };
 
   if (loading && users.length === 0) {
@@ -381,9 +391,16 @@ export function UsersPage() {
                       className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-main"
                     >
                       <option value="">未所属</option>
-                      {groups.map(group => (
-                        <option key={group.id} value={group.id}>{group.name}</option>
-                      ))}
+                      {groups
+                        .map(group => ({
+                          ...group,
+                          label: getGroupHierarchyLabel(group, groups)
+                        }))
+                        .sort((a, b) => a.label.localeCompare(b.label, 'ja'))
+                        .map(group => (
+                          <option key={group.id} value={group.id}>{group.label}</option>
+                        ))
+                      }
                     </select>
                   </div>
                 </div>
