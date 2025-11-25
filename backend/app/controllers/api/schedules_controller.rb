@@ -7,18 +7,15 @@ module Api
     # GET /api/schedules/daily?date=2025-11-25
     def daily
       date = params[:date].present? ? Date.parse(params[:date]) : Date.current
-      visits = Visit.includes(:staff, :patient)
+      visits = Visit.includes(:user, :patient)
                     .on_date(date)
                     .order(:scheduled_at)
 
-      visits = visits.for_staff(params[:staff_id]) if params[:staff_id].present?
+      visits = visits.for_user(params[:staff_id]) if params[:staff_id].present?
 
       render json: {
         date: date.to_s,
-        visits: visits.as_json(include: {
-          staff: { only: [ :id, :name ] },
-          patient: { only: [ :id, :name, :address ] }
-        })
+        visits: visits.map { |v| visit_with_staff_json(v) }
       }
     end
 
@@ -27,11 +24,11 @@ module Api
       start_date = params[:start_date].present? ? Date.parse(params[:start_date]) : Date.current.beginning_of_week
       end_date = start_date + 6.days
 
-      visits = Visit.includes(:staff, :patient)
+      visits = Visit.includes(:user, :patient)
                     .where(scheduled_at: start_date.beginning_of_day..end_date.end_of_day)
                     .order(:scheduled_at)
 
-      visits = visits.for_staff(params[:staff_id]) if params[:staff_id].present?
+      visits = visits.for_user(params[:staff_id]) if params[:staff_id].present?
 
       # Group visits by date
       visits_by_date = {}
@@ -41,10 +38,7 @@ module Api
 
       visits.each do |visit|
         date_key = visit.scheduled_at.to_date.to_s
-        visits_by_date[date_key] << visit.as_json(include: {
-          staff: { only: [ :id, :name ] },
-          patient: { only: [ :id, :name, :address ] }
-        })
+        visits_by_date[date_key] << visit_with_staff_json(visit)
       end
 
       render json: {
@@ -56,16 +50,16 @@ module Api
 
     # GET /api/schedules/staff/:id?start_date=2025-11-24&end_date=2025-11-30
     def staff
-      staff = Staff.find(params[:id])
+      user = User.find(params[:id])
       start_date = params[:start_date].present? ? Date.parse(params[:start_date]) : Date.current
       end_date = params[:end_date].present? ? Date.parse(params[:end_date]) : start_date + 6.days
 
-      visits = staff.visits.includes(:patient)
+      visits = user.visits.includes(:patient)
                     .where(scheduled_at: start_date.beginning_of_day..end_date.end_of_day)
                     .order(:scheduled_at)
 
       render json: {
-        staff: staff.as_json(only: [ :id, :name, :qualifications, :available_hours ]),
+        staff: user.as_json(only: [ :id, :name, :qualifications, :available_hours ]),
         start_date: start_date.to_s,
         end_date: end_date.to_s,
         visits: visits.as_json(include: {
@@ -92,7 +86,7 @@ module Api
           cancelled: visits.where(status: "cancelled").count,
           unassigned: visits.where(status: "unassigned").count
         },
-        unassigned_visits: visits.where(staff_id: nil).count
+        unassigned_visits: visits.where(user_id: nil).count
       }
     end
 
@@ -101,26 +95,26 @@ module Api
     def gantt
       date = params[:date].present? ? Date.parse(params[:date]) : Date.current
 
-      staffs = Staff.where(status: "active").order(:name)
-      visits = Visit.includes(:staff, :patient)
+      users = User.where(staff_status: "active").order(:name)
+      visits = Visit.includes(:user, :patient)
                     .on_date(date)
                     .where.not(status: "cancelled")
                     .order(:scheduled_at)
 
-      # Group visits by staff
-      visits_by_staff = visits.group_by(&:staff_id)
+      # Group visits by user
+      visits_by_user = visits.group_by(&:user_id)
 
       # Build staff rows with their visits
-      staff_rows = staffs.map do |staff|
-        staff_visits = visits_by_staff[staff.id] || []
+      staff_rows = users.map do |user|
+        user_visits = visits_by_user[user.id] || []
         {
-          staff: staff.as_json(only: [ :id, :name, :status ]),
-          visits: staff_visits.map { |v| visit_json(v) }
+          staff: user.as_json(only: [ :id, :name, :staff_status ]),
+          visits: user_visits.map { |v| visit_json(v) }
         }
       end
 
       # Unassigned visits
-      unassigned_visits = visits_by_staff[nil] || []
+      unassigned_visits = visits_by_user[nil] || []
 
       render json: {
         date: date.to_s,
@@ -131,6 +125,20 @@ module Api
 
     private
 
+    def visit_with_staff_json(visit)
+      {
+        id: visit.id,
+        scheduled_at: visit.scheduled_at,
+        duration: visit.duration,
+        status: visit.status,
+        notes: visit.notes,
+        staff_id: visit.user_id,
+        staff: visit.user&.as_json(only: [ :id, :name ]),
+        patient: visit.patient&.as_json(only: [ :id, :name, :address ]),
+        planning_lane_id: visit.planning_lane_id
+      }
+    end
+
     def visit_json(visit)
       {
         id: visit.id,
@@ -139,7 +147,7 @@ module Api
         status: visit.status,
         notes: visit.notes,
         patient: visit.patient.as_json(only: [ :id, :name, :address ]),
-        staff_id: visit.staff_id,
+        staff_id: visit.user_id,
         planning_lane_id: visit.planning_lane_id
       }
     end
