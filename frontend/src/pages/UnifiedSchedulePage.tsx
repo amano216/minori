@@ -117,6 +117,11 @@ export function UnifiedSchedulePage() {
         setGroups(groupsData);
         setStaffs(staffsData);
         setPatients(patientsData);
+        
+        // If no staff found, show warning
+        if (staffsData.length === 0) {
+          console.warn('No active staffs found');
+        }
       } catch (err) {
         console.error('Failed to load master data:', err);
         setError('マスターデータの取得に失敗しました');
@@ -156,8 +161,8 @@ export function UnifiedSchedulePage() {
       Object.values(scheduleData.days).forEach((dayVisits) => {
         dayVisits.forEach((sv) => {
           const visit = convertScheduleVisitToVisit(sv);
-          // Enrich with staff name
-          if (visit.staff_id) {
+          // Enrich with staff name (if staffs are loaded)
+          if (visit.staff_id && staffs.length > 0) {
             const staff = staffs.find((s) => s.id === visit.staff_id);
             if (staff) {
               visit.staff_name = staff.name;
@@ -195,11 +200,10 @@ export function UnifiedSchedulePage() {
 
   useEffect(() => {
     console.log('Effect triggered:', { staffsLength: staffs.length, currentDate, viewMode });
-    if (staffs.length > 0) {
-      loadScheduleData();
-    }
+    // Load schedule data even if no staffs (for unassigned visits)
+    loadScheduleData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentDate, viewMode, filters.staffIds, filters.patientIds, staffs.length]);
+  }, [currentDate, viewMode, filters.staffIds, filters.patientIds]);
 
   const handlePrevious = () => {
     if (viewMode === 'day') {
