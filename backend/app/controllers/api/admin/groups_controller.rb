@@ -3,17 +3,17 @@ module Api
     class GroupsController < ApplicationController
       before_action :authenticate_user!
       before_action :authorize_admin!
-      before_action :set_group, only: [:show, :update, :destroy]
+      before_action :set_group, only: [ :show, :update, :destroy ]
 
       def index
         @groups = current_user.organization.groups
                               .includes(:users)
                               .order(:name)
-        render json: @groups, include: [:users]
+        render json: @groups, include: [ :users ]
       end
 
       def show
-        render json: @group, include: [:users, :patients]
+        render json: @group, include: [ :users, :patients ]
       end
 
       def create
@@ -44,7 +44,7 @@ module Api
       def set_group
         @group = current_user.organization.groups.find(params[:id])
       rescue ActiveRecord::RecordNotFound
-        render json: { error: 'Group not found' }, status: :not_found
+        render json: { error: "Group not found" }, status: :not_found
       end
 
       def group_params
@@ -52,8 +52,8 @@ module Api
       end
 
       def authorize_admin!
-        unless current_user.has_role?('organization_admin') || current_user.has_role?('group_admin') || current_user.has_role?('super_admin')
-          render json: { error: 'Unauthorized' }, status: :forbidden
+        unless current_user.has_role?("organization_admin") || current_user.has_role?("group_admin") || current_user.has_role?("super_admin")
+          render json: { error: "Unauthorized" }, status: :forbidden
         end
       end
     end

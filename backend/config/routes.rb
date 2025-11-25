@@ -36,7 +36,7 @@ Rails.application.routes.draw do
     get "schedules/summary", to: "schedules#summary"
 
     # Organization routes
-    resource :organization, only: [:show, :update]
+    resource :organization, only: [ :show, :update ]
 
     # Admin routes
     namespace :admin do
@@ -44,15 +44,15 @@ Rails.application.routes.draw do
       resources :roles
       resources :groups do
         member do
-          post 'members', to: 'group_memberships#create'
-          delete 'members/:user_id', to: 'group_memberships#destroy'
+          post "members", to: "group_memberships#create"
+          delete "members/:user_id", to: "group_memberships#destroy"
         end
       end
     end
 
     # User roles routes
     resources :users, only: [] do
-      resources :roles, only: [:create, :destroy], controller: 'user_roles'
+      resources :roles, only: [ :create, :destroy ], controller: "user_roles"
     end
   end
 end

@@ -5,9 +5,9 @@ class Role < ApplicationRecord
   validates :name, presence: true, uniqueness: true
 
   # 定義済みロール
-  SUPER_ADMIN = 'super_admin'
-  ORGANIZATION_ADMIN = 'organization_admin'
-  GROUP_ADMIN = 'group_admin'
-  STAFF = 'staff'
-  VIEWER = 'viewer'
+  SUPER_ADMIN = "super_admin"
+  ORGANIZATION_ADMIN = "organization_admin"
+  GROUP_ADMIN = "group_admin"
+  STAFF = "staff"
+  VIEWER = "viewer"
 end

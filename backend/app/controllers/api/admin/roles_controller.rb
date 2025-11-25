@@ -3,7 +3,7 @@ module Api
     class RolesController < ApplicationController
       before_action :authenticate_user!
       before_action :authorize_admin!
-      before_action :set_role, only: [:show, :update, :destroy]
+      before_action :set_role, only: [ :show, :update, :destroy ]
 
       def index
         @roles = Role.all.order(:name)
@@ -11,7 +11,7 @@ module Api
       end
 
       def show
-        render json: @role, include: [:users]
+        render json: @role, include: [ :users ]
       end
 
       def create
@@ -34,7 +34,7 @@ module Api
 
       def destroy
         if @role.users.any?
-          render json: { error: 'Cannot delete role with assigned users' }, status: :unprocessable_entity
+          render json: { error: "Cannot delete role with assigned users" }, status: :unprocessable_entity
           return
         end
 
@@ -47,7 +47,7 @@ module Api
       def set_role
         @role = Role.find(params[:id])
       rescue ActiveRecord::RecordNotFound
-        render json: { error: 'Role not found' }, status: :not_found
+        render json: { error: "Role not found" }, status: :not_found
       end
 
       def role_params
@@ -55,8 +55,8 @@ module Api
       end
 
       def authorize_admin!
-        unless current_user.has_role?('organization_admin') || current_user.has_role?('super_admin')
-          render json: { error: 'Unauthorized' }, status: :forbidden
+        unless current_user.has_role?("organization_admin") || current_user.has_role?("super_admin")
+          render json: { error: "Unauthorized" }, status: :forbidden
         end
       end
     end
