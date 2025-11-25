@@ -33,7 +33,7 @@ module Backend
       #{config.root}/app/concepts
       #{config.root}/app/synchronizations
     ]
-    
+
     config.eager_load_paths += %W[
       #{config.root}/app/concepts
       #{config.root}/app/synchronizations
