@@ -1,7 +1,7 @@
 module Api
   module Admin
     class RolesController < ApplicationController
-      before_action :authenticate_user!
+      before_action :authenticate_request!
       before_action :authorize_admin!
       before_action :set_role, only: [ :show, :update, :destroy ]
 
