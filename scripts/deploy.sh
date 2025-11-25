@@ -39,11 +39,15 @@ COMPONENT="${1:-all}"
 deploy_frontend() {
     echo -e "${GREEN}=== Deploying Frontend ===${NC}"
 
+    # Get current git commit SHA
+    GIT_SHA=$(git rev-parse --short HEAD)
+    echo "Using git SHA: $GIT_SHA"
+
     # Build and push frontend
     gcloud builds submit ./frontend \
         --config=./frontend/cloudbuild.yaml \
         --project="$PROJECT_ID" \
-        --substitutions=_VITE_API_URL="https://minori-backend-336192862447.asia-northeast1.run.app"
+        --substitutions=_SHORT_SHA="$GIT_SHA",_VITE_API_URL="https://minori-backend-336192862447.asia-northeast1.run.app"
 
     echo -e "${GREEN}✓ Frontend deployed successfully${NC}"
     echo "URL: https://minori-frontend-336192862447.asia-northeast1.run.app"
@@ -52,10 +56,15 @@ deploy_frontend() {
 deploy_backend() {
     echo -e "${GREEN}=== Deploying Backend ===${NC}"
 
+    # Get current git commit SHA
+    GIT_SHA=$(git rev-parse --short HEAD)
+    echo "Using git SHA: $GIT_SHA"
+
     # Build and push backend
     gcloud builds submit ./backend \
         --config=./backend/cloudbuild.yaml \
-        --project="$PROJECT_ID"
+        --project="$PROJECT_ID" \
+        --substitutions=_SHORT_SHA="$GIT_SHA"
 
     echo -e "${GREEN}✓ Backend deployed successfully${NC}"
     echo "URL: https://minori-backend-336192862447.asia-northeast1.run.app"

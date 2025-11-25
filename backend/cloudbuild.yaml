@@ -4,13 +4,12 @@ steps:
     args:
       - 'build'
       - '-t'
-      - 'asia-northeast1-docker.pkg.dev/${PROJECT_ID}/minori/backend:${SHORT_SHA}'
+      - 'asia-northeast1-docker.pkg.dev/${PROJECT_ID}/minori/backend:${_SHORT_SHA}'
       - '-t'
       - 'asia-northeast1-docker.pkg.dev/${PROJECT_ID}/minori/backend:latest'
       - '-f'
       - 'Dockerfile'
       - '.'
-    dir: 'backend'
 
   # Push the container image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
@@ -26,7 +25,7 @@ steps:
       - 'run'
       - 'deploy'
       - 'minori-backend'
-      - '--image=asia-northeast1-docker.pkg.dev/${PROJECT_ID}/minori/backend:${SHORT_SHA}'
+      - '--image=asia-northeast1-docker.pkg.dev/${PROJECT_ID}/minori/backend:${_SHORT_SHA}'
       - '--region=asia-northeast1'
       - '--platform=managed'
       - '--allow-unauthenticated'
@@ -41,7 +40,7 @@ steps:
       - '--cpu=1'
 
 images:
-  - 'asia-northeast1-docker.pkg.dev/${PROJECT_ID}/minori/backend:${SHORT_SHA}'
+  - 'asia-northeast1-docker.pkg.dev/${PROJECT_ID}/minori/backend:${_SHORT_SHA}'
   - 'asia-northeast1-docker.pkg.dev/${PROJECT_ID}/minori/backend:latest'
 
 options:

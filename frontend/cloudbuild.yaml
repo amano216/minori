@@ -1,7 +1,10 @@
 steps:
+  # Build the container image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
+      - '-t'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/minori/frontend:${_SHORT_SHA}'
       - '-t'
       - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/minori/frontend:latest'
       - '-f'
@@ -9,7 +12,40 @@ steps:
       - '--build-arg'
       - 'VITE_API_URL=${_VITE_API_URL}'
       - '.'
+
+  # Push the container image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '--all-tags'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/minori/frontend'
+
+  # Deploy container image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'minori-frontend'
+      - '--image=asia-northeast1-docker.pkg.dev/$PROJECT_ID/minori/frontend:${_SHORT_SHA}'
+      - '--region=asia-northeast1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--port=80'
+      - '--timeout=60'
+      - '--max-instances=10'
+      - '--min-instances=0'
+      - '--memory=256Mi'
+      - '--cpu=1'
+
 images:
+  - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/minori/frontend:${_SHORT_SHA}'
   - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/minori/frontend:latest'
+
 substitutions:
   _VITE_API_URL: 'https://minori-backend-336192862447.asia-northeast1.run.app'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: 1200s
