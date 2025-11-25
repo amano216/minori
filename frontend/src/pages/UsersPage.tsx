@@ -24,11 +24,8 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const ROLE_OPTIONS = [
-  { value: 'super_admin', label: 'システム管理者' },
-  { value: 'organization_admin', label: '法人管理者' },
-  { value: 'group_admin', label: '拠点・チーム管理者' },
+  { value: 'organization_admin', label: '管理者' },
   { value: 'staff', label: 'スタッフ' },
-  { value: 'viewer', label: '閲覧者' },
 ];
 
 const getRoleLabel = (role: string): string => {
