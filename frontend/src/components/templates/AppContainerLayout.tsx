@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { AppSidebar } from "../organisms/AppSidebar";
 import { AppSwitcher } from "../molecules/AppSwitcher";
 import { useAuth } from "../../contexts/AuthContext";
