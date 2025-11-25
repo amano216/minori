@@ -1,4 +1,4 @@
-import { type ReactNode, useState, useEffect } from "react";
+import { type ReactNode, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Menu, X, LogOut, ChevronRight } from "lucide-react";
 import { Icon } from "../atoms/Icon";
@@ -31,9 +31,9 @@ export function AppContainerLayout({ app, routes, children }: AppContainerLayout
   });
 
   // Close menu when route changes
-  useEffect(() => {
-    setIsMenuOpen(false);
-  }, [location.pathname]);
+  // useEffect(() => {
+  //   setIsMenuOpen(false);
+  // }, [location.pathname]);
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -109,9 +109,9 @@ export function AppContainerLayout({ app, routes, children }: AppContainerLayout
          ================================================================================= */}
       <aside 
         className={`
-          hidden md:flex flex-col w-64 bg-white/95 backdrop-blur-xl border-r border-gray-200 fixed top-0 bottom-0 z-40 shadow-2xl
-          transition-all duration-300 cubic-bezier(0.4, 0, 0.2, 1)
-          ${isMenuOpen ? "translate-x-16 opacity-100" : "-translate-x-full opacity-0"} 
+          hidden md:flex flex-col w-64 bg-white/80 backdrop-blur-2xl border-r border-gray-200/50 fixed top-0 bottom-0 z-40 shadow-[20px_0_40px_-10px_rgba(0,0,0,0.1)]
+          transition-all duration-500 [transition-timing-function:cubic-bezier(0.19,1,0.22,1)]
+          ${isMenuOpen ? "translate-x-16 opacity-100 visible" : "-translate-x-4 opacity-0 invisible"} 
         `}
         style={{ left: 0 }}
       >
@@ -135,6 +135,10 @@ export function AppContainerLayout({ app, routes, children }: AppContainerLayout
               <Link
                 key={route.path}
                 to={route.path}
+                onClick={() => {
+                  // Close menu on mobile or desktop overlay when a link is clicked
+                  setIsMenuOpen(false);
+                }}
                 className={`
                   flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 group
                   ${isActive
@@ -162,12 +166,13 @@ export function AppContainerLayout({ app, routes, children }: AppContainerLayout
       </aside>
       
       {/* Desktop Backdrop to close sidebar */}
-      {isMenuOpen && (
-        <div 
-          className="hidden md:block fixed inset-0 z-30 bg-black/10 backdrop-blur-[1px] transition-opacity duration-300"
-          onClick={() => setIsMenuOpen(false)}
-        />
-      )}
+      <div 
+        className={`
+          hidden md:block fixed inset-0 z-30 bg-black/5 backdrop-blur-[2px] transition-all duration-500
+          ${isMenuOpen ? "opacity-100 visible" : "opacity-0 invisible"}
+        `}
+        onClick={() => setIsMenuOpen(false)}
+      />
 
       {/* =================================================================================
           Mobile: Header (Top)
@@ -189,69 +194,82 @@ export function AppContainerLayout({ app, routes, children }: AppContainerLayout
       </div>
 
       {/* Mobile: Sub Menu Drawer (Right Side Slide-in) */}
-      {isMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-50 flex justify-end">
-          <div 
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm transition-opacity" 
-            onClick={() => setIsMenuOpen(false)}
-          />
-          <div className="relative w-4/5 max-w-xs bg-white shadow-2xl transform transition-transform duration-300 ease-out h-full flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b border-gray-100">
-              <span className="font-bold text-lg text-gray-900">メニュー</span>
-              <button
-                className="p-2 -mr-2 rounded-full hover:bg-gray-100 text-gray-500"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-4">
-              <nav className="space-y-1">
-                {routes.map((route) => {
-                  const isActive = location.pathname.startsWith(route.path);
-                  return (
-                    <Link
-                      key={route.path}
-                      to={route.path}
-                      className={`group flex items-center px-4 py-3.5 text-base font-medium rounded-xl transition-all duration-200 ${
-                        isActive
-                          ? "bg-main/10 text-main shadow-sm"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                      }`}
-                    >
-                      <div className="mr-4 flex-shrink-0">
-                        {route.icon && <Icon name={route.icon} size={22} strokeWidth={isActive ? 2.5 : 2} />}
-                      </div>
-                      {route.label}
-                      {isActive && <ChevronRight className="ml-auto opacity-50" size={18} />}
-                    </Link>
-                  );
-                })}
-              </nav>
-            </div>
+      <div 
+        className={`
+          md:hidden fixed inset-0 z-50 flex justify-end transition-all duration-500
+          ${isMenuOpen ? "visible" : "invisible pointer-events-none"}
+        `}
+      >
+        <div 
+          className={`
+            fixed inset-0 bg-black/30 backdrop-blur-sm transition-opacity duration-500
+            ${isMenuOpen ? "opacity-100" : "opacity-0"}
+          `}
+          onClick={() => setIsMenuOpen(false)}
+        />
+        <div 
+          className={`
+            relative w-4/5 max-w-xs bg-white/90 backdrop-blur-xl shadow-2xl h-full flex flex-col
+            transition-transform duration-500 [transition-timing-function:cubic-bezier(0.19,1,0.22,1)]
+            ${isMenuOpen ? "translate-x-0" : "translate-x-full"}
+          `}
+        >
+          <div className="flex items-center justify-between p-4 border-b border-gray-100/50">
+            <span className="font-bold text-lg text-gray-900">メニュー</span>
+            <button
+              className="p-2 -mr-2 rounded-full hover:bg-gray-100 text-gray-500"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-4">
+            <nav className="space-y-1">
+              {routes.map((route) => {
+                const isActive = location.pathname.startsWith(route.path);
+                return (
+                  <Link
+                    key={route.path}
+                    to={route.path}
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`group flex items-center px-4 py-3.5 text-base font-medium rounded-xl transition-all duration-200 ${
+                      isActive
+                        ? "bg-main/10 text-main shadow-sm"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    }`}
+                  >
+                    <div className="mr-4 flex-shrink-0">
+                      {route.icon && <Icon name={route.icon} size={22} strokeWidth={isActive ? 2.5 : 2} />}
+                    </div>
+                    {route.label}
+                    {isActive && <ChevronRight className="ml-auto opacity-50" size={18} />}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
 
-            <div className="p-4 border-t border-gray-100 bg-gray-50">
-              <div className="flex items-center gap-3 mb-4 px-2">
-                <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-sm font-bold text-gray-700 shadow-sm">
-                  {user?.email?.charAt(0).toUpperCase() || "U"}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-gray-900 truncate">{user?.email}</p>
-                  <p className="text-xs text-gray-500">ログイン中</p>
-                </div>
+          <div className="p-4 border-t border-gray-100/50 bg-gray-50/50">
+            <div className="flex items-center gap-3 mb-4 px-2">
+              <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-sm font-bold text-gray-700 shadow-sm">
+                {user?.email?.charAt(0).toUpperCase() || "U"}
               </div>
-              <button
-                onClick={handleLogout}
-                className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-bold text-red-600 bg-white border border-red-100 rounded-xl hover:bg-red-50 shadow-sm transition-colors"
-              >
-                <LogOut size={18} />
-                ログアウト
-              </button>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-gray-900 truncate">{user?.email}</p>
+                <p className="text-xs text-gray-500">ログイン中</p>
+              </div>
             </div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-bold text-red-600 bg-white border border-red-100 rounded-xl hover:bg-red-50 shadow-sm transition-colors"
+            >
+              <LogOut size={18} />
+              ログアウト
+            </button>
           </div>
         </div>
-      )}
+      </div>
 
       {/* =================================================================================
           Mobile: Bottom Navigation (App Switcher)
