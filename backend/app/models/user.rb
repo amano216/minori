@@ -24,6 +24,7 @@ class User < ApplicationRecord
   validates :role, presence: true, inclusion: { in: ROLES }
 
   before_save :downcase_email
+  before_create :generate_confirmation_token
 
   # 旧メソッド（後方互換性）
   def admin?
@@ -59,9 +60,75 @@ class User < ApplicationRecord
     END', Role::SUPER_ADMIN, Role::ORGANIZATION_ADMIN, Role::GROUP_ADMIN, Role::STAFF) || 0
   end
 
+  # Email confirmation
+  def email_confirmed?
+    email_confirmed_at.present?
+  end
+
+  def confirm_email!
+    update(email_confirmed_at: Time.current, confirmation_token: nil)
+  end
+
+  def generate_confirmation_token!
+    update(confirmation_token: SecureRandom.urlsafe_base64(32))
+  end
+
+  # Password reset
+  def generate_reset_password_token!
+    update(
+      reset_password_token: SecureRandom.urlsafe_base64(32),
+      reset_password_sent_at: Time.current
+    )
+  end
+
+  def reset_password_token_valid?
+    reset_password_sent_at.present? && reset_password_sent_at > 24.hours.ago
+  end
+
+  def reset_password!(new_password)
+    update(
+      password: new_password,
+      reset_password_token: nil,
+      reset_password_sent_at: nil
+    )
+  end
+
+  # OTP (One-Time Password)
+  def generate_otp
+    # 6桁のOTPを生成
+    format("%06d", SecureRandom.random_number(1_000_000))
+  end
+
+  def save_otp(otp_code)
+    # OTPを暗号化して保存（10分間有効）
+    encrypted_otp = BCrypt::Password.create(otp_code)
+    update(otp_secret: encrypted_otp)
+  end
+
+  def verify_otp(otp_code)
+    return false if otp_secret.blank?
+
+    BCrypt::Password.new(otp_secret) == otp_code
+  rescue BCrypt::Errors::InvalidHash
+    false
+  end
+
+  def otp_required?
+    # 2FAが有効 かつ 最後のOTP認証から24時間以上経過
+    otp_enabled && (last_otp_at.nil? || last_otp_at < 24.hours.ago)
+  end
+
+  def mark_otp_verified!
+    update(last_otp_at: Time.current, otp_secret: nil)
+  end
+
   private
 
   def downcase_email
     self.email = email.downcase
+  end
+
+  def generate_confirmation_token
+    self.confirmation_token = SecureRandom.urlsafe_base64(32)
   end
 end

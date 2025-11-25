@@ -7,6 +7,10 @@ function getApiUrl(): string {
   return '';
 }
 
+export function getFullApiUrl(path: string): string {
+  return `${getApiUrl()}${path}`;
+}
+
 const API_URL = getApiUrl();
 const TOKEN_KEY = 'minori_auth_token';
 
@@ -96,6 +100,7 @@ export interface Staff {
   status: 'active' | 'inactive' | 'on_leave';
   created_at: string;
   updated_at: string;
+  group_id?: number | null;
 }
 
 export interface StaffInput {
@@ -104,6 +109,7 @@ export interface StaffInput {
   qualifications?: string[];
   available_hours?: Record<string, { start: string; end: string }>;
   status?: string;
+  group_id?: number | null;
 }
 
 export async function fetchStaffs(params?: { status?: string; qualification?: string }): Promise<Staff[]> {
@@ -143,6 +149,10 @@ export interface Group {
   status: string;
   created_at: string;
   updated_at: string;
+  users?: User[];
+  parent_id?: number | null;
+  group_type?: 'office' | 'team';
+  children?: Group[];
 }
 
 export async function fetchGroups(params?: { status?: string }): Promise<Group[]> {
@@ -212,11 +222,12 @@ export interface Visit {
   staff_id: number | null;
   patient_id: number;
   staff: { id: number; name: string } | null;
-  patient: { id: number; name: string };
+  patient: { id: number; name: string; address?: string };
   status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'unassigned';
   notes: string;
   created_at: string;
   updated_at: string;
+  planning_lane_id?: number | null;
 }
 
 export interface VisitInput {
@@ -226,6 +237,7 @@ export interface VisitInput {
   patient_id: number;
   status?: string;
   notes?: string;
+  planning_lane_id?: number | null;
 }
 
 export async function fetchVisits(params?: {
@@ -395,6 +407,36 @@ export async function reassignVisit(id: number, staffId: number | null): Promise
     method: 'PUT',
     body: JSON.stringify({ visit: { staff_id: staffId } }),
   });
+}
+
+// Planning Lane API
+export interface PlanningLane {
+  id: number;
+  name: string;
+  position: number;
+  organization_id: number;
+}
+
+export async function fetchPlanningLanes(): Promise<PlanningLane[]> {
+  return apiRequest('/api/planning_lanes');
+}
+
+export async function createPlanningLane(name: string, position: number): Promise<PlanningLane> {
+  return apiRequest('/api/planning_lanes', {
+    method: 'POST',
+    body: JSON.stringify({ planning_lane: { name, position } }),
+  });
+}
+
+export async function updatePlanningLane(id: number, name: string): Promise<PlanningLane> {
+  return apiRequest(`/api/planning_lanes/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ planning_lane: { name } }),
+  });
+}
+
+export async function deletePlanningLane(id: number): Promise<void> {
+  return apiRequest(`/api/planning_lanes/${id}`, { method: 'DELETE' });
 }
 
 // Axios-like API client for organization API

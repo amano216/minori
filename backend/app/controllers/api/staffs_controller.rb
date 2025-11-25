@@ -5,7 +5,7 @@ module Api
     before_action :set_staff, only: %i[show update destroy]
 
     def index
-      @staffs = Staff.all
+      @staffs = Current.organization.staffs
       @staffs = @staffs.where(status: params[:status]) if params[:status].present?
       @staffs = @staffs.with_qualification(params[:qualification]) if params[:qualification].present?
       @staffs = @staffs.order(created_at: :desc)
@@ -18,7 +18,7 @@ module Api
     end
 
     def create
-      @staff = Staff.new(staff_params)
+      @staff = Current.organization.staffs.new(staff_params)
 
       if @staff.save
         render json: @staff, status: :created
@@ -43,13 +43,13 @@ module Api
     private
 
     def set_staff
-      @staff = Staff.find(params[:id])
+      @staff = Current.organization.staffs.find(params[:id])
     rescue ActiveRecord::RecordNotFound
       render json: { error: "Staff not found" }, status: :not_found
     end
 
     def staff_params
-      params.require(:staff).permit(:name, :email, :status, qualifications: [], available_hours: {})
+      params.require(:staff).permit(:name, :email, :status, :group_id, qualifications: [], available_hours: {})
     end
   end
 end

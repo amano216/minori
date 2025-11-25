@@ -1,6 +1,5 @@
 class ApplicationController < ActionController::API
   include ActionController::HttpAuthentication::Token::ControllerMethods
-  include OrganizationAuthSync
 
   before_action :authenticate_request
 

@@ -4,6 +4,8 @@ class Staff < ApplicationRecord
   STATUSES = %w[active inactive on_leave].freeze
   QUALIFICATIONS = %w[nurse physical_therapist occupational_therapist speech_therapist care_worker].freeze
 
+  belongs_to :organization, optional: true
+  belongs_to :group, optional: true
   has_many :visits, dependent: :nullify
 
   validates :name, presence: true

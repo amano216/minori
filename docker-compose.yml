@@ -31,6 +31,8 @@ services:
     environment:
       DATABASE_URL: postgres://minori:minori_dev@db:5432/minori_development
       RAILS_ENV: development
+      FRONTEND_URL: http://localhost:5174
+      AUTO_CONFIRM_EMAIL: "true"
 
   frontend:
     build:

@@ -2,8 +2,6 @@
 
 module Api
   class PatientsController < ApplicationController
-    include AuthorizationPatientSync
-
     def index
       @patients = scoped_patients
       @patients = @patients.where(status: params[:status]) if params[:status].present?
@@ -41,6 +39,18 @@ module Api
     end
 
     private
+
+    def scoped_patients
+      if current_user.organization
+        current_user.organization.patients
+      else
+        Patient.none
+      end
+    end
+
+    def patient_params_with_organization
+      patient_params.merge(organization_id: current_user.organization&.id)
+    end
 
     def patient_params
       params.require(:patient).permit(:name, :address, :phone, :notes, :status, :group_id, care_requirements: [])

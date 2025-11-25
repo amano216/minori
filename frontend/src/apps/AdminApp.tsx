@@ -1,7 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AppContainerLayout } from "../components/templates/AppContainerLayout";
 import { APPS, ADMIN_ROUTES } from "../types/apps";
-import { AdminDashboardPage } from "../pages/AdminDashboardPage";
 import { OrganizationPage } from "../pages/OrganizationPage";
 import { UsersPage } from "../pages/UsersPage";
 import { RolesPage } from "../pages/RolesPage";
@@ -13,8 +12,7 @@ export function AdminApp() {
   return (
     <AppContainerLayout app={adminApp} routes={ADMIN_ROUTES}>
       <Routes>
-        <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
-        <Route path="/dashboard" element={<AdminDashboardPage />} />
+        <Route path="/" element={<Navigate to="/admin/organization" replace />} />
         <Route path="/organization" element={<OrganizationPage />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/roles" element={<RolesPage />} />

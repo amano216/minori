@@ -64,7 +64,6 @@ export const STAFF_ROUTES: AppRoute[] = [
 
 // Admin App Routes
 export const ADMIN_ROUTES: AppRoute[] = [
-  { path: "/admin/dashboard", label: "ダッシュボード", icon: "LayoutDashboard" },
   { path: "/admin/organization", label: "組織設定", icon: "Building" },
   { path: "/admin/users", label: "ユーザー管理", icon: "Users" },
   { path: "/admin/roles", label: "ロール管理", icon: "Shield" },

@@ -26,14 +26,36 @@ Rails.application.configure do
   # Change to :null_store to avoid any caching.
   config.cache_store = :memory_store
 
-  # Don't care if the mailer can't send.
-  config.action_mailer.raise_delivery_errors = false
-
-  # Make template changes take effect immediately.
+  # Action Mailer settings
+  config.action_mailer.raise_delivery_errors = true
   config.action_mailer.perform_caching = false
-
-  # Set localhost to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = { host: "localhost", port: 3000 }
+  config.action_mailer.perform_deliveries = true
+  
+  # Set URL for email links
+  frontend_url = ENV.fetch("FRONTEND_URL", "http://localhost:5174")
+  config.action_mailer.default_url_options = { 
+    host: URI.parse(frontend_url).host,
+    port: URI.parse(frontend_url).port,
+    protocol: URI.parse(frontend_url).scheme
+  }
+  
+  # Use SMTP if configured, otherwise use test mode (logs only)
+  if ENV["SMTP_ADDRESS"].present?
+    config.action_mailer.delivery_method = :smtp
+    config.action_mailer.smtp_settings = {
+      address: ENV.fetch("SMTP_ADDRESS", "smtp.gmail.com"),
+      port: ENV.fetch("SMTP_PORT", 587).to_i,
+      domain: ENV.fetch("SMTP_DOMAIN", "gmail.com"),
+      user_name: ENV["SMTP_USERNAME"],
+      password: ENV["SMTP_PASSWORD"],
+      authentication: ENV.fetch("SMTP_AUTHENTICATION", "plain"),
+      enable_starttls_auto: ENV.fetch("SMTP_ENABLE_STARTTLS", "true") == "true"
+    }
+  else
+    # For Docker/Codespaces: use test mode to log emails
+    config.action_mailer.delivery_method = :test
+    config.action_mailer.logger = Logger.new($stdout)
+  end
 
   # Print deprecation notices to the Rails logger.
   config.active_support.deprecation = :log
