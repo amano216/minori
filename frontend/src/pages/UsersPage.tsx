@@ -27,8 +27,9 @@ export function UsersPage() {
       const data = await organizationApi.getUsers();
       setUsers(data);
       setError(null);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'ユーザーの取得に失敗しました');
+    } catch (err) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'ユーザーの取得に失敗しました');
     } finally {
       setLoading(false);
     }
@@ -74,8 +75,9 @@ export function UsersPage() {
       }
       await loadUsers();
       handleCloseModal();
-    } catch (err: any) {
-      setError(err.response?.data?.errors?.[0] || '保存に失敗しました');
+    } catch (err) {
+      const error = err as { response?: { data?: { errors?: string[] } } };
+      setError(error.response?.data?.errors?.[0] || '保存に失敗しました');
     } finally {
       setLoading(false);
     }
@@ -88,8 +90,9 @@ export function UsersPage() {
       setLoading(true);
       await organizationApi.deleteUser(id);
       await loadUsers();
-    } catch (err: any) {
-      setError(err.response?.data?.error || '削除に失敗しました');
+    } catch (err) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || '削除に失敗しました');
     } finally {
       setLoading(false);
     }

@@ -19,8 +19,9 @@ export function OrganizationPage() {
       const data = await organizationApi.getOrganization();
       setOrganization(data);
       setFormData({ name: data.name, subdomain: data.subdomain || '' });
-    } catch (err: any) {
-      setError(err.response?.data?.error || '組織情報の取得に失敗しました');
+    } catch (err) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || '組織情報の取得に失敗しました');
     } finally {
       setLoading(false);
     }
@@ -34,8 +35,9 @@ export function OrganizationPage() {
       setOrganization(updated);
       setIsEditing(false);
       setError(null);
-    } catch (err: any) {
-      setError(err.response?.data?.errors?.[0] || '更新に失敗しました');
+    } catch (err) {
+      const error = err as { response?: { data?: { errors?: string[] } } };
+      setError(error.response?.data?.errors?.[0] || '更新に失敗しました');
     } finally {
       setLoading(false);
     }

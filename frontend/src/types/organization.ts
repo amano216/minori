@@ -2,7 +2,7 @@ export interface Organization {
   id: number;
   name: string;
   subdomain: string | null;
-  settings: any;
+  settings: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
