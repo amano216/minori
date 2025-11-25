@@ -145,7 +145,7 @@ export function UnifiedSchedulePage() {
 
   useEffect(() => {
     loadScheduleData();
-  }, [currentDate, staffs.length]); // Reload when date changes or staffs are loaded
+  }, [loadScheduleData]); // Reload when loadScheduleData callback changes (depends on currentDate and staffs)
 
   const handlePrevious = () => {
     const newDate = new Date(currentDate);
@@ -163,7 +163,7 @@ export function UnifiedSchedulePage() {
     if (dateInputRef.current) {
       try {
         dateInputRef.current.showPicker();
-      } catch (e) {
+      } catch {
         // Fallback for browsers that don't support showPicker
         dateInputRef.current.click(); 
       }
@@ -185,7 +185,7 @@ export function UnifiedSchedulePage() {
       await cancelVisit(visitId);
       await loadScheduleData();
       setSelectedVisit(null);
-    } catch (err) {
+    } catch {
       alert('キャンセルに失敗しました');
     }
   };
@@ -195,7 +195,7 @@ export function UnifiedSchedulePage() {
       await completeVisit(visitId);
       await loadScheduleData();
       setSelectedVisit(null);
-    } catch (err) {
+    } catch {
       alert('完了処理に失敗しました');
     }
   };
@@ -204,18 +204,19 @@ export function UnifiedSchedulePage() {
     navigate(`/schedule/visits/${visitId}/edit`);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleVisitReassign = (_visitId: number) => {
     // This is now handled inside VisitDetailPanel via onUpdate
     // But we keep it for backward compatibility if needed, or just alert
     // alert('再割当機能は実装予定です');
   };
 
-  const handleVisitUpdate = async (visitId: number, data: any) => {
+  const handleVisitUpdate = async (visitId: number, data: { staff_id: number | null; scheduled_at?: string; status?: string }) => {
     try {
       await updateVisit(visitId, data);
       await loadScheduleData();
       setSelectedVisit(null);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Failed to update visit:', err);
       alert('更新に失敗しました');
       throw err;
@@ -230,7 +231,7 @@ export function UnifiedSchedulePage() {
       await deleteVisit(visitId);
       await loadScheduleData();
       setSelectedVisit(null);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Failed to delete visit:', err);
       alert('削除に失敗しました');
     }
@@ -274,7 +275,7 @@ export function UnifiedSchedulePage() {
 
     if (visit && staff) {
       try {
-        const updateData: any = {
+        const updateData: { staff_id: number; status: string; scheduled_at?: string } = {
           staff_id: staff.id,
           status: 'scheduled'
         };
@@ -291,7 +292,7 @@ export function UnifiedSchedulePage() {
         
         // Reload data
         await loadScheduleData();
-      } catch (err) {
+      } catch (err: unknown) {
         console.error('Failed to assign visit:', err);
         alert('割り当てに失敗しました');
       }

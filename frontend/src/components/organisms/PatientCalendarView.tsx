@@ -247,7 +247,7 @@ export default function PatientCalendarView({
         color: LANE_COLORS[lanes.length % LANE_COLORS.length]
       };
       setLanes([...lanes, mappedLane]);
-    } catch (err) {
+    } catch {
       alert('レーンの作成に失敗しました');
     }
   };
@@ -257,7 +257,7 @@ export default function PatientCalendarView({
     try {
       await deletePlanningLane(laneId);
       setLanes(lanes.filter(l => l.id !== laneId));
-    } catch (err) {
+    } catch {
       alert('レーンの削除に失敗しました');
     }
   };
@@ -266,7 +266,7 @@ export default function PatientCalendarView({
     try {
       const updated = await updatePlanningLane(laneId, newLabel);
       setLanes(lanes.map(l => l.id === laneId ? { ...l, name: updated.name, label: updated.name } : l));
-    } catch (err) {
+    } catch {
       alert('レーンの名称変更に失敗しました');
     }
   };

@@ -83,7 +83,7 @@ export function NewVisitPanel({
       ]);
       setStaffs(staffsData);
       setPatients(patientsData);
-    } catch (err) {
+    } catch {
       setError('マスターデータの取得に失敗しました');
     } finally {
       setLoading(false);

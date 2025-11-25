@@ -20,6 +20,67 @@ interface WeeklyStaffRowProps {
   onCellClick?: (staffId: number, date: Date) => void;
 }
 
+interface DayCellProps {
+  staff: Staff;
+  day: Date;
+  visits: Visit[];
+  onVisitClick: (visit: Visit) => void;
+  onCellClick?: (staffId: number, date: Date) => void;
+}
+
+function DayCell({ staff, day, visits, onVisitClick, onCellClick }: DayCellProps) {
+  const dayStr = day.toISOString().split('T')[0];
+  const dayVisits = visits.filter(v => v.scheduled_at.startsWith(dayStr));
+  
+  // Sort visits by time
+  dayVisits.sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
+
+  const { setNodeRef, isOver } = useDroppable({
+    id: `staff-${staff.id}-date-${dayStr}`,
+    data: { staff, date: day },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`flex-1 border-r border-gray-100 p-1 min-w-[120px] relative transition-colors ${
+        isOver ? 'bg-indigo-50 ring-2 ring-inset ring-indigo-300' : 'hover:bg-gray-50'
+      }`}
+      onClick={() => onCellClick?.(staff.id, day)}
+    >
+      <div className="flex flex-col gap-1 h-full">
+        {dayVisits.map((visit) => (
+          <div
+            key={visit.id}
+            onClick={(e) => {
+              e.stopPropagation();
+              onVisitClick(visit);
+            }}
+            className="bg-white border border-indigo-200 rounded px-1.5 py-1 shadow-sm cursor-pointer hover:border-indigo-400 hover:shadow-md transition-all group"
+          >
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[10px] font-mono text-gray-500 bg-gray-100 px-1 rounded">
+                {new Date(visit.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+              <span className="text-[10px] text-gray-400">
+                {visit.duration}分
+              </span>
+            </div>
+            <div className="text-xs font-medium text-gray-900 truncate mt-0.5">
+              {visit.patient.name}
+            </div>
+          </div>
+        ))}
+        {dayVisits.length === 0 && (
+          <div className="h-full flex items-center justify-center text-gray-300 text-xs opacity-0 hover:opacity-100 select-none pointer-events-none">
+            空き
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function WeeklyStaffRow({ staff, visits, days, onVisitClick, onCellClick }: WeeklyStaffRowProps) {
   return (
     <div className="flex border-b border-gray-100 transition-colors min-h-[80px]">
@@ -35,59 +96,16 @@ function WeeklyStaffRow({ staff, visits, days, onVisitClick, onCellClick }: Week
       </div>
 
       {/* Days Grid */}
-      {days.map((day) => {
-        const dayStr = day.toISOString().split('T')[0];
-        const dayVisits = visits.filter(v => v.scheduled_at.startsWith(dayStr));
-        
-        // Sort visits by time
-        dayVisits.sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
-
-        const { setNodeRef, isOver } = useDroppable({
-          id: `staff-${staff.id}-date-${dayStr}`,
-          data: { staff, date: day },
-        });
-
-        return (
-          <div
-            key={dayStr}
-            ref={setNodeRef}
-            className={`flex-1 border-r border-gray-100 p-1 min-w-[120px] relative transition-colors ${
-              isOver ? 'bg-indigo-50 ring-2 ring-inset ring-indigo-300' : 'hover:bg-gray-50'
-            }`}
-            onClick={() => onCellClick?.(staff.id, day)}
-          >
-            <div className="flex flex-col gap-1 h-full">
-              {dayVisits.map((visit) => (
-                <div
-                  key={visit.id}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onVisitClick(visit);
-                  }}
-                  className="bg-white border border-indigo-200 rounded px-1.5 py-1 shadow-sm cursor-pointer hover:border-indigo-400 hover:shadow-md transition-all group"
-                >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-[10px] font-mono text-gray-500 bg-gray-100 px-1 rounded">
-                      {new Date(visit.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                    <span className="text-[10px] text-gray-400">
-                      {visit.duration}分
-                    </span>
-                  </div>
-                  <div className="text-xs font-medium text-gray-900 truncate mt-0.5">
-                    {visit.patient.name}
-                  </div>
-                </div>
-              ))}
-              {dayVisits.length === 0 && (
-                <div className="h-full flex items-center justify-center text-gray-300 text-xs opacity-0 hover:opacity-100 select-none pointer-events-none">
-                  空き
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })}
+      {days.map((day) => (
+        <DayCell
+          key={day.toISOString().split('T')[0]}
+          staff={staff}
+          day={day}
+          visits={visits}
+          onVisitClick={onVisitClick}
+          onCellClick={onCellClick}
+        />
+      ))}
     </div>
   );
 }

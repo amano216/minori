@@ -12,7 +12,7 @@ interface VisitDetailPanelProps {
   onCancel?: (visitId: number) => void;
   onComplete?: (visitId: number) => void;
   onReassign?: (visitId: number) => void;
-  onUpdate?: (visitId: number, data: any) => Promise<void>;
+  onUpdate?: (visitId: number, data: { staff_id: number | null; scheduled_at?: string; status?: string }) => Promise<void>;
   onDelete?: (visitId: number) => Promise<void>;
 }
 
