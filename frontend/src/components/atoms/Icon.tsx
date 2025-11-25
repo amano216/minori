@@ -1,13 +1,11 @@
 import * as LucideIcons from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import type { LucideIcon, LucideProps } from 'lucide-react';
 
-interface IconProps {
+interface IconProps extends Omit<LucideProps, 'ref'> {
   name: string;
-  className?: string;
-  size?: number;
 }
 
-export function Icon({ name, className = '', size = 20 }: IconProps) {
+export function Icon({ name, ...props }: IconProps) {
   const IconComponent = (LucideIcons as unknown as Record<string, LucideIcon>)[name];
 
   if (!IconComponent) {
@@ -15,5 +13,5 @@ export function Icon({ name, className = '', size = 20 }: IconProps) {
     return null;
   }
 
-  return <IconComponent className={className} size={size} />;
+  return <IconComponent {...props} />;
 }

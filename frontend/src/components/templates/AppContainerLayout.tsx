@@ -1,6 +1,6 @@
 import { type ReactNode, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Menu, X, LogOut, ChevronRight } from "lucide-react";
 import { Icon } from "../atoms/Icon";
 import { useAuth } from "../../contexts/AuthContext";
 import { APPS, type AppMetadata, type AppRoute } from "../../types/apps";
@@ -14,9 +14,11 @@ interface AppContainerLayoutProps {
 export function AppContainerLayout({ app, routes, children }: AppContainerLayoutProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [isAppMenuOpen, setIsAppMenuOpen] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const location = useLocation();
+  
+  // Desktop: Sub Sidebar open state
+  // Mobile: Drawer open state (for sub-menu)
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -25,168 +27,288 @@ export function AppContainerLayout({ app, routes, children }: AppContainerLayout
 
   const availableApps = APPS.filter((a) => {
     if (!a.requiredRoles) return true;
-    // TODO: ユーザーのロールチェックを実装
     return true;
   });
 
+  // Close menu when route changes
+  // useEffect(() => {
+  //   setIsMenuOpen(false);
+  // }, [location.pathname]);
+
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Mobile/Tablet Sidebar Drawer */}
-      {isSidebarOpen && (
-        <div className="fixed inset-0 z-50 flex">
-          <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" 
-            onClick={() => setIsSidebarOpen(false)}
-          />
-          <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white shadow-xl transform transition-transform duration-300 ease-in-out">
-            <div className="absolute top-0 right-0 -mr-12 pt-2">
-              <button
-                className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-                onClick={() => setIsSidebarOpen(false)}
-              >
-                <X className="h-6 w-6 text-white" />
-              </button>
-            </div>
-            <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
-              <div className="flex-shrink-0 flex items-center px-4 mb-6">
-                <span className="font-bold text-xl text-gray-900">{app.name}</span>
+      {/* =================================================================================
+          Desktop: App Rail (Always Visible)
+          Leftmost vertical bar with app icons.
+         ================================================================================= */}
+      <aside className="hidden md:flex flex-col w-16 bg-gray-900 text-white flex-shrink-0 z-50 items-center py-6 gap-6 fixed left-0 top-0 bottom-0 shadow-xl">
+        {/* Logo */}
+        <div className="w-10 h-10 bg-main rounded-xl flex items-center justify-center shadow-lg shadow-main/20 flex-shrink-0 cursor-pointer hover:scale-105 transition-transform" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+          <span className="font-bold text-lg text-white">M</span>
+        </div>
+
+        {/* App Icons */}
+        <nav className="flex-1 flex flex-col gap-4 w-full px-2 items-center">
+          {availableApps.map((a) => {
+            const isActive = a.id === app.id;
+            return (
+              <div key={a.id} className="group relative flex items-center justify-center">
+                <Link
+                  to={a.path}
+                  onClick={() => {
+                    // If clicking a different app, open the menu to show its routes
+                    // If clicking current app, toggle menu
+                    if (!isActive) {
+                      setIsMenuOpen(true);
+                    } else {
+                      setIsMenuOpen(!isMenuOpen);
+                    }
+                  }}
+                  className={`
+                    w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200
+                    ${isActive 
+                      ? "bg-main text-white shadow-lg shadow-main/30 scale-110" 
+                      : "text-gray-400 hover:bg-gray-800 hover:text-gray-100 hover:scale-105"
+                    }
+                  `}
+                >
+                  <Icon name={a.icon} size={20} strokeWidth={isActive ? 2.5 : 2} />
+                </Link>
+                
+                {/* Tooltip (Only if menu is closed) */}
+                {!isMenuOpen && (
+                  <div className="absolute left-full ml-4 px-2.5 py-1.5 bg-gray-800 text-white text-xs font-medium rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 whitespace-nowrap z-50 shadow-xl border border-gray-700 translate-x-2 group-hover:translate-x-0">
+                    {a.name}
+                    <div className="absolute top-1/2 right-full -mt-1 border-4 border-transparent border-r-gray-800" />
+                  </div>
+                )}
               </div>
-              <nav className="mt-5 px-2 space-y-1">
-                {routes.map((route) => (
-                  <Link
-                    key={route.path}
-                    to={route.path}
-                    onClick={() => setIsSidebarOpen(false)}
-                    className="group flex items-center px-2 py-2 text-base font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                  >
-                    <div className="mr-4 flex-shrink-0 h-6 w-6 text-gray-400 group-hover:text-gray-500">
-                      {route.icon && <Icon name={route.icon} size={24} />}
-                    </div>
-                    {route.label}
-                  </Link>
-                ))}
-              </nav>
+            );
+          })}
+        </nav>
+
+        {/* Bottom Actions */}
+        <div className="flex flex-col gap-4 px-2 w-full items-center mb-2">
+          <button
+            onClick={handleLogout}
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-400 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+            title="ログアウト"
+          >
+            <LogOut size={18} />
+          </button>
+          
+          <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs font-medium border-2 border-gray-800 cursor-default">
+            {user?.email?.charAt(0).toUpperCase() || "U"}
+          </div>
+        </div>
+      </aside>
+
+      {/* =================================================================================
+          Desktop: Sub Sidebar (Slide-in Overlay)
+          Shows the routes for the current app.
+         ================================================================================= */}
+      <aside 
+        className={`
+          hidden md:flex flex-col w-64 bg-white/80 backdrop-blur-2xl border-r border-gray-200/50 fixed top-0 bottom-0 z-40 shadow-[20px_0_40px_-10px_rgba(0,0,0,0.1)]
+          transition-all duration-500 [transition-timing-function:cubic-bezier(0.19,1,0.22,1)]
+          ${isMenuOpen ? "translate-x-16 opacity-100 visible" : "-translate-x-4 opacity-0 invisible"} 
+        `}
+        style={{ left: 0 }}
+      >
+        <div className="h-20 flex items-center px-6 border-b border-gray-100/50">
+          <div>
+            <h1 className="font-bold text-xl text-gray-900 tracking-tight flex items-center gap-2">
+              <Icon name={app.icon} size={20} className="text-main" />
+              {app.name}
+            </h1>
+            <p className="text-xs text-gray-500 mt-0.5 font-medium">{app.description}</p>
+          </div>
+        </div>
+        
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          {routes.map((route) => {
+            const isActive = route.path === "/" 
+              ? location.pathname === "/"
+              : location.pathname.startsWith(route.path);
+              
+            return (
+              <Link
+                key={route.path}
+                to={route.path}
+                onClick={() => {
+                  // Close menu on mobile or desktop overlay when a link is clicked
+                  setIsMenuOpen(false);
+                }}
+                className={`
+                  flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 group
+                  ${isActive
+                    ? "bg-main/10 text-main"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 hover:translate-x-1"
+                  }
+                `}
+              >
+                {route.icon && <Icon name={route.icon} size={18} strokeWidth={isActive ? 2.5 : 2} />}
+                <span className="flex-1">{route.label}</span>
+                {isActive && <ChevronRight size={14} className="opacity-50" />}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="p-4 border-t border-gray-100/50 bg-gray-50/50">
+          <div className="flex items-center gap-3 px-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-gray-500 font-medium mb-0.5">ログイン中</p>
+              <p className="text-sm font-bold text-gray-900 truncate">{user?.email}</p>
             </div>
           </div>
         </div>
-      )}
+      </aside>
+      
+      {/* Desktop Backdrop to close sidebar */}
+      <div 
+        className={`
+          hidden md:block fixed inset-0 z-30 bg-black/5 backdrop-blur-[2px] transition-all duration-500
+          ${isMenuOpen ? "opacity-100 visible" : "opacity-0 invisible"}
+        `}
+        onClick={() => setIsMenuOpen(false)}
+      />
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header - GitHub風 */}
-        <header className="bg-gray-900 text-white border-b border-gray-800 flex-shrink-0">
-          <div className="h-14 px-4 flex items-center justify-between">
-            {/* Left: Menu & App Switcher */}
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setIsSidebarOpen(true)}
-                className="p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-              >
-                <Menu className="h-6 w-6" />
-              </button>
+      {/* =================================================================================
+          Mobile: Header (Top)
+          Shows current app name and hamburger for sub-menu.
+         ================================================================================= */}
+      <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-white/90 backdrop-blur-md border-b border-gray-200 z-40 flex items-center justify-between px-4 transition-all duration-300">
+        <div className="flex items-center gap-3">
+          <span className="font-bold text-lg text-gray-900 flex items-center gap-2">
+            <Icon name={app.icon} size={20} className="text-main" />
+            {app.name}
+          </span>
+        </div>
+        <button
+          onClick={() => setIsMenuOpen(true)}
+          className="p-2 -mr-2 rounded-lg text-gray-600 hover:bg-gray-100 active:scale-95 transition-transform"
+        >
+          <Menu className="h-6 w-6" />
+        </button>
+      </div>
 
-              <div className="relative">
-                <button
-                  onClick={() => setIsAppMenuOpen(!isAppMenuOpen)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded hover:bg-gray-800 transition-colors"
-                >
-                  <Icon name={app.icon} size={18} />
-                  <span className="text-sm font-semibold hidden sm:inline">{app.name}</span>
-                  <Icon name="ChevronDown" size={16} />
-                </button>
-
-                {/* App Menu Dropdown */}
-                {isAppMenuOpen && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setIsAppMenuOpen(false)}
-                    />
-                    <div className="absolute left-0 top-full mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-20">
-                      <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">
-                        アプリケーション
-                      </div>
-                      {availableApps.map((a) => (
-                        <Link
-                          key={a.id}
-                          to={a.path}
-                          onClick={() => setIsAppMenuOpen(false)}
-                          className={`
-                            flex items-center gap-3 px-3 py-2 text-sm no-underline transition-colors
-                            ${
-                              a.id === app.id
-                                ? "bg-gray-100 text-gray-900 font-semibold"
-                                : "text-gray-700 hover:bg-gray-50"
-                            }
-                          `}
-                        >
-                          <Icon name={a.icon} size={18} />
-                          <div>
-                            <div className="font-medium">{a.name}</div>
-                            <div className="text-xs text-gray-500">{a.description}</div>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Right: User Menu */}
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <button
-                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded hover:bg-gray-800 transition-colors"
-                >
-                  <div className="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center text-xs font-semibold">
-                    {user?.email?.charAt(0).toUpperCase() || "U"}
-                  </div>
-                  <span className="text-sm hidden sm:inline">{user?.email}</span>
-                  <Icon name="ChevronDown" size={16} />
-                </button>
-
-                {/* User Menu Dropdown */}
-                {isUserMenuOpen && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setIsUserMenuOpen(false)}
-                    />
-                    <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-20">
-                      <div className="px-3 py-2 text-sm text-gray-900 border-b border-gray-200">
-                        <div className="font-semibold">{user?.email}</div>
-                        <div className="text-xs text-gray-500 mt-0.5">
-                          {/* TODO: ロール表示 */}
-                          管理者
-                        </div>
-                      </div>
-                      <Link
-                        to="/admin/organization"
-                        onClick={() => setIsUserMenuOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 no-underline"
-                      >
-                        <Icon name="Settings" size={16} />
-                        設定
-                      </Link>
-                      <button
-                        onClick={handleLogout}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
-                      >
-                        <Icon name="LogOut" size={16} />
-                        ログアウト
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
+      {/* Mobile: Sub Menu Drawer (Right Side Slide-in) */}
+      <div 
+        className={`
+          md:hidden fixed inset-0 z-50 flex justify-end transition-all duration-500
+          ${isMenuOpen ? "visible" : "invisible pointer-events-none"}
+        `}
+      >
+        <div 
+          className={`
+            fixed inset-0 bg-black/30 backdrop-blur-sm transition-opacity duration-500
+            ${isMenuOpen ? "opacity-100" : "opacity-0"}
+          `}
+          onClick={() => setIsMenuOpen(false)}
+        />
+        <div 
+          className={`
+            relative w-4/5 max-w-xs bg-white/90 backdrop-blur-xl shadow-2xl h-full flex flex-col
+            transition-transform duration-500 [transition-timing-function:cubic-bezier(0.19,1,0.22,1)]
+            ${isMenuOpen ? "translate-x-0" : "translate-x-full"}
+          `}
+        >
+          <div className="flex items-center justify-between p-4 border-b border-gray-100/50">
+            <span className="font-bold text-lg text-gray-900">メニュー</span>
+            <button
+              className="p-2 -mr-2 rounded-full hover:bg-gray-100 text-gray-500"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <X className="h-6 w-6" />
+            </button>
           </div>
-        </header>
+          
+          <div className="flex-1 overflow-y-auto p-4">
+            <nav className="space-y-1">
+              {routes.map((route) => {
+                const isActive = location.pathname.startsWith(route.path);
+                return (
+                  <Link
+                    key={route.path}
+                    to={route.path}
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`group flex items-center px-4 py-3.5 text-base font-medium rounded-xl transition-all duration-200 ${
+                      isActive
+                        ? "bg-main/10 text-main shadow-sm"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    }`}
+                  >
+                    <div className="mr-4 flex-shrink-0">
+                      {route.icon && <Icon name={route.icon} size={22} strokeWidth={isActive ? 2.5 : 2} />}
+                    </div>
+                    {route.label}
+                    {isActive && <ChevronRight className="ml-auto opacity-50" size={18} />}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
 
-        {/* Content Area */}
-        <main className="flex-1 overflow-auto bg-white">
+          <div className="p-4 border-t border-gray-100/50 bg-gray-50/50">
+            <div className="flex items-center gap-3 mb-4 px-2">
+              <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-sm font-bold text-gray-700 shadow-sm">
+                {user?.email?.charAt(0).toUpperCase() || "U"}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-gray-900 truncate">{user?.email}</p>
+                <p className="text-xs text-gray-500">ログイン中</p>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-bold text-red-600 bg-white border border-red-100 rounded-xl hover:bg-red-50 shadow-sm transition-colors"
+            >
+              <LogOut size={18} />
+              ログアウト
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* =================================================================================
+          Mobile: Bottom Navigation (App Switcher)
+          "Mobile First" optimization for quick app switching.
+         ================================================================================= */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-[calc(3.5rem+env(safe-area-inset-bottom))] bg-white border-t border-gray-200 z-40 flex justify-around items-start pt-2 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+        {availableApps.map((a) => {
+          const isActive = a.id === app.id;
+          return (
+            <Link
+              key={a.id}
+              to={a.path}
+              className={`
+                flex flex-col items-center gap-1 px-4 py-1 rounded-xl transition-all duration-200 active:scale-95
+                ${isActive ? "text-main" : "text-gray-400 hover:text-gray-600"}
+              `}
+            >
+              <div className={`
+                relative p-1.5 rounded-xl transition-all duration-300
+                ${isActive ? "bg-main/10 -translate-y-1" : ""}
+              `}>
+                <Icon name={a.icon} size={24} strokeWidth={isActive ? 2.5 : 2} />
+              </div>
+              <span className={`text-[10px] font-bold transition-opacity duration-200 ${isActive ? "opacity-100" : "opacity-70"}`}>
+                {a.name}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* =================================================================================
+          Main Content Area
+         ================================================================================= */}
+      <div className="flex-1 flex flex-col overflow-hidden relative md:pl-16 transition-all duration-300">
+        {/* Spacer for Mobile Header */}
+        <div className="md:hidden h-14 flex-shrink-0" />
+
+        <main className="flex-1 overflow-auto bg-gray-50/50 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
           {children}
         </main>
       </div>
