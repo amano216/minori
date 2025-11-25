@@ -4,19 +4,15 @@ class User < ApplicationRecord
   # ロールシステム（シンプル化）
   SUPER_ADMIN = "super_admin"
   ORGANIZATION_ADMIN = "organization_admin"
-  GROUP_ADMIN = "group_admin"
   STAFF = "staff"
-  VIEWER = "viewer"
 
-  ROLES = [ SUPER_ADMIN, ORGANIZATION_ADMIN, GROUP_ADMIN, STAFF, VIEWER ].freeze
+  ROLES = [ SUPER_ADMIN, ORGANIZATION_ADMIN, STAFF ].freeze
 
   # ロールレベル（権限の強さ）
   ROLE_LEVELS = {
     SUPER_ADMIN => 100,
     ORGANIZATION_ADMIN => 50,
-    GROUP_ADMIN => 30,
-    STAFF => 10,
-    VIEWER => 1
+    STAFF => 10
   }.freeze
 
   # Staff統合: 資格とステータス
@@ -59,16 +55,8 @@ class User < ApplicationRecord
     role == ORGANIZATION_ADMIN
   end
 
-  def group_admin?
-    role == GROUP_ADMIN
-  end
-
   def staff?
     role == STAFF
-  end
-
-  def viewer?
-    role == VIEWER
   end
 
   # 後方互換性のためのエイリアス
