@@ -3,17 +3,17 @@
 
 # スタッフの重複チェック
 staff_conflicts = []
-Visit.where.not(status: ['cancelled', 'completed']).where.not(staff_id: nil).each do |visit|
+Visit.where.not(status: [ 'cancelled', 'completed' ]).where.not(staff_id: nil).each do |visit|
   conflicting = Visit.where(staff_id: visit.staff_id)
     .where.not(id: visit.id)
-    .where.not(status: ['cancelled', 'completed'])
-    .where('scheduled_at < ? AND scheduled_at + (duration * interval \'1 minute\') > ?', 
+    .where.not(status: [ 'cancelled', 'completed' ])
+    .where('scheduled_at < ? AND scheduled_at + (duration * interval \'1 minute\') > ?',
            visit.scheduled_at + visit.duration.minutes, visit.scheduled_at)
-  
+
   if conflicting.exists?
     staff_conflicts << {
-      visit_id: visit.id, 
-      staff_id: visit.staff_id, 
+      visit_id: visit.id,
+      staff_id: visit.staff_id,
       patient_name: visit.patient.name,
       time: visit.scheduled_at.strftime('%Y-%m-%d %H:%M'),
       duration: visit.duration
@@ -23,16 +23,16 @@ end
 
 # 患者の重複チェック
 patient_conflicts = []
-Visit.where.not(status: ['cancelled', 'completed']).each do |visit|
+Visit.where.not(status: [ 'cancelled', 'completed' ]).each do |visit|
   conflicting = Visit.where(patient_id: visit.patient_id)
     .where.not(id: visit.id)
-    .where.not(status: ['cancelled', 'completed'])
-    .where('scheduled_at < ? AND scheduled_at + (duration * interval \'1 minute\') > ?', 
+    .where.not(status: [ 'cancelled', 'completed' ])
+    .where('scheduled_at < ? AND scheduled_at + (duration * interval \'1 minute\') > ?',
            visit.scheduled_at + visit.duration.minutes, visit.scheduled_at)
-  
+
   if conflicting.exists?
     patient_conflicts << {
-      visit_id: visit.id, 
+      visit_id: visit.id,
       patient_id: visit.patient_id,
       patient_name: visit.patient.name,
       time: visit.scheduled_at.strftime('%Y-%m-%d %H:%M'),

@@ -1,6 +1,6 @@
 module Api
   class PlanningLanesController < ApplicationController
-    before_action :set_planning_lane, only: [:update, :destroy]
+    before_action :set_planning_lane, only: [ :update, :destroy ]
 
     def index
       render json: Current.organization.planning_lanes.order(:position)

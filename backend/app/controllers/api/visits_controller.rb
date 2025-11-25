@@ -3,7 +3,7 @@
 module Api
   class VisitsController < ApplicationController
     include AuthorizationVisitSync
-    before_action :set_visit, only: [:show, :update, :destroy, :cancel, :complete]
+    before_action :set_visit, only: [ :show, :update, :destroy, :cancel, :complete ]
 
     def index
       @visits = scoped_visits.includes(:staff, :patient)
