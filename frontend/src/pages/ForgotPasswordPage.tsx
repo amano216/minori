@@ -7,7 +7,6 @@ import { Input } from '../components/atoms/Input';
 import { Label } from '../components/atoms/Label';
 import { Card } from '../components/molecules/Card';
 import { useToast } from '../contexts/ToastContext';
-import { getFullApiUrl } from '../api/client';
 
 export function ForgotPasswordPage() {
   const { showToast } = useToast();
@@ -42,7 +41,7 @@ export function ForgotPasswordPage() {
       } else {
         showToast('error', data.error);
       }
-    } catch (err) {
+    } catch {
       showToast('error', 'エラーが発生しました');
     } finally {
       setIsLoading(false);

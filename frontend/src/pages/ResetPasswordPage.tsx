@@ -7,7 +7,6 @@ import { Input } from '../components/atoms/Input';
 import { Label } from '../components/atoms/Label';
 import { Card } from '../components/molecules/Card';
 import { useToast } from '../contexts/ToastContext';
-import { getFullApiUrl } from '../api/client';
 
 export function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -64,7 +63,7 @@ export function ResetPasswordPage() {
       } else {
         setError(data.error || 'リセットに失敗しました');
       }
-    } catch (err) {
+    } catch {
       setError('エラーが発生しました');
     } finally {
       setIsLoading(false);

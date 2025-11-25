@@ -55,11 +55,11 @@ export function TwoFactorPage() {
         // Save token and login
         localStorage.setItem('minori_auth_token', data.token);
         showToast('success', 'ログインしました');
-        window.location.href = '/schedule';
+        navigate('/schedule');
       } else {
         setError(data.error || '認証に失敗しました');
       }
-    } catch (err) {
+    } catch {
       setError('エラーが発生しました');
     } finally {
       setIsLoading(false);
@@ -85,7 +85,7 @@ export function TwoFactorPage() {
       if (response.ok) {
         showToast('success', '認証コードを再送信しました');
       }
-    } catch (err) {
+    } catch {
       showToast('error', '再送信に失敗しました');
     }
   };

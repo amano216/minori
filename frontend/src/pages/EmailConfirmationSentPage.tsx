@@ -4,7 +4,6 @@ import { Button } from '../components/atoms/Button';
 import { Card } from '../components/molecules/Card';
 import { useToast } from '../contexts/ToastContext';
 import { useState } from 'react';
-import { getFullApiUrl } from '../api/client';
 
 export function EmailConfirmationSentPage() {
   const location = useLocation();
@@ -37,7 +36,7 @@ export function EmailConfirmationSentPage() {
       } else {
         showToast('error', data.error);
       }
-    } catch (err) {
+    } catch {
       showToast('error', 'エラーが発生しました');
     } finally {
       setIsResending(false);

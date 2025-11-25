@@ -4,7 +4,6 @@ import { CheckCircle, Mail, RefreshCw, Sparkles } from 'lucide-react';
 import { Button } from '../components/atoms/Button';
 import { Card } from '../components/molecules/Card';
 import { useToast } from '../contexts/ToastContext';
-import { getFullApiUrl } from '../api/client';
 
 export function EmailConfirmationPage() {
   const [searchParams] = useSearchParams();
@@ -17,46 +16,46 @@ export function EmailConfirmationPage() {
   const token = searchParams.get('token');
 
   useEffect(() => {
+    const confirmEmail = async () => {
+      try {
+        const response = await fetch('/api/auth/confirm-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          setStatus('success');
+          setMessage(data.message);
+          
+          // Save token and redirect
+          localStorage.setItem('minori_auth_token', data.token);
+          showToast('success', 'メールアドレスを確認しました！');
+          
+          setTimeout(() => {
+            window.location.href = '/onboarding';
+          }, 2000);
+        } else {
+          setStatus('error');
+          setMessage(data.error || '確認に失敗しました');
+        }
+      } catch {
+        setStatus('error');
+        setMessage('エラーが発生しました');
+      }
+    };
+
     if (token) {
       confirmEmail();
     } else {
       setStatus('error');
       setMessage('無効な確認リンクです');
     }
-  }, [token]);
-
-  const confirmEmail = async () => {
-    try {
-      const response = await fetch('/api/auth/confirm-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setStatus('success');
-        setMessage(data.message);
-        
-        // Save token and redirect
-        localStorage.setItem('minori_auth_token', data.token);
-        showToast('success', 'メールアドレスを確認しました！');
-        
-        setTimeout(() => {
-          window.location.href = '/onboarding';
-        }, 2000);
-      } else {
-        setStatus('error');
-        setMessage(data.error || '確認に失敗しました');
-      }
-    } catch (err) {
-      setStatus('error');
-      setMessage('エラーが発生しました');
-    }
-  };
+  }, [token, showToast]);
 
   const resendConfirmation = async () => {
     if (!email) {
@@ -82,7 +81,7 @@ export function EmailConfirmationPage() {
       } else {
         showToast('error', data.error);
       }
-    } catch (err) {
+    } catch {
       showToast('error', 'エラーが発生しました');
     } finally {
       setIsResending(false);
