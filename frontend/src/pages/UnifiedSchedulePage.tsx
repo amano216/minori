@@ -187,7 +187,8 @@ export function UnifiedSchedulePage() {
     if (staffs.length > 0) {
       loadScheduleData();
     }
-  }, [loadScheduleData, staffs]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDate, viewMode, filters.staffIds, filters.patientIds, staffs.length]);
 
   const handlePrevious = () => {
     if (viewMode === 'day') {

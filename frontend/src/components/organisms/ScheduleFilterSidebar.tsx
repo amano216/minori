@@ -56,6 +56,7 @@ export function ScheduleFilterSidebar({
         console.error('Failed to parse saved filters', e);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Save filters to localStorage when they change
