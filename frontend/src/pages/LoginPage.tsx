@@ -9,7 +9,6 @@ import { Card } from '../components/molecules/Card';
 import { Sparkles, Mail, Lock, ArrowRight } from 'lucide-react';
 
 export function LoginPage() {
-  const { login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -50,7 +49,6 @@ export function LoginPage() {
 
       // Normal login - save token and redirect
       localStorage.setItem('token', data.token);
-      login(data.user);
       navigate('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'ログインに失敗しました');

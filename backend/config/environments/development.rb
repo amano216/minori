@@ -29,9 +29,6 @@ Rails.application.configure do
   # Action Mailer settings
   config.action_mailer.raise_delivery_errors = true
   config.action_mailer.perform_caching = false
-  
-  # For Docker/Codespaces: use test mode to log emails instead of opening browser
-  config.action_mailer.delivery_method = :test
   config.action_mailer.perform_deliveries = true
   
   # Set URL for email links
@@ -42,8 +39,23 @@ Rails.application.configure do
     protocol: URI.parse(frontend_url).scheme
   }
   
-  # Log email content
-  config.action_mailer.logger = Logger.new($stdout)
+  # Use SMTP if configured, otherwise use test mode (logs only)
+  if ENV["SMTP_ADDRESS"].present?
+    config.action_mailer.delivery_method = :smtp
+    config.action_mailer.smtp_settings = {
+      address: ENV.fetch("SMTP_ADDRESS", "smtp.gmail.com"),
+      port: ENV.fetch("SMTP_PORT", 587).to_i,
+      domain: ENV.fetch("SMTP_DOMAIN", "gmail.com"),
+      user_name: ENV["SMTP_USERNAME"],
+      password: ENV["SMTP_PASSWORD"],
+      authentication: ENV.fetch("SMTP_AUTHENTICATION", "plain"),
+      enable_starttls_auto: ENV.fetch("SMTP_ENABLE_STARTTLS", "true") == "true"
+    }
+  else
+    # For Docker/Codespaces: use test mode to log emails
+    config.action_mailer.delivery_method = :test
+    config.action_mailer.logger = Logger.new($stdout)
+  end
 
   # Print deprecation notices to the Rails logger.
   config.active_support.deprecation = :log
