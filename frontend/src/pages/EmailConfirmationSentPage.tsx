@@ -4,6 +4,7 @@ import { Button } from '../components/atoms/Button';
 import { Card } from '../components/molecules/Card';
 import { useToast } from '../contexts/ToastContext';
 import { useState } from 'react';
+import { getFullApiUrl } from '../api/client';
 
 export function EmailConfirmationSentPage() {
   const location = useLocation();
@@ -21,7 +22,7 @@ export function EmailConfirmationSentPage() {
     setIsResending(true);
 
     try {
-      const response = await fetch('/api/auth/resend-confirmation', {
+      const response = await fetch(getFullApiUrl('/api/auth/resend-confirmation'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

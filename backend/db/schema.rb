@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_25_123115) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_25_212425) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -125,6 +125,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_25_123115) do
     t.string "email", null: false
     t.datetime "email_confirmed_at"
     t.datetime "last_otp_at"
+    t.string "name"
     t.bigint "organization_id"
     t.boolean "otp_enabled", default: false
     t.string "otp_secret"
