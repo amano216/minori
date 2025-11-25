@@ -4,6 +4,10 @@ class User < ApplicationRecord
   # 旧ロールシステム（後方互換性のため残す）
   ROLES = %w[admin staff].freeze
 
+  # Staff統合: 資格とステータス
+  QUALIFICATIONS = %w[nurse physical_therapist occupational_therapist speech_therapist care_worker].freeze
+  STAFF_STATUSES = %w[active inactive on_leave].freeze
+
   # Organization Concept
   belongs_to :organization, optional: true
   has_many :organization_memberships, dependent: :destroy
@@ -17,11 +21,20 @@ class User < ApplicationRecord
   has_many :group_memberships, dependent: :destroy
   has_many :groups, through: :group_memberships
 
+  # Group (Staff統合: 直接所属)
+  belongs_to :group, optional: true
+
+  # Visits (Staff統合)
+  has_many :visits, dependent: :nullify
+
   validates :email, presence: true,
                     uniqueness: { case_sensitive: false },
                     format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :password, length: { minimum: 8 }, if: -> { new_record? || !password.nil? }
   validates :role, presence: true, inclusion: { in: ROLES }
+  validates :staff_status, inclusion: { in: STAFF_STATUSES }, allow_nil: true
+  validate :validate_qualifications
+  validate :validate_available_hours
 
   before_save :downcase_email
   before_create :generate_confirmation_token
@@ -122,6 +135,15 @@ class User < ApplicationRecord
     update(last_otp_at: Time.current, otp_secret: nil)
   end
 
+  # Staff統合: スコープ
+  scope :active_staff, -> { where(staff_status: "active") }
+  scope :with_qualification, ->(qual) { where("qualifications @> ?", [ qual ].to_json) }
+
+  # Staff統合: ヘルパーメソッド
+  def staff_active?
+    staff_status == "active"
+  end
+
   private
 
   def downcase_email
@@ -130,5 +152,20 @@ class User < ApplicationRecord
 
   def generate_confirmation_token
     self.confirmation_token = SecureRandom.urlsafe_base64(32)
+  end
+
+  def validate_qualifications
+    return if qualifications.blank?
+
+    invalid = qualifications - QUALIFICATIONS
+    errors.add(:qualifications, "contains invalid values: #{invalid.join(', ')}") if invalid.any?
+  end
+
+  def validate_available_hours
+    return if available_hours.blank?
+
+    valid_days = %w[monday tuesday wednesday thursday friday saturday sunday]
+    invalid_days = available_hours.keys - valid_days
+    errors.add(:available_hours, "contains invalid days: #{invalid_days.join(', ')}") if invalid_days.any?
   end
 end

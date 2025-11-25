@@ -6,7 +6,6 @@ import { ToastContainer } from './components/molecules/ToastContainer'
 import { PrivateRoute } from './components/PrivateRoute'
 import { ScheduleApp } from './apps/ScheduleApp'
 import { PatientsApp } from './apps/PatientsApp'
-import { StaffApp } from './apps/StaffApp'
 import { AdminApp } from './apps/AdminApp'
 import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
@@ -61,12 +60,6 @@ function App() {
             <Route
               path="/patients/*"
               element={<PrivateRoute><PatientsApp /></PrivateRoute>}
-            />
-
-            {/* Staff App */}
-            <Route
-              path="/staff/*"
-              element={<PrivateRoute><StaffApp /></PrivateRoute>}
             />
 
             {/* Admin App */}

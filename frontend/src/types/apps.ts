@@ -29,14 +29,6 @@ export const APPS: AppMetadata[] = [
     icon: "Users",
   },
   {
-    id: "staff",
-    name: "スタッフ管理",
-    description: "スタッフ情報の管理",
-    path: "/staff",
-    icon: "UserCog",
-    requiredRoles: ["organization_admin", "group_admin"],
-  },
-  {
     id: "admin",
     name: "管理",
     description: "組織・ユーザー・権限の管理",
@@ -55,11 +47,6 @@ export const SCHEDULE_ROUTES: AppRoute[] = [
 // Patients App Routes
 export const PATIENTS_ROUTES: AppRoute[] = [
   { path: "/patients/list", label: "患者一覧", icon: "Users" },
-];
-
-// Staff App Routes
-export const STAFF_ROUTES: AppRoute[] = [
-  { path: "/staff/list", label: "スタッフ一覧", icon: "UserCog" },
 ];
 
 // Admin App Routes

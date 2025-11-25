@@ -3,14 +3,15 @@
 class Visit < ApplicationRecord
   STATUSES = %w[scheduled in_progress completed cancelled unassigned].freeze
 
-  belongs_to :staff, optional: true
+  belongs_to :user, optional: true
   belongs_to :patient
   belongs_to :planning_lane, optional: true
+  belongs_to :organization, optional: true
 
   validates :scheduled_at, presence: true
   validates :duration, presence: true, numericality: { greater_than: 0 }
   validates :status, inclusion: { in: STATUSES }
-  validate :staff_availability, if: -> { staff_id.present? && scheduled_at.present? }
+  validate :user_availability, if: -> { user_id.present? && scheduled_at.present? }
   validate :patient_availability, if: -> { patient_id.present? && scheduled_at.present? }
 
   scope :scheduled, -> { where(status: "scheduled") }
@@ -18,10 +19,18 @@ class Visit < ApplicationRecord
   scope :completed, -> { where(status: "completed") }
   scope :cancelled, -> { where(status: "cancelled") }
   scope :unassigned, -> { where(status: "unassigned") }
-  scope :for_staff, ->(staff_id) { where(staff_id: staff_id) }
+  scope :for_user, ->(user_id) { where(user_id: user_id) }
+  scope :for_staff, ->(user_id) { where(user_id: user_id) } # エイリアス（後方互換性）
   scope :for_patient, ->(patient_id) { where(patient_id: patient_id) }
   scope :on_date, ->(date) { where(scheduled_at: date.beginning_of_day..date.end_of_day) }
   scope :upcoming, -> { where("scheduled_at >= ?", Time.current).order(:scheduled_at) }
+
+  # 後方互換性のためのエイリアス
+  alias_attribute :staff_id, :user_id
+
+  def staff
+    user
+  end
 
   def end_at
     scheduled_at + duration.minutes
@@ -40,15 +49,15 @@ class Visit < ApplicationRecord
   end
 
   def unassign!
-    update!(staff_id: nil, status: "unassigned")
+    update!(user_id: nil, status: "unassigned")
   end
 
   private
 
-  def staff_availability
-    return unless staff_id_changed? || scheduled_at_changed? || duration_changed?
+  def user_availability
+    return unless user_id_changed? || scheduled_at_changed? || duration_changed?
 
-    conflicting = Visit.where(staff_id: staff_id)
+    conflicting = Visit.where(user_id: user_id)
                        .where.not(id: id)
                        .where.not(status: %w[cancelled completed])
                        .where("scheduled_at < ? AND scheduled_at + (duration * interval '1 minute') > ?",

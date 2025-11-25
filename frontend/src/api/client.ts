@@ -90,7 +90,7 @@ export async function fetchCurrentUser(): Promise<{ user: User }> {
   return apiRequest('/api/auth/me');
 }
 
-// Staff API
+// Staff API (Userモデルに統合済み - 後方互換性のためStaff APIを維持)
 export interface Staff {
   id: number;
   name: string;
@@ -98,6 +98,7 @@ export interface Staff {
   qualifications: string[];
   available_hours: Record<string, { start: string; end: string }>;
   status: 'active' | 'inactive' | 'on_leave';
+  staff_status?: 'active' | 'inactive' | 'on_leave'; // バックエンドからの応答用
   created_at: string;
   updated_at: string;
   group_id?: number | null;
@@ -109,6 +110,7 @@ export interface StaffInput {
   qualifications?: string[];
   available_hours?: Record<string, { start: string; end: string }>;
   status?: string;
+  staff_status?: string;
   group_id?: number | null;
 }
 
@@ -117,25 +119,39 @@ export async function fetchStaffs(params?: { status?: string; qualification?: st
   if (params?.status) query.append('status', params.status);
   if (params?.qualification) query.append('qualification', params.qualification);
   const queryString = query.toString();
-  return apiRequest(`/api/staffs${queryString ? `?${queryString}` : ''}`);
+  const staffs = await apiRequest<Staff[]>(`/api/staffs${queryString ? `?${queryString}` : ''}`);
+  // staff_status を status にマッピング
+  return staffs.map(s => ({ ...s, status: s.staff_status || s.status }));
 }
 
 export async function fetchStaff(id: number): Promise<Staff> {
-  return apiRequest(`/api/staffs/${id}`);
+  const staff = await apiRequest<Staff>(`/api/staffs/${id}`);
+  return { ...staff, status: staff.staff_status || staff.status };
 }
 
 export async function createStaff(staff: StaffInput): Promise<Staff> {
-  return apiRequest('/api/staffs', {
+  // status を staff_status にマッピング
+  const input = { ...staff, staff_status: staff.status || staff.staff_status };
+  delete (input as Record<string, unknown>).status;
+  const result = await apiRequest<Staff>('/api/staffs', {
     method: 'POST',
-    body: JSON.stringify({ staff }),
+    body: JSON.stringify({ staff: input }),
   });
+  return { ...result, status: result.staff_status || result.status };
 }
 
 export async function updateStaff(id: number, staff: Partial<StaffInput>): Promise<Staff> {
-  return apiRequest(`/api/staffs/${id}`, {
+  // status を staff_status にマッピング
+  const input = { ...staff };
+  if (input.status) {
+    (input as Record<string, unknown>).staff_status = input.status;
+    delete (input as Record<string, unknown>).status;
+  }
+  const result = await apiRequest<Staff>(`/api/staffs/${id}`, {
     method: 'PUT',
-    body: JSON.stringify({ staff }),
+    body: JSON.stringify({ staff: input }),
   });
+  return { ...result, status: result.staff_status || result.status };
 }
 
 export async function deleteStaff(id: number): Promise<void> {

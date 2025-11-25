@@ -1,10 +1,31 @@
 import { useState, useEffect } from 'react';
 import { organizationApi } from '../api/organizationApi';
-import type { User } from '../types/organization';
+import type { User, Group } from '../types/organization';
 import { Icon } from '../components/atoms/Icon';
+
+const QUALIFICATION_OPTIONS = [
+  { value: 'nurse', label: '看護師' },
+  { value: 'physical_therapist', label: '理学療法士' },
+  { value: 'occupational_therapist', label: '作業療法士' },
+  { value: 'speech_therapist', label: '言語聴覚士' },
+  { value: 'care_worker', label: '介護福祉士' },
+];
+
+const STATUS_OPTIONS = [
+  { value: 'active', label: '在籍' },
+  { value: 'inactive', label: '退職' },
+  { value: 'on_leave', label: '休職' },
+];
+
+const STATUS_COLORS: Record<string, string> = {
+  active: 'bg-green-100 text-green-800',
+  inactive: 'bg-gray-100 text-gray-800',
+  on_leave: 'bg-yellow-100 text-yellow-800',
+};
 
 export function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -14,18 +35,25 @@ export function UsersPage() {
     password: '',
     password_confirmation: '',
     name: '',
-    role: 'staff'
+    role: 'staff',
+    qualifications: [] as string[],
+    staff_status: 'active' as 'active' | 'inactive' | 'on_leave',
+    group_id: null as number | null,
   });
 
   useEffect(() => {
-    loadUsers();
+    loadData();
   }, []);
 
-  const loadUsers = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
-      const data = await organizationApi.getUsers();
-      setUsers(data);
+      const [usersData, groupsData] = await Promise.all([
+        organizationApi.getUsers(),
+        organizationApi.getGroups().catch(() => []), // グループがなくてもエラーにしない
+      ]);
+      setUsers(usersData);
+      setGroups(groupsData);
       setError(null);
     } catch (err) {
       const error = err as { response?: { data?: { error?: string } } };
@@ -43,8 +71,11 @@ export function UsersPage() {
         password: '',
         password_confirmation: '',
         name: user.name || '',
-        role: user.role
-      });
+        role: user.role,
+        qualifications: user.qualifications || [],
+        staff_status: user.staff_status || 'active',
+        group_id: user.group_id || null,
+      } as typeof formData);
     } else {
       setEditingUser(null);
       setFormData({
@@ -52,7 +83,10 @@ export function UsersPage() {
         password: '',
         password_confirmation: '',
         name: '',
-        role: 'staff'
+        role: 'staff',
+        qualifications: [],
+        staff_status: 'active' as 'active' | 'inactive' | 'on_leave',
+        group_id: null,
       });
     }
     setIsModalOpen(true);
@@ -64,6 +98,15 @@ export function UsersPage() {
     setError(null);
   };
 
+  const handleQualificationChange = (qualification: string) => {
+    setFormData(prev => {
+      const newQualifications = prev.qualifications.includes(qualification)
+        ? prev.qualifications.filter(q => q !== qualification)
+        : [...prev.qualifications, qualification];
+      return { ...prev, qualifications: newQualifications };
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -73,7 +116,7 @@ export function UsersPage() {
       } else {
         await organizationApi.createUser(formData);
       }
-      await loadUsers();
+      await loadData();
       handleCloseModal();
     } catch (err) {
       const error = err as { response?: { data?: { errors?: string[] } } };
@@ -89,13 +132,25 @@ export function UsersPage() {
     try {
       setLoading(true);
       await organizationApi.deleteUser(id);
-      await loadUsers();
+      await loadData();
     } catch (err) {
       const error = err as { response?: { data?: { error?: string } } };
       setError(error.response?.data?.error || '削除に失敗しました');
     } finally {
       setLoading(false);
     }
+  };
+
+  const getQualificationLabels = (qualifications?: string[]) => {
+    if (!qualifications || qualifications.length === 0) return '-';
+    return qualifications
+      .map(q => QUALIFICATION_OPTIONS.find(opt => opt.value === q)?.label || q)
+      .join(', ');
+  };
+
+  const getGroupName = (groupId?: number | null) => {
+    if (!groupId) return '-';
+    return groups.find(g => g.id === groupId)?.name || '-';
   };
 
   if (loading && users.length === 0) {
@@ -129,27 +184,37 @@ export function UsersPage() {
         <table className="w-full">
           <thead className="bg-bg-base border-b border-border">
             <tr>
-              <th className="px-6 py-3 text-left text-sm font-medium text-text-primary">メールアドレス</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-text-primary">名前</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-text-primary">ロール</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-text-primary">作成日</th>
-              <th className="px-6 py-3 text-right text-sm font-medium text-text-primary">操作</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">名前</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">メールアドレス</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">ロール</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">ステータス</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">資格</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">グループ</th>
+              <th className="px-4 py-3 text-right text-sm font-medium text-text-primary">操作</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {users.map((user) => (
               <tr key={user.id} className="hover:bg-bg-base transition-colors">
-                <td className="px-6 py-4 text-sm text-text-primary">{user.email}</td>
-                <td className="px-6 py-4 text-sm text-text-primary">{user.name || '-'}</td>
-                <td className="px-6 py-4 text-sm">
+                <td className="px-4 py-4 text-sm text-text-primary font-medium">{user.name || '-'}</td>
+                <td className="px-4 py-4 text-sm text-text-primary">{user.email}</td>
+                <td className="px-4 py-4 text-sm">
                   <span className="px-2 py-1 bg-primary-50 text-main rounded text-xs">
-                    {user.role}
+                    {user.role === 'admin' ? '管理者' : 'スタッフ'}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-sm text-text-grey">
-                  {new Date(user.created_at).toLocaleDateString('ja-JP')}
+                <td className="px-4 py-4 text-sm">
+                  <span className={`px-2 py-1 rounded text-xs ${STATUS_COLORS[user.staff_status || 'active']}`}>
+                    {STATUS_OPTIONS.find(s => s.value === (user.staff_status || 'active'))?.label}
+                  </span>
                 </td>
-                <td className="px-6 py-4 text-sm text-right">
+                <td className="px-4 py-4 text-sm text-text-grey">
+                  {getQualificationLabels(user.qualifications)}
+                </td>
+                <td className="px-4 py-4 text-sm text-text-grey">
+                  {getGroupName(user.group_id)}
+                </td>
+                <td className="px-4 py-4 text-sm text-right">
                   <button
                     onClick={() => handleOpenModal(user)}
                     className="text-main hover:text-main-dark mr-3"
@@ -177,67 +242,142 @@ export function UsersPage() {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
+          <div className="bg-white rounded-lg p-6 w-full max-w-lg my-8">
             <h2 className="text-xl font-bold text-text-primary mb-4">
               {editingUser ? 'ユーザー編集' : '新規ユーザー'}
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
-                  メールアドレス
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-main"
-                  required
-                />
+              {/* 基本情報 */}
+              <div className="border-b pb-4">
+                <h3 className="text-sm font-semibold text-text-grey mb-3">基本情報</h3>
+                
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-text-primary mb-1">
+                      名前 <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-main"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-text-primary mb-1">
+                      メールアドレス <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-main"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-text-primary mb-1">
+                      パスワード {editingUser && '（変更する場合のみ入力）'}
+                    </label>
+                    <input
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-main"
+                      required={!editingUser}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-text-primary mb-1">
+                        ロール
+                      </label>
+                      <select
+                        value={formData.role}
+                        onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                        className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-main"
+                        required
+                      >
+                        <option value="staff">スタッフ</option>
+                        <option value="admin">管理者</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-text-primary mb-1">
+                        ステータス
+                      </label>
+                      <select
+                        value={formData.staff_status}
+                        onChange={(e) => setFormData({ ...formData, staff_status: e.target.value as 'active' | 'inactive' | 'on_leave' })}
+                        className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-main"
+                      >
+                        {STATUS_OPTIONS.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
-                  名前
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-main"
-                />
+              {/* スタッフ情報 */}
+              <div className="border-b pb-4">
+                <h3 className="text-sm font-semibold text-text-grey mb-3">スタッフ情報</h3>
+                
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-text-primary mb-2">
+                      資格
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {QUALIFICATION_OPTIONS.map(opt => (
+                        <label
+                          key={opt.value}
+                          className={`px-3 py-1.5 rounded border cursor-pointer text-sm transition-colors ${
+                            formData.qualifications.includes(opt.value)
+                              ? 'bg-main text-white border-main'
+                              : 'bg-white text-text-primary border-border hover:border-main'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.qualifications.includes(opt.value)}
+                            onChange={() => handleQualificationChange(opt.value)}
+                            className="sr-only"
+                          />
+                          {opt.label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-text-primary mb-1">
+                      所属グループ
+                    </label>
+                    <select
+                      value={formData.group_id || ''}
+                      onChange={(e) => setFormData({ ...formData, group_id: e.target.value ? Number(e.target.value) : null })}
+                      className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-main"
+                    >
+                      <option value="">未所属</option>
+                      {groups.map(group => (
+                        <option key={group.id} value={group.id}>{group.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
-                  パスワード {editingUser && '（変更する場合のみ入力）'}
-                </label>
-                <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-main"
-                  required={!editingUser}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
-                  ロール
-                </label>
-                <select
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-main"
-                  required
-                >
-                  <option value="staff">スタッフ</option>
-                  <option value="admin">管理者</option>
-                </select>
-              </div>
-
-              <div className="flex gap-2 pt-4">
+              {/* ボタン */}
+              <div className="flex gap-2 pt-2">
                 <button
                   type="submit"
                   disabled={loading}
