@@ -25,8 +25,14 @@ class Visit < ApplicationRecord
   scope :on_date, ->(date) { where(scheduled_at: date.beginning_of_day..date.end_of_day) }
   scope :upcoming, -> { where("scheduled_at >= ?", Time.current).order(:scheduled_at) }
 
-  # 後方互換性のためのエイリアス
-  alias_attribute :staff_id, :user_id
+  # 後方互換性のためのメソッド（staff_idはuser_idのエイリアス）
+  def staff_id
+    user_id
+  end
+
+  def staff_id=(value)
+    self.user_id = value
+  end
 
   def staff
     user
