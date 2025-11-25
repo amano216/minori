@@ -83,7 +83,8 @@ export function NewVisitPanel({
       ]);
       setStaffs(staffsData);
       setPatients(patientsData);
-    } catch {
+    } catch (err: unknown) {
+      console.error('Failed to load master data:', err);
       setError('マスターデータの取得に失敗しました');
     } finally {
       setLoading(false);

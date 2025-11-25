@@ -204,11 +204,11 @@ export function UnifiedSchedulePage() {
     navigate(`/schedule/visits/${visitId}/edit`);
   };
 
+  // Note: handleVisitReassign is kept for backward compatibility with VisitDetailPanel's onReassign prop
+  // The actual reassignment logic is handled through onUpdate callback
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleVisitReassign = (_visitId: number) => {
-    // This is now handled inside VisitDetailPanel via onUpdate
-    // But we keep it for backward compatibility if needed, or just alert
-    // alert('再割当機能は実装予定です');
+    // This function is intentionally empty - reassignment is handled via onUpdate
   };
 
   const handleVisitUpdate = async (visitId: number, data: { staff_id: number | null; scheduled_at?: string; status?: string }) => {

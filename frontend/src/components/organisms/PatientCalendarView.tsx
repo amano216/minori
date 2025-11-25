@@ -247,7 +247,8 @@ export default function PatientCalendarView({
         color: LANE_COLORS[lanes.length % LANE_COLORS.length]
       };
       setLanes([...lanes, mappedLane]);
-    } catch {
+    } catch (err: unknown) {
+      console.error('Failed to create lane:', err);
       alert('レーンの作成に失敗しました');
     }
   };
@@ -257,7 +258,8 @@ export default function PatientCalendarView({
     try {
       await deletePlanningLane(laneId);
       setLanes(lanes.filter(l => l.id !== laneId));
-    } catch {
+    } catch (err: unknown) {
+      console.error('Failed to delete lane:', err);
       alert('レーンの削除に失敗しました');
     }
   };
@@ -266,7 +268,8 @@ export default function PatientCalendarView({
     try {
       const updated = await updatePlanningLane(laneId, newLabel);
       setLanes(lanes.map(l => l.id === laneId ? { ...l, name: updated.name, label: updated.name } : l));
-    } catch {
+    } catch (err: unknown) {
+      console.error('Failed to rename lane:', err);
       alert('レーンの名称変更に失敗しました');
     }
   };
