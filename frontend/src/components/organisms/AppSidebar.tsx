@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Icon } from "../atoms/Icon";
 import type { AppRoute } from "../../types/apps";
@@ -18,24 +19,44 @@ const COLOR_CLASSES: Record<string, { bg: string; text: string }> = {
 export function AppSidebar({ routes, appName, appColor }: AppSidebarProps) {
   const location = useLocation();
   const colors = COLOR_CLASSES[appColor] || COLOR_CLASSES.blue;
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const isActive = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(path + "/");
   };
 
   return (
-    <aside className="w-56 bg-white border-r border-border flex-shrink-0">
-      <div className="p-4 border-b border-border">
-        <Link to="/" className="flex items-center gap-2 text-text-grey hover:text-text-primary transition-colors no-underline">
-          <Icon name="ChevronLeft" size={16} />
-          <span className="text-sm">アプリ一覧に戻る</span>
-        </Link>
+    <aside
+      className={`
+        bg-white border-r border-border flex-shrink-0
+        transition-all duration-300 ease-in-out
+        ${isExpanded ? "w-56" : "w-16"}
+      `}
+      onMouseEnter={() => setIsExpanded(true)}
+      onMouseLeave={() => setIsExpanded(false)}
+      onClick={() => setIsExpanded(!isExpanded)}
+    >
+      {/* Header - アプリ一覧に戻る */}
+      <div className={`h-14 border-b border-border flex items-center ${isExpanded ? "px-4" : "px-2 justify-center"}`}>
+        {isExpanded ? (
+          <Link to="/" className="flex items-center gap-2 text-text-grey hover:text-text-primary transition-colors no-underline">
+            <Icon name="ChevronLeft" size={16} />
+            <span className="text-sm whitespace-nowrap">アプリ一覧</span>
+          </Link>
+        ) : (
+          <Icon name="ChevronLeft" size={20} className="text-text-grey" />
+        )}
       </div>
 
-      <div className="p-3">
-        <h2 className={`text-lg font-bold ${colors.text} mb-4 px-3`}>
-          {appName}
-        </h2>
+      {/* Navigation */}
+      <div className={`py-3 ${isExpanded ? "px-3" : "px-2"}`}>
+        {/* App Name */}
+        {isExpanded && (
+          <h2 className={`text-sm font-bold ${colors.text} mb-3 px-2 whitespace-nowrap overflow-hidden text-ellipsis`}>
+            {appName}
+          </h2>
+        )}
+
         <nav>
           <ul className="space-y-1">
             {routes.map((route) => (
@@ -43,16 +64,22 @@ export function AppSidebar({ routes, appName, appColor }: AppSidebarProps) {
                 <Link
                   to={route.path}
                   className={`
-                    flex items-center gap-2 px-3 py-2.5 rounded text-sm font-medium transition-colors no-underline
+                    flex items-center rounded text-sm font-medium transition-all no-underline
+                    ${isExpanded ? "gap-2 px-3 py-2.5" : "justify-center py-2.5"}
                     ${
                       isActive(route.path)
                         ? `${colors.bg} ${colors.text}`
                         : "text-text-grey hover:bg-bg-base hover:text-text-black"
                     }
                   `}
+                  title={!isExpanded ? route.label : undefined}
                 >
                   {route.icon && <Icon name={route.icon} size={18} />}
-                  {route.label}
+                  {isExpanded && (
+                    <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+                      {route.label}
+                    </span>
+                  )}
                 </Link>
               </li>
             ))}
