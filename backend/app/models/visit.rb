@@ -5,11 +5,13 @@ class Visit < ApplicationRecord
 
   belongs_to :staff, optional: true
   belongs_to :patient
+  belongs_to :planning_lane, optional: true
 
   validates :scheduled_at, presence: true
   validates :duration, presence: true, numericality: { greater_than: 0 }
   validates :status, inclusion: { in: STATUSES }
   validate :staff_availability, if: -> { staff_id.present? && scheduled_at.present? }
+  validate :patient_availability, if: -> { patient_id.present? && scheduled_at.present? }
 
   scope :scheduled, -> { where(status: "scheduled") }
   scope :in_progress, -> { where(status: "in_progress") }
@@ -53,5 +55,17 @@ class Visit < ApplicationRecord
                               end_at, scheduled_at)
 
     errors.add(:base, "スタッフは既に別の訪問が予定されています") if conflicting.exists?
+  end
+
+  def patient_availability
+    return unless patient_id_changed? || scheduled_at_changed? || duration_changed?
+
+    conflicting = Visit.where(patient_id: patient_id)
+                       .where.not(id: id)
+                       .where.not(status: %w[cancelled completed])
+                       .where("scheduled_at < ? AND scheduled_at + (duration * interval '1 minute') > ?",
+                              end_at, scheduled_at)
+
+    errors.add(:base, "患者は既に別の訪問が予定されています") if conflicting.exists?
   end
 end

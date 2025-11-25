@@ -57,7 +57,7 @@ module AuthorizationVisitSync
 
   # Set organization on create
   def visit_params_with_organization
-    params.require(:visit).permit(:patient_id, :user_id, :scheduled_at, :duration, :status, :notes).tap do |p|
+    params.require(:visit).permit(:patient_id, :staff_id, :user_id, :scheduled_at, :duration, :status, :notes, :visit_type, :planning_lane_id).tap do |p|
       p[:organization_id] = Current.organization&.id if Current.organization
     end
   end

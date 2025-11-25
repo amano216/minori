@@ -9,9 +9,16 @@ export function GroupsPage() {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    description: string;
+    parent_id?: number | null;
+    group_type?: 'office' | 'team';
+  }>({
     name: '',
-    description: ''
+    description: '',
+    parent_id: null,
+    group_type: 'office'
   });
 
   useEffect(() => {
@@ -37,13 +44,17 @@ export function GroupsPage() {
       setEditingGroup(group);
       setFormData({
         name: group.name,
-        description: group.description || ''
+        description: group.description || '',
+        parent_id: group.parent_id || null,
+        group_type: group.group_type || 'office'
       });
     } else {
       setEditingGroup(null);
       setFormData({
         name: '',
-        description: ''
+        description: '',
+        parent_id: null,
+        group_type: 'office'
       });
     }
     setIsModalOpen(true);
@@ -148,6 +159,11 @@ export function GroupsPage() {
 
             <div className="flex items-center gap-4 text-xs text-text-grey">
               <div className="flex items-center gap-1">
+                <span className={`px-2 py-0.5 rounded-full text-[10px] ${group.group_type === 'office' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                  {group.group_type === 'office' ? '事業所' : 'チーム'}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
                 <Icon name="User" size={14} />
                 <span>{group.users?.length || 0}名</span>
               </div>
@@ -174,6 +190,41 @@ export function GroupsPage() {
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-text-primary mb-2">
+                  グループタイプ
+                </label>
+                <select
+                  value={formData.group_type}
+                  onChange={(e) => setFormData({ ...formData, group_type: e.target.value as 'office' | 'team' })}
+                  className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-main"
+                >
+                  <option value="office">事業所</option>
+                  <option value="team">チーム</option>
+                </select>
+              </div>
+
+              {formData.group_type === 'team' && (
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-2">
+                    所属事業所
+                  </label>
+                  <select
+                    value={formData.parent_id || ''}
+                    onChange={(e) => setFormData({ ...formData, parent_id: e.target.value ? Number(e.target.value) : null })}
+                    className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-main"
+                    required
+                  >
+                    <option value="">選択してください</option>
+                    {groups.filter(g => g.group_type === 'office').map(office => (
+                      <option key={office.id} value={office.id}>
+                        {office.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-text-primary mb-2">
                   グループ名

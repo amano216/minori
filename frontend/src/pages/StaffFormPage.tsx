@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { fetchStaff, createStaff, updateStaff, type StaffInput } from '../api/client';
+import { fetchStaff, createStaff, updateStaff, fetchGroups, type StaffInput, type Group } from '../api/client';
 import { Button } from '../components/atoms/Button';
 import { Input } from '../components/atoms/Input';
 import { Label } from '../components/atoms/Label';
@@ -37,27 +37,34 @@ export function StaffFormPage() {
   const [status, setStatus] = useState('active');
   const [qualifications, setQualifications] = useState<string[]>([]);
   const [availableHours, setAvailableHours] = useState<Record<string, { start: string; end: string }>>({});
-  const [loading, setLoading] = useState(isEdit);
+  const [groupId, setGroupId] = useState<number | null>(null);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!id) return;
-    const loadStaff = async () => {
+    const loadData = async () => {
       try {
-        const staff = await fetchStaff(Number(id));
-        setName(staff.name);
-        setEmail(staff.email);
-        setStatus(staff.status);
-        setQualifications(staff.qualifications);
-        setAvailableHours(staff.available_hours);
+        const groupsData = await fetchGroups();
+        setGroups(groupsData);
+
+        if (id) {
+          const staff = await fetchStaff(Number(id));
+          setName(staff.name);
+          setEmail(staff.email);
+          setStatus(staff.status);
+          setQualifications(staff.qualifications);
+          setAvailableHours(staff.available_hours);
+          setGroupId(staff.group_id || null);
+        }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'スタッフの取得に失敗しました');
+        setError(err instanceof Error ? err.message : 'データの取得に失敗しました');
       } finally {
         setLoading(false);
       }
     };
-    loadStaff();
+    loadData();
   }, [id]);
 
   const handleQualificationChange = (qual: string) => {
@@ -95,6 +102,7 @@ export function StaffFormPage() {
       status,
       qualifications,
       available_hours: availableHours,
+      group_id: groupId,
     };
 
     try {
@@ -161,6 +169,33 @@ export function StaffFormPage() {
               disabled={submitting}
               placeholder="例: yamada@example.com"
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="group">所属グループ</Label>
+            <select
+              id="group"
+              value={groupId || ''}
+              onChange={(e) => setGroupId(e.target.value ? Number(e.target.value) : null)}
+              disabled={submitting}
+              className="w-full px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
+            >
+              <option value="">未所属</option>
+              {groups.filter(g => g.group_type === 'office').map(office => (
+                <optgroup key={office.id} label={office.name}>
+                  <option value={office.id}>{office.name} (事業所)</option>
+                  {groups.filter(g => g.parent_id === office.id).map(team => (
+                    <option key={team.id} value={team.id}>
+                      &nbsp;&nbsp;{team.name} (チーム)
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+              {/* Orphan teams or other groups */}
+              {groups.filter(g => !g.parent_id && g.group_type !== 'office').map(group => (
+                <option key={group.id} value={group.id}>{group.name}</option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-1.5">

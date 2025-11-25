@@ -3,6 +3,7 @@
 module Api
   class VisitsController < ApplicationController
     include AuthorizationVisitSync
+    before_action :set_visit, only: [ :show, :update, :destroy, :cancel, :complete ]
 
     def index
       @visits = scoped_visits.includes(:staff, :patient)
@@ -68,7 +69,7 @@ module Api
     end
 
     def visit_params
-      params.require(:visit).permit(:scheduled_at, :duration, :staff_id, :patient_id, :status, :notes)
+      params.require(:visit).permit(:scheduled_at, :duration, :staff_id, :patient_id, :status, :notes, :planning_lane_id)
     end
   end
 end

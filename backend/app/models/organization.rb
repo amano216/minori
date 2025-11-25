@@ -4,6 +4,8 @@ class Organization < ApplicationRecord
   has_many :groups, dependent: :destroy
   has_many :patients, dependent: :nullify
   has_many :visits, dependent: :nullify
+  has_many :staffs, dependent: :destroy
+  has_many :planning_lanes, dependent: :destroy
 
   validates :name, presence: true
   validates :subdomain, uniqueness: true, allow_nil: true

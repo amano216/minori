@@ -47,7 +47,7 @@ module Api
       end
 
       def group_params
-        params.require(:group).permit(:name, :description)
+        params.require(:group).permit(:name, :description, :parent_id, :group_type)
       end
 
       def authorize_admin!

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_24_211505) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_25_110103) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -31,8 +31,10 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_24_211505) do
     t.integer "group_type", default: 0
     t.string "name", null: false
     t.bigint "organization_id", null: false
+    t.bigint "parent_id"
     t.datetime "updated_at", null: false
     t.index ["organization_id"], name: "index_groups_on_organization_id"
+    t.index ["parent_id"], name: "index_groups_on_parent_id"
   end
 
   create_table "organization_memberships", force: :cascade do |t|
@@ -71,6 +73,15 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_24_211505) do
     t.index ["status"], name: "index_patients_on_status"
   end
 
+  create_table "planning_lanes", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name"
+    t.bigint "organization_id", null: false
+    t.integer "position"
+    t.datetime "updated_at", null: false
+    t.index ["organization_id"], name: "index_planning_lanes_on_organization_id"
+  end
+
   create_table "roles", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "description"
@@ -82,11 +93,15 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_24_211505) do
     t.jsonb "available_hours", default: {}
     t.datetime "created_at", null: false
     t.string "email", null: false
+    t.bigint "group_id"
     t.string "name", null: false
+    t.bigint "organization_id"
     t.jsonb "qualifications", default: []
     t.string "status", default: "active"
     t.datetime "updated_at", null: false
     t.index ["email"], name: "index_staffs_on_email", unique: true
+    t.index ["group_id"], name: "index_staffs_on_group_id"
+    t.index ["organization_id"], name: "index_staffs_on_organization_id"
     t.index ["status"], name: "index_staffs_on_status"
   end
 
@@ -121,12 +136,14 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_24_211505) do
     t.text "notes"
     t.bigint "organization_id"
     t.bigint "patient_id", null: false
+    t.bigint "planning_lane_id"
     t.datetime "scheduled_at", null: false
     t.bigint "staff_id"
     t.string "status", default: "scheduled", null: false
     t.datetime "updated_at", null: false
     t.index ["organization_id"], name: "index_visits_on_organization_id"
     t.index ["patient_id"], name: "index_visits_on_patient_id"
+    t.index ["planning_lane_id"], name: "index_visits_on_planning_lane_id"
     t.index ["scheduled_at"], name: "index_visits_on_scheduled_at"
     t.index ["staff_id", "scheduled_at"], name: "index_visits_on_staff_id_and_scheduled_at"
     t.index ["staff_id"], name: "index_visits_on_staff_id"
@@ -135,11 +152,15 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_24_211505) do
 
   add_foreign_key "group_memberships", "groups"
   add_foreign_key "group_memberships", "users"
+  add_foreign_key "groups", "groups", column: "parent_id"
   add_foreign_key "groups", "organizations"
   add_foreign_key "organization_memberships", "organizations"
   add_foreign_key "organization_memberships", "users"
   add_foreign_key "patients", "groups"
   add_foreign_key "patients", "organizations"
+  add_foreign_key "planning_lanes", "organizations"
+  add_foreign_key "staffs", "groups"
+  add_foreign_key "staffs", "organizations"
   add_foreign_key "user_roles", "groups"
   add_foreign_key "user_roles", "organizations"
   add_foreign_key "user_roles", "roles"
@@ -147,5 +168,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_24_211505) do
   add_foreign_key "users", "organizations"
   add_foreign_key "visits", "organizations"
   add_foreign_key "visits", "patients"
+  add_foreign_key "visits", "planning_lanes"
   add_foreign_key "visits", "staffs"
 end
