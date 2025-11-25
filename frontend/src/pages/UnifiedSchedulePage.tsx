@@ -108,7 +108,7 @@ export function UnifiedSchedulePage() {
     const loadMasterData = async () => {
       try {
         const [groupsData, staffsData, patientsData] = await Promise.all([
-          fetchGroups({ status: 'active' }),
+          fetchGroups(),
           fetchStaffs({ status: 'active' }),
           fetchPatients({ status: 'active' }),
         ]);

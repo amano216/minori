@@ -149,7 +149,7 @@ export async function fetchGroups(params?: { status?: string }): Promise<Group[]
   const query = new URLSearchParams();
   if (params?.status) query.append('status', params.status);
   const queryString = query.toString();
-  return apiRequest(`/api/groups${queryString ? `?${queryString}` : ''}`);
+  return apiRequest(`/api/admin/groups${queryString ? `?${queryString}` : ''}`);
 }
 
 // Patient API

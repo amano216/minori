@@ -9,7 +9,6 @@ interface Group {
 interface Staff {
   id: number;
   name: string;
-  group_id?: number;
 }
 
 interface Patient {
@@ -44,7 +43,6 @@ export function ScheduleFilterSidebar({
   isCollapsed = false,
   onToggleCollapse,
 }: ScheduleFilterSidebarProps) {
-  const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set());
   const [showPatients, setShowPatients] = useState(false);
 
   // Load filters from localStorage on mount
@@ -64,41 +62,6 @@ export function ScheduleFilterSidebar({
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
   }, [filters]);
-
-  const toggleGroup = (groupId: number) => {
-    const newExpanded = new Set(expandedGroups);
-    if (newExpanded.has(groupId)) {
-      newExpanded.delete(groupId);
-    } else {
-      newExpanded.add(groupId);
-    }
-    setExpandedGroups(newExpanded);
-  };
-
-  const toggleGroupFilter = (groupId: number) => {
-    const groupStaffIds = staffs
-      .filter((s) => s.group_id === groupId)
-      .map((s) => s.id);
-    
-    const hasAllStaff = groupStaffIds.every((id) => filters.staffIds.includes(id));
-    
-    if (hasAllStaff) {
-      // Deselect all staff in this group
-      onFiltersChange({
-        ...filters,
-        groupIds: filters.groupIds.filter((id) => id !== groupId),
-        staffIds: filters.staffIds.filter((id) => !groupStaffIds.includes(id)),
-      });
-    } else {
-      // Select all staff in this group
-      const newStaffIds = [...new Set([...filters.staffIds, ...groupStaffIds])];
-      onFiltersChange({
-        ...filters,
-        groupIds: [...new Set([...filters.groupIds, groupId])],
-        staffIds: newStaffIds,
-      });
-    }
-  };
 
   const toggleStaffFilter = (staffId: number) => {
     if (filters.staffIds.includes(staffId)) {
@@ -193,104 +156,29 @@ export function ScheduleFilterSidebar({
 
       {/* Filter Content */}
       <div className="flex-1 overflow-y-auto">
-        {/* Groups and Staff */}
+        {/* Staff List */}
         <div className="border-b border-gray-200">
           <div className="p-3 bg-gray-100 font-medium text-sm text-gray-700 flex items-center gap-2">
             <Users className="w-4 h-4" />
-            グループ・スタッフ
+            スタッフ
           </div>
-          {groups.map((group) => {
-            const groupStaffs = staffs.filter((s) => s.group_id === group.id);
-            const isExpanded = expandedGroups.has(group.id);
-            const hasAllStaff = groupStaffs.every((s) =>
-              filters.staffIds.includes(s.id)
-            );
-            const hasSomeStaff = groupStaffs.some((s) =>
-              filters.staffIds.includes(s.id)
-            );
-
-            return (
-              <div key={group.id} className="border-b border-gray-100">
-                <div className="flex items-center px-3 py-2 hover:bg-gray-100">
-                  <button
-                    onClick={() => toggleGroup(group.id)}
-                    className="p-1 hover:bg-gray-200 rounded transition-colors mr-1"
-                  >
-                    {isExpanded ? (
-                      <ChevronDown className="w-4 h-4 text-gray-600" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4 text-gray-600" />
-                    )}
-                  </button>
-                  <label className="flex items-center gap-2 flex-1 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={hasAllStaff}
-                      ref={(el) => {
-                        if (el) el.indeterminate = hasSomeStaff && !hasAllStaff;
-                      }}
-                      onChange={() => toggleGroupFilter(group.id)}
-                      className="rounded border-gray-300"
-                    />
-                    <span className="text-sm font-medium text-gray-800">
-                      {group.name}
-                    </span>
-                    <span className="text-xs text-gray-500 ml-auto">
-                      {groupStaffs.length}
-                    </span>
-                  </label>
-                </div>
-                {isExpanded && (
-                  <div className="pl-8 pb-2">
-                    {groupStaffs.map((staff) => (
-                      <label
-                        key={staff.id}
-                        className="flex items-center gap-2 py-1 px-2 hover:bg-gray-100 rounded cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={filters.staffIds.includes(staff.id)}
-                          onChange={() => toggleStaffFilter(staff.id)}
-                          className="rounded border-gray-300"
-                        />
-                        <User className="w-3 h-3 text-gray-500" />
-                        <span className="text-sm text-gray-700">{staff.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-          {/* Ungrouped staff */}
-          {staffs.filter((s) => !s.group_id).length > 0 && (
-            <div className="border-b border-gray-100">
-              <div className="flex items-center px-3 py-2">
-                <span className="text-sm font-medium text-gray-500 pl-6">
-                  未所属
-                </span>
-              </div>
-              <div className="pl-8 pb-2">
-                {staffs
-                  .filter((s) => !s.group_id)
-                  .map((staff) => (
-                    <label
-                      key={staff.id}
-                      className="flex items-center gap-2 py-1 px-2 hover:bg-gray-100 rounded cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={filters.staffIds.includes(staff.id)}
-                        onChange={() => toggleStaffFilter(staff.id)}
-                        className="rounded border-gray-300"
-                      />
-                      <User className="w-3 h-3 text-gray-500" />
-                      <span className="text-sm text-gray-700">{staff.name}</span>
-                    </label>
-                  ))}
-              </div>
-            </div>
-          )}
+          <div className="p-2">
+            {staffs.map((staff) => (
+              <label
+                key={staff.id}
+                className="flex items-center gap-2 py-2 px-3 hover:bg-gray-100 rounded cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={filters.staffIds.includes(staff.id)}
+                  onChange={() => toggleStaffFilter(staff.id)}
+                  className="rounded border-gray-300"
+                />
+                <User className="w-4 h-4 text-gray-500" />
+                <span className="text-sm text-gray-700">{staff.name}</span>
+              </label>
+            ))}
+          </div>
         </div>
 
         {/* Patients */}
