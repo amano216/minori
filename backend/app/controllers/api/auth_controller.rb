@@ -7,9 +7,22 @@ class Api::AuthController < ApplicationController
   def signup
     ActiveRecord::Base.transaction do
       # Create organization
+      # If subdomain is blank, set it to nil to avoid uniqueness constraint issues
+      subdomain = params[:subdomain].presence
+      
+      # If subdomain is provided and already exists, make it unique
+      if subdomain && Organization.exists?(subdomain: subdomain)
+        base_subdomain = subdomain
+        counter = 1
+        while Organization.exists?(subdomain: subdomain)
+          subdomain = "#{base_subdomain}-#{counter}"
+          counter += 1
+        end
+      end
+      
       organization = Organization.create!(
         name: params[:organization_name],
-        subdomain: params[:subdomain]
+        subdomain: subdomain
       )
 
       # Create admin user

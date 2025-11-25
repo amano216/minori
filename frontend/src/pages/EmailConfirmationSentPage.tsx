@@ -4,6 +4,7 @@ import { Button } from '../components/atoms/Button';
 import { Card } from '../components/molecules/Card';
 import { useToast } from '../contexts/ToastContext';
 import { useState } from 'react';
+import { getFullApiUrl } from '../api/client';
 
 export function EmailConfirmationSentPage() {
   const location = useLocation();
@@ -75,7 +76,7 @@ export function EmailConfirmationSentPage() {
             <Button
               onClick={resendConfirmation}
               disabled={isResending}
-              variant="outline"
+              variant="secondary"
               className="w-full mb-4"
             >
               {isResending ? (
@@ -89,7 +90,7 @@ export function EmailConfirmationSentPage() {
             </Button>
 
             <Link to="/login">
-              <Button variant="ghost" className="w-full">
+              <Button variant="text" className="w-full">
                 ログインページに戻る
               </Button>
             </Link>

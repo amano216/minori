@@ -1,5 +1,13 @@
 import { useState, useMemo, useEffect } from 'react';
-import { ClockIcon, PlusIcon, TrashIcon, PencilIcon, CheckIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { 
+  PlusIcon, 
+  TrashIcon, 
+  PencilIcon, 
+  CheckIcon, 
+  ExclamationTriangleIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon
+} from '@heroicons/react/24/outline';
 import { 
   fetchPlanningLanes, 
   createPlanningLane, 
@@ -21,6 +29,7 @@ const END_HOUR = 24;
 const TOTAL_HOURS = END_HOUR - START_HOUR;
 const VISIBLE_HOURS = 12; // 一度に表示する時間数
 
+// TODO: Future improvement - Sync lane colors with Group colors to improve visibility
 const LANE_COLORS = [
   'bg-blue-50',
   'bg-green-50',
@@ -182,11 +191,19 @@ const LaneRow: React.FC<LaneRowProps> = ({
           return (
             <div
               key={hour}
-              className={`flex-1 min-w-[100px] border-r border-gray-100 p-2 cursor-pointer hover:bg-indigo-50/50 transition-colors relative ${hasConflict ? 'bg-red-50' : ''}`}
+              className={`flex-1 min-w-[100px] border-r border-gray-100 p-2 cursor-pointer hover:bg-indigo-50/50 transition-colors relative group ${hasConflict ? 'bg-red-50' : ''}`}
               style={{ minHeight: '80px' }}
-              onClick={() => onTimeSlotClick?.(hour, String(lane.id))}
+              onClick={() => {
+                console.log('Time slot clicked:', hour, lane.id);
+                onTimeSlotClick?.(hour, String(lane.id));
+              }}
               title={`${String(hour).padStart(2, '0')}:00 - 予定を追加`}
             >
+              {/* Hover Plus Icon */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
+                <PlusIcon className="w-6 h-6 text-indigo-300" />
+              </div>
+
               {hasConflict && (
                 <div className="absolute top-0 right-0 p-1 text-red-500" title="重複あり: 1レーン1時間帯1患者の原則に違反しています">
                   <ExclamationTriangleIcon className="w-4 h-4" />
@@ -284,9 +301,6 @@ export default function PatientCalendarView({
     });
   }, [visits, date]);
 
-  const unassignedCount = todaysVisits.filter(v => !v.staff_id).length;
-  const assignedCount = todaysVisits.filter(v => v.staff_id).length;
-
   const scrollEarlier = () => {
     setScrollOffset(prev => Math.max(0, prev - 4));
   };
@@ -305,55 +319,40 @@ export default function PatientCalendarView({
   return (
     <div className="h-full flex flex-col bg-white">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-3">
-            <h2 className="text-lg font-bold">患者カレンダー - 計画ボード</h2>
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <span className="flex items-center gap-1">
-                <ClockIcon className="w-4 h-4" />
-                {date.toLocaleDateString('ja-JP')}
-              </span>
-            </div>
-          </div>
+      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+        <button
+          onClick={() => {
+            console.log('Adding lane...');
+            addLane();
+          }}
+          className="p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors shadow-sm flex items-center justify-center"
+          title="レーン追加"
+        >
+          <PlusIcon className="w-6 h-6" />
+        </button>
+
+        <div className="flex items-center gap-2">
           <button
-            onClick={addLane}
-            className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 transition-colors shadow-sm"
+            onClick={scrollEarlier}
+            disabled={!canScrollEarlier}
+            className="p-2 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed rounded-full transition-colors"
+            title="前の時間帯"
           >
-            <PlusIcon className="w-4 h-4" />
-            レーン追加
+            <ChevronLeftIcon className="w-6 h-6" />
           </button>
-        </div>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4 text-sm text-gray-600">
-            <span>本日の訪問: {todaysVisits.length}件</span>
-            <span className="text-red-600">未割当: {unassignedCount}件</span>
-            <span className="text-blue-600">割当済: {assignedCount}件</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500">
-              表示: {visibleHours[0]}:00 - {visibleHours[visibleHours.length - 1]}:59
-            </span>
-            <button
-              onClick={scrollEarlier}
-              disabled={!canScrollEarlier}
-              className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed rounded transition-colors"
-              title="前の時間帯"
-            >
-              ← 早い時間
-            </button>
-            <button
-              onClick={scrollLater}
-              disabled={!canScrollLater}
-              className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed rounded transition-colors"
-              title="次の時間帯"
-            >
-              遅い時間 →
-            </button>
-          </div>
-        </div>
-        <div className="mt-2 text-xs text-gray-500">
-          💡 タイムスロットをクリックして新規訪問を追加 / 訪問をクリックして詳細・スタッフ割当
+          
+          <span className="text-sm font-medium text-gray-600 min-w-[100px] text-center">
+            {visibleHours[0]}:00 - {visibleHours[visibleHours.length - 1]}:59
+          </span>
+
+          <button
+            onClick={scrollLater}
+            disabled={!canScrollLater}
+            className="p-2 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed rounded-full transition-colors"
+            title="次の時間帯"
+          >
+            <ChevronRightIcon className="w-6 h-6" />
+          </button>
         </div>
       </div>
 
@@ -361,14 +360,17 @@ export default function PatientCalendarView({
       <div className="flex-1 overflow-y-auto">
         {/* Time Header */}
         <div className="flex sticky top-0 bg-white z-10 border-b-2 border-gray-300">
-          <div className="w-48 flex-shrink-0 p-3 border-r border-gray-200 bg-gray-100 font-semibold text-sm">
-            計画レーン
+          <div className="w-48 flex-shrink-0 p-3 border-r border-gray-200 bg-gray-100 font-semibold text-sm text-gray-700 flex items-center gap-2">
+            <span>計画レーン</span>
+            <span className="text-xs font-normal text-gray-500 bg-gray-200 px-1.5 py-0.5 rounded">
+              {lanes.length}
+            </span>
           </div>
           <div className="flex-1 flex">
             {visibleHours.map(hour => (
               <div
                 key={hour}
-                className="flex-1 min-w-[100px] p-2 text-center border-r border-gray-200 bg-gray-100 text-xs font-medium"
+                className="flex-1 min-w-[100px] p-2 text-center border-r border-gray-200 bg-gray-100 text-xs font-medium text-gray-600"
               >
                 {String(hour).padStart(2, '0')}:00
               </div>
@@ -377,19 +379,27 @@ export default function PatientCalendarView({
         </div>
 
         {/* Lane Rows */}
-        {lanes.map(lane => (
-          <LaneRow
-            key={lane.id}
-            lane={lane}
-            visits={todaysVisits}
-            date={date}
-            onVisitClick={onVisitClick}
-            onTimeSlotClick={onTimeSlotClick}
-            onRemove={() => removeLane(lane.id)}
-            onRename={(newLabel) => renameLane(lane.id, newLabel)}
-            visibleHours={visibleHours}
-          />
-        ))}
+        {lanes.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+            <ExclamationTriangleIcon className="w-12 h-12 mb-2 opacity-50" />
+            <p className="text-sm">レーンがありません</p>
+            <p className="text-xs mt-1">左上の「＋」ボタンから追加してください</p>
+          </div>
+        ) : (
+          lanes.map(lane => (
+            <LaneRow
+              key={lane.id}
+              lane={lane}
+              visits={todaysVisits}
+              date={date}
+              onVisitClick={onVisitClick}
+              onTimeSlotClick={onTimeSlotClick}
+              onRemove={() => removeLane(lane.id)}
+              onRename={(newLabel) => renameLane(lane.id, newLabel)}
+              visibleHours={visibleHours}
+            />
+          ))
+        )}
       </div>
     </div>
   );

@@ -11,19 +11,34 @@ end
 
 # Create system roles
 puts "Creating system roles..."
-Role.seed_roles
+[
+  { name: Role::ORGANIZATION_ADMIN, description: "Organization Administrator" },
+  { name: Role::STAFF, description: "Staff Member" },
+  { name: Role::VIEWER, description: "Read-only User" }
+].each do |role_data|
+  Role.find_or_create_by!(name: role_data[:name]) do |role|
+    role.description = role_data[:description]
+  end
+end
 
 # Create default users for all environments
 admin_user = User.find_or_create_by!(email: "admin@example.com") do |user|
   user.password = "password123"
   user.role = "admin"
   user.organization = default_org
+  user.email_confirmed_at = Time.current
 end
 
 staff_user = User.find_or_create_by!(email: "staff@example.com") do |user|
   user.password = "password123"
   user.role = "staff"
   user.organization = default_org
+  user.email_confirmed_at = Time.current
+end
+
+# Ensure existing users are confirmed
+[admin_user, staff_user].each do |user|
+  user.update(email_confirmed_at: Time.current) if user.email_confirmed_at.nil?
 end
 
 # Create organization memberships

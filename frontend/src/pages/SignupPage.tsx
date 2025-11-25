@@ -7,6 +7,7 @@ import { Input } from '../components/atoms/Input';
 import { Label } from '../components/atoms/Label';
 import { Card } from '../components/molecules/Card';
 import { useToast } from '../contexts/ToastContext';
+import { getFullApiUrl } from '../api/client';
 
 export function SignupPage() {
   const navigate = useNavigate();
@@ -64,7 +65,7 @@ export function SignupPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/auth/signup', {
+      const response = await fetch(getFullApiUrl('/api/auth/signup'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -84,12 +85,14 @@ export function SignupPage() {
         throw new Error(data.error || '登録に失敗しました');
       }
 
+      console.log('Signup response:', data); // Debug log
+
       showToast('success', data.message);
 
       // If token is returned (dev mode with auto-confirm), save and redirect to onboarding
       if (data.token) {
-        localStorage.setItem('token', data.token);
-        navigate('/onboarding');
+        localStorage.setItem('minori_auth_token', data.token);
+        window.location.href = '/onboarding';
       } else {
         // Otherwise, show email confirmation page
         navigate('/email-confirmation-sent', { state: { email: adminEmail } });

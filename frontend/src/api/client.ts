@@ -7,6 +7,10 @@ function getApiUrl(): string {
   return '';
 }
 
+export function getFullApiUrl(path: string): string {
+  return `${getApiUrl()}${path}`;
+}
+
 const API_URL = getApiUrl();
 const TOKEN_KEY = 'minori_auth_token';
 

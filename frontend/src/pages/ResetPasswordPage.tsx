@@ -7,6 +7,7 @@ import { Input } from '../components/atoms/Input';
 import { Label } from '../components/atoms/Label';
 import { Card } from '../components/molecules/Card';
 import { useToast } from '../contexts/ToastContext';
+import { getFullApiUrl } from '../api/client';
 
 export function ResetPasswordPage() {
   const [searchParams] = useSearchParams();

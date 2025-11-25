@@ -1,5 +1,5 @@
 import { useState, useEffect, type FormEvent } from 'react';
-import { X } from 'lucide-react';
+import { X, User, Calendar, Clock, FileText, Save, Plus } from 'lucide-react';
 import {
   createVisit,
   fetchStaffs,
@@ -9,7 +9,6 @@ import {
   type Patient,
 } from '../../api/client';
 import { Button } from '../atoms/Button';
-import { Label } from '../atoms/Label';
 import { Spinner } from '../atoms/Spinner';
 
 interface NewVisitPanelProps {
@@ -54,10 +53,19 @@ export function NewVisitPanel({
       
       // Initialize form with props
       if (initialDate) {
-        setScheduledDate(initialDate.toISOString().split('T')[0]);
+        // Use local time components to avoid UTC shift issues
+        const year = initialDate.getFullYear();
+        const month = String(initialDate.getMonth() + 1).padStart(2, '0');
+        const day = String(initialDate.getDate()).padStart(2, '0');
+        setScheduledDate(`${year}-${month}-${day}`);
+        
         setScheduledTime(initialDate.toTimeString().slice(0, 5));
       } else {
-        setScheduledDate(new Date().toISOString().split('T')[0]);
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        setScheduledDate(`${year}-${month}-${day}`);
       }
       
       if (initialStaffId) {
@@ -142,7 +150,9 @@ export function NewVisitPanel({
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
-          <h2 className="text-lg font-bold text-gray-900">新規訪問</h2>
+          <div className="flex items-center gap-2 text-gray-900 font-bold text-lg">
+            <Plus className="w-6 h-6 text-indigo-600" />
+          </div>
           <button
             onClick={handleClose}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -166,7 +176,9 @@ export function NewVisitPanel({
               )}
 
               <div className="space-y-1.5">
-                <Label htmlFor="patient" required>患者</Label>
+                <div className="flex items-center gap-2 mb-1">
+                  <User className="w-4 h-4 text-gray-500" />
+                </div>
                 <select
                   id="patient"
                   value={patientId}
@@ -175,7 +187,7 @@ export function NewVisitPanel({
                   disabled={submitting}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
-                  <option value="">選択してください</option>
+                  <option value="">患者を選択...</option>
                   {patients.map((patient) => (
                     <option key={patient.id} value={patient.id}>
                       {patient.name}
@@ -185,7 +197,9 @@ export function NewVisitPanel({
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="staff">担当スタッフ</Label>
+                <div className="flex items-center gap-2 mb-1">
+                  <User className="w-4 h-4 text-indigo-500" />
+                </div>
                 <select
                   id="staff"
                   value={staffId}
@@ -193,7 +207,7 @@ export function NewVisitPanel({
                   disabled={submitting}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
-                  <option value="">未割当</option>
+                  <option value="">未割り当て</option>
                   {staffs.map((staff) => (
                     <option key={staff.id} value={staff.id}>
                       {staff.name}
@@ -204,7 +218,9 @@ export function NewVisitPanel({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="date" required>日付</Label>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Calendar className="w-4 h-4 text-gray-500" />
+                  </div>
                   <input
                     type="date"
                     id="date"
@@ -217,7 +233,9 @@ export function NewVisitPanel({
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="time" required>時刻</Label>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Clock className="w-4 h-4 text-gray-500" />
+                  </div>
                   <input
                     type="time"
                     id="time"
@@ -231,7 +249,9 @@ export function NewVisitPanel({
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="duration">所要時間</Label>
+                <div className="flex items-center gap-2 mb-1">
+                  <Clock className="w-4 h-4 text-gray-500" />
+                </div>
                 <select
                   id="duration"
                   value={duration}
@@ -248,7 +268,9 @@ export function NewVisitPanel({
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="notes">備考</Label>
+                <div className="flex items-center gap-2 mb-1">
+                  <FileText className="w-4 h-4 text-gray-500" />
+                </div>
                 <textarea
                   id="notes"
                   value={notes}
@@ -256,7 +278,7 @@ export function NewVisitPanel({
                   disabled={submitting}
                   rows={4}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
-                  placeholder="訪問に関する補足情報..."
+                  placeholder="..."
                 />
               </div>
             </form>
@@ -264,12 +286,12 @@ export function NewVisitPanel({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-100 bg-gray-50/50 rounded-b-xl flex justify-end gap-3">
-          <Button variant="secondary" onClick={handleClose} disabled={submitting} className="h-10 px-6">
-            キャンセル
+        <div className="p-4 border-t border-gray-100 bg-gray-50/50 rounded-b-xl flex justify-end gap-4">
+          <Button variant="secondary" onClick={handleClose} disabled={submitting} className="h-14 w-14 p-0 flex items-center justify-center rounded-full shadow-sm hover:shadow-md transition-all" title="キャンセル">
+            <X className="w-8 h-8" />
           </Button>
-          <Button type="submit" form="new-visit-form" variant="primary" disabled={submitting} className="h-10 px-6">
-            {submitting ? '保存中...' : '保存'}
+          <Button type="submit" form="new-visit-form" variant="primary" disabled={submitting} className="h-14 w-14 p-0 flex items-center justify-center rounded-full shadow-md hover:shadow-lg transition-all" title="保存">
+            <Save className="w-8 h-8" />
           </Button>
         </div>
       </div>

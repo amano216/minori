@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { CheckCircle, Mail, RefreshCw, Sparkles } from 'lucide-react';
 import { Button } from '../components/atoms/Button';
 import { Card } from '../components/molecules/Card';
 import { useToast } from '../contexts/ToastContext';
+import { getFullApiUrl } from '../api/client';
 
 export function EmailConfirmationPage() {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const { showToast } = useToast();
   const [status, setStatus] = useState<'confirming' | 'success' | 'error'>('confirming');
   const [message, setMessage] = useState('');
@@ -42,11 +42,11 @@ export function EmailConfirmationPage() {
         setMessage(data.message);
         
         // Save token and redirect
-        localStorage.setItem('token', data.token);
+        localStorage.setItem('minori_auth_token', data.token);
         showToast('success', 'メールアドレスを確認しました！');
         
         setTimeout(() => {
-          navigate('/onboarding');
+          window.location.href = '/onboarding';
         }, 2000);
       } else {
         setStatus('error');

@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/atoms/Button';
 import { Input } from '../components/atoms/Input';
 import { Label } from '../components/atoms/Label';
 import { Card } from '../components/molecules/Card';
 import { Sparkles, Mail, Lock, ArrowRight } from 'lucide-react';
+import { getFullApiUrl } from '../api/client';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -21,7 +21,7 @@ export function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch(getFullApiUrl('/api/auth/login'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -48,8 +48,11 @@ export function LoginPage() {
       }
 
       // Normal login - save token and redirect
-      localStorage.setItem('token', data.token);
-      navigate('/');
+      console.log('Login success, token:', data.token);
+      localStorage.setItem('minori_auth_token', data.token);
+      console.log('Navigating to /schedule');
+      // Force page reload to trigger AuthContext to fetch user
+      window.location.href = '/schedule';
     } catch (err) {
       setError(err instanceof Error ? err.message : 'ログインに失敗しました');
     } finally {

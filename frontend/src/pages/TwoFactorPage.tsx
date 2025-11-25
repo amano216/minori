@@ -7,13 +7,12 @@ import { Input } from '../components/atoms/Input';
 import { Label } from '../components/atoms/Label';
 import { Card } from '../components/molecules/Card';
 import { useToast } from '../contexts/ToastContext';
-import { useAuth } from '../contexts/AuthContext';
+import { getFullApiUrl } from '../api/client';
 
 export function TwoFactorPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { showToast } = useToast();
-  const { login } = useAuth();
   
   const [otpCode, setOtpCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -39,7 +38,7 @@ export function TwoFactorPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/auth/verify-otp', {
+      const response = await fetch(getFullApiUrl('/api/auth/verify-otp'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -54,10 +53,9 @@ export function TwoFactorPage() {
 
       if (response.ok) {
         // Save token and login
-        localStorage.setItem('token', data.token);
-        login(data.user);
+        localStorage.setItem('minori_auth_token', data.token);
         showToast('success', 'ログインしました');
-        navigate('/schedule');
+        window.location.href = '/schedule';
       } else {
         setError(data.error || '認証に失敗しました');
       }
@@ -73,7 +71,7 @@ export function TwoFactorPage() {
     showToast('info', '認証コードを再送信しています...');
     
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch(getFullApiUrl('/api/auth/login'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

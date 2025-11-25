@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MagnifyingGlassIcon, FunnelIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, FunnelIcon, InboxIcon } from '@heroicons/react/24/outline';
 import { useDraggable } from '@dnd-kit/core';
 import type { Visit } from '../../api/client';
 
@@ -68,10 +68,10 @@ export function UnassignedVisitInbox({
       <div className="p-4 border-b border-gray-200 bg-gray-50">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-gray-700 flex items-center">
-            <span className="bg-red-100 text-red-600 py-0.5 px-2 rounded-full text-xs font-bold mr-2">
+            <InboxIcon className="w-5 h-5 mr-2 text-gray-500" />
+            <span className="bg-red-100 text-red-600 py-0.5 px-2 rounded-full text-xs font-bold">
               {visits.length}
             </span>
-            未割当
           </h2>
           <button className="text-gray-400 hover:text-gray-600">
             <FunnelIcon className="w-5 h-5" />
@@ -81,7 +81,7 @@ export function UnassignedVisitInbox({
           <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="患者名で検索..."
+            placeholder="Search..."
             className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -99,8 +99,8 @@ export function UnassignedVisitInbox({
         ))}
         
         {filteredVisits.length === 0 && (
-          <div className="text-center py-8 text-gray-400 text-sm">
-            該当する訪問はありません
+          <div className="flex flex-col items-center justify-center py-12 text-gray-300">
+            <InboxIcon className="w-12 h-12 mb-2" />
           </div>
         )}
       </div>

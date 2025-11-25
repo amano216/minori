@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Clock, User, FileText, MapPin, Calendar } from 'lucide-react';
+import { X, Clock, User, FileText, MapPin, Calendar, Edit, Trash2, CheckCircle, XCircle, RefreshCw, Save } from 'lucide-react';
 import { Button } from '../atoms/Button';
 import { Badge } from '../atoms/Badge';
 import { fetchVisits, type Staff, type Visit } from '../../api/client';
@@ -220,17 +220,6 @@ export function VisitDetailPanel({
 
   return (
     <>
-      {/* Backdrop - Removed for better UX on iPad/Desktop as requested? No, keep it for modal feel but maybe lighter? Or remove as per "New Visit Panel" request? 
-          User said "New Visit Panel" background was black. Let's keep this one standard for now or make it lighter.
-          Actually, user complained about "New Visit Panel" background. Let's remove backdrop here too for consistency if it's a side panel.
-      */}
-      {/* <div
-        className={`fixed inset-0 bg-black transition-opacity duration-300 z-40 ${
-          isVisible ? 'bg-opacity-20' : 'bg-opacity-0 pointer-events-none'
-        }`}
-        onClick={handleClose}
-      /> */}
-
       {/* Panel */}
       <div
         className={`fixed top-16 right-4 bottom-4 w-96 bg-white shadow-2xl border border-gray-200 rounded-xl z-40 transform transition-transform duration-300 ease-in-out flex flex-col ${
@@ -239,9 +228,11 @@ export function VisitDetailPanel({
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
-          <h2 className="text-lg font-bold text-gray-900">
-            {activeTab === 'details' ? '訪問詳細' : '患者スケジュール'}
-          </h2>
+          <div className="flex gap-2 items-center">
+             <Badge className={STATUS_COLORS[visit.status]}>
+                {STATUS_LABELS[visit.status]}
+             </Badge>
+          </div>
           <div className="flex gap-2">
             <button
               onClick={() => setActiveTab(activeTab === 'details' ? 'calendar' : 'details')}
@@ -262,28 +253,17 @@ export function VisitDetailPanel({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
           {activeTab === 'details' ? (
-            <div className="space-y-4">
-              {/* Status */}
-              <div>
-                <Badge className={STATUS_COLORS[visit.status]}>
-                  {STATUS_LABELS[visit.status]}
-                </Badge>
-              </div>
-
+            <div className="space-y-6">
               {/* Patient */}
-              <div className="flex items-start gap-3">
-                <User className="w-5 h-5 text-gray-400 mt-0.5" />
-                <div>
-                  <div className="text-sm text-gray-500">患者</div>
-                  <div className="font-medium text-gray-900">{visit.patient.name}</div>
-                </div>
+              <div className="flex items-center gap-4">
+                <User className="w-5 h-5 text-gray-400" />
+                <div className="font-medium text-gray-900 text-lg">{visit.patient.name}</div>
               </div>
 
               {/* Staff */}
-              <div className="flex items-start gap-3">
-                <User className="w-5 h-5 text-gray-400 mt-0.5" />
-                <div>
-                  <div className="text-sm text-gray-500">担当スタッフ</div>
+              <div className="flex items-center gap-4">
+                <User className="w-5 h-5 text-indigo-400" />
+                <div className="flex-1">
                   {isReassigning ? (
                     <div className="mt-1">
                       <select
@@ -308,48 +288,34 @@ export function VisitDetailPanel({
               </div>
 
               {/* Scheduled Time */}
-              <div className="flex items-start gap-3">
-                <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
-                <div>
-                  <div className="text-sm text-gray-500">予定日時</div>
-                  <div className="font-medium text-gray-900">
-                    {formatDateTime(visit.scheduled_at)}
-                  </div>
+              <div className="flex items-center gap-4">
+                <Calendar className="w-5 h-5 text-gray-400" />
+                <div className="font-medium text-gray-900">
+                  {formatDateTime(visit.scheduled_at)}
                 </div>
               </div>
 
               {/* Duration */}
-              <div className="flex items-start gap-3">
-                <Clock className="w-5 h-5 text-gray-400 mt-0.5" />
-                <div>
-                  <div className="text-sm text-gray-500">所要時間</div>
-                  <div className="font-medium text-gray-900">
-                    {formatDuration(visit.duration)}
-                  </div>
+              <div className="flex items-center gap-4">
+                <Clock className="w-5 h-5 text-gray-400" />
+                <div className="font-medium text-gray-900">
+                  {formatDuration(visit.duration)}
                 </div>
               </div>
 
-
-
               {/* Address */}
               {visit.patient.address && (
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <div className="text-sm text-gray-500">訪問先</div>
-                    <div className="font-medium text-gray-900">{visit.patient.address}</div>
-                  </div>
+                <div className="flex items-center gap-4">
+                  <MapPin className="w-5 h-5 text-gray-400" />
+                  <div className="font-medium text-gray-900">{visit.patient.address}</div>
                 </div>
               )}
 
               {/* Notes */}
               {visit.notes && (
-                <div className="flex items-start gap-3">
-                  <FileText className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <div className="text-sm text-gray-500">メモ</div>
-                    <div className="text-gray-700 whitespace-pre-wrap">{visit.notes}</div>
-                  </div>
+                <div className="flex items-start gap-4">
+                  <FileText className="w-5 h-5 text-gray-400 mt-1" />
+                  <div className="text-gray-700 whitespace-pre-wrap">{visit.notes}</div>
                 </div>
               )}
             </div>
@@ -358,12 +324,8 @@ export function VisitDetailPanel({
               <div className="flex items-center gap-2 mb-4">
                 <User className="w-5 h-5 text-gray-400" />
                 <span className="font-bold text-gray-900">{visit.patient.name}</span>
-                <span className="text-sm text-gray-500">様のスケジュール</span>
               </div>
               <PatientCalendar patientId={visit.patient_id} />
-              <div className="mt-4 text-sm text-gray-600">
-                <p>※ カレンダーの日付をクリックすると、その日の詳細を確認できます（実装予定）</p>
-              </div>
             </div>
           )}
         </div>
@@ -374,19 +336,21 @@ export function VisitDetailPanel({
             <div className="flex gap-2">
               <Button
                 variant="secondary"
-                className="flex-1"
+                className="flex-1 flex justify-center items-center"
                 onClick={() => setIsReassigning(false)}
                 disabled={updating}
+                title="キャンセル"
               >
-                キャンセル
+                <X className="w-5 h-5" />
               </Button>
               <Button
                 variant="primary"
-                className="flex-1"
+                className="flex-1 flex justify-center items-center"
                 onClick={handleReassignSave}
                 disabled={updating}
+                title="保存"
               >
-                {updating ? '保存中...' : '保存'}
+                <Save className="w-5 h-5" />
               </Button>
             </div>
           ) : (
@@ -394,10 +358,11 @@ export function VisitDetailPanel({
               {onEdit && canEdit && (
                 <Button
                   variant="primary"
-                  className="w-full"
+                  className="w-full flex justify-center items-center"
                   onClick={() => onEdit(visit.id)}
+                  title="編集"
                 >
-                  編集
+                  <Edit className="w-5 h-5" />
                 </Button>
               )}
 
@@ -405,28 +370,31 @@ export function VisitDetailPanel({
                 {(onUpdate || onReassign) && canReassign && (
                   <Button
                     variant="secondary"
-                    className="flex-1"
+                    className="flex-1 flex justify-center items-center"
                     onClick={() => setIsReassigning(true)}
+                    title="再割当"
                   >
-                    再割当
+                    <RefreshCw className="w-5 h-5" />
                   </Button>
                 )}
                 {onComplete && canComplete && (
                   <Button
                     variant="secondary"
-                    className="flex-1 border-green-300 text-green-700 hover:bg-green-50"
+                    className="flex-1 border-green-300 text-green-700 hover:bg-green-50 flex justify-center items-center"
                     onClick={() => onComplete(visit.id)}
+                    title="完了"
                   >
-                    完了
+                    <CheckCircle className="w-5 h-5" />
                   </Button>
                 )}
                 {onCancel && canCancel && (
                   <Button
                     variant="secondary"
-                    className="flex-1 border-red-300 text-red-700 hover:bg-red-50"
+                    className="flex-1 border-red-300 text-red-700 hover:bg-red-50 flex justify-center items-center"
                     onClick={() => onCancel(visit.id)}
+                    title="キャンセル"
                   >
-                    キャンセル
+                    <XCircle className="w-5 h-5" />
                   </Button>
                 )}
               </div>
@@ -435,11 +403,12 @@ export function VisitDetailPanel({
                 <div className="pt-2 border-t border-gray-200 mt-2">
                   <Button
                     variant="secondary"
-                    className="w-full border-red-200 text-red-600 hover:bg-red-50 text-xs"
+                    className="w-full border-red-200 text-red-600 hover:bg-red-50 text-xs flex justify-center items-center"
                     onClick={handleDelete}
                     disabled={deleting}
+                    title="削除"
                   >
-                    {deleting ? '削除中...' : 'この予定を削除'}
+                    <Trash2 className="w-5 h-5" />
                   </Button>
                 </div>
               )}

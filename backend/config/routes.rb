@@ -41,6 +41,9 @@ Rails.application.routes.draw do
       end
     end
 
+    # Planning Lane routes
+    resources :planning_lanes
+
     # Schedule routes
     get "schedules/daily", to: "schedules#daily"
     get "schedules/weekly", to: "schedules#weekly"
