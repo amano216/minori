@@ -10,6 +10,7 @@ Rails.application.routes.draw do
     get "health", to: "health#show"
 
     # Auth routes
+    post "auth/signup", to: "auth#signup"
     post "auth/login", to: "auth#login"
     delete "auth/logout", to: "auth#logout"
     get "auth/me", to: "auth#me"

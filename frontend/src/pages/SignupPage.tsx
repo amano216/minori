@@ -64,8 +64,28 @@ export function SignupPage() {
     setIsLoading(true);
 
     try {
-      // TODO: Implement actual API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          organization_name: organizationName,
+          subdomain: subdomain,
+          email: adminEmail,
+          password: password,
+          password_confirmation: passwordConfirmation,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || '登録に失敗しました');
+      }
+
+      // Save token to localStorage
+      localStorage.setItem('token', data.token);
       
       showToast('success', 'アカウントを作成しました！');
       navigate('/onboarding');

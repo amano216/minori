@@ -29,15 +29,15 @@ module Backend
     config.autoload_lib(ignore: %w[assets tasks])
 
     # Autoload Concepts
-    config.autoload_paths += %W[
-      #{config.root}/app/concepts
-      #{config.root}/app/synchronizations
-    ]
+    # config.autoload_paths += %W[
+    #   #{config.root}/app/concepts
+    #   #{config.root}/app/synchronizations
+    # ]
 
-    config.eager_load_paths += %W[
-      #{config.root}/app/concepts
-      #{config.root}/app/synchronizations
-    ]
+    # config.eager_load_paths += %W[
+    #   #{config.root}/app/concepts
+    #   #{config.root}/app/synchronizations
+    # ]
 
     # Configuration for the application, engines, and railties goes here.
     #
