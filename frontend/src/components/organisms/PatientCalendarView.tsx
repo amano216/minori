@@ -541,6 +541,9 @@ export default function PatientCalendarView({
   useEffect(() => {
     if (groups && groups.length > 0) {
       loadLanes();
+    } else {
+      // If no groups, still set loading to false to show the UI
+      setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groups]);
