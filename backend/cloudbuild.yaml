@@ -30,7 +30,7 @@ steps:
       - '--platform=managed'
       - '--allow-unauthenticated'
       - '--add-cloudsql-instances=${PROJECT_ID}:asia-northeast1:minori-prod-db'
-      - '--set-env-vars=RAILS_ENV=production,DB_HOST=/cloudsql/${PROJECT_ID}:asia-northeast1:minori-prod-db,DB_NAME=minori_production,DB_USER=rails-app'
+      - '--set-env-vars=RAILS_ENV=production,DB_HOST=/cloudsql/${PROJECT_ID}:asia-northeast1:minori-prod-db,DB_NAME=minori_production,DB_USER=rails-app,FRONTEND_URL=https://minori-frontend-336192862447.asia-northeast1.run.app'
       - '--set-secrets=RAILS_MASTER_KEY=RAILS_MASTER_KEY:latest,DB_PASSWORD=DB_PASSWORD:latest,SECRET_KEY_BASE=SECRET_KEY_BASE:latest'
       - '--port=8080'
       - '--timeout=300'
