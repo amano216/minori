@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_26_044638) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_26_133338) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -114,6 +114,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_26_044638) do
   create_table "visits", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "duration", default: 60, null: false
+    t.integer "lock_version", default: 0, null: false
     t.text "notes"
     t.bigint "organization_id"
     t.bigint "patient_id", null: false

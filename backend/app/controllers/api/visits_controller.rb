@@ -27,21 +27,54 @@ module Api
     end
 
     def create
-      @visit = Visit.new(visit_params_with_organization)
+      Visit.transaction do
+        @visit = Visit.new(visit_params_with_organization)
 
-      if @visit.save
+        # ダブルブッキング防止: 悲観的ロックで競合をチェック
+        if @visit.user_id.present?
+          check_user_conflicts!(@visit)
+        end
+
+        if @visit.patient_id.present?
+          check_patient_conflicts!(@visit)
+        end
+
+        @visit.save!
         render json: visit_json(@visit), status: :created
-      else
-        render json: { errors: @visit.errors.full_messages }, status: :unprocessable_entity
       end
+    rescue ActiveRecord::RecordInvalid => e
+      render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
+    rescue StandardError => e
+      render json: { errors: [e.message] }, status: :unprocessable_entity
     end
 
     def update
-      if @visit.update(visit_params)
+      Visit.transaction do
+        # 楽観的ロックでStaleObjectErrorが発生する可能性がある
+        @visit.reload
+
+        # スタッフまたは患者が変更される場合は競合チェック
+        if visit_params[:user_id].present? && visit_params[:user_id] != @visit.user_id
+          temp_visit = @visit.dup
+          temp_visit.assign_attributes(visit_params)
+          check_user_conflicts!(temp_visit)
+        end
+
+        if visit_params[:patient_id].present? && visit_params[:patient_id] != @visit.patient_id
+          temp_visit = @visit.dup
+          temp_visit.assign_attributes(visit_params)
+          check_patient_conflicts!(temp_visit)
+        end
+
+        @visit.update!(visit_params)
         render json: visit_json(@visit)
-      else
-        render json: { errors: @visit.errors.full_messages }, status: :unprocessable_entity
       end
+    rescue ActiveRecord::StaleObjectError
+      render json: { errors: ["この訪問予定は他のユーザーによって更新されました。ページを再読み込みしてください。"] }, status: :conflict
+    rescue ActiveRecord::RecordInvalid => e
+      render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
+    rescue StandardError => e
+      render json: { errors: [e.message] }, status: :unprocessable_entity
     end
 
     def destroy
@@ -103,9 +136,38 @@ module Api
         user_id: visit.user_id,
         patient_id: visit.patient_id,
         planning_lane_id: visit.planning_lane_id,
+        lock_version: visit.lock_version,
         staff: visit.user&.as_json(only: [ :id, :name ]),
         patient: visit.patient&.as_json(only: [ :id, :name ])
       }
+    end
+
+    def check_user_conflicts!(visit)
+      end_time = visit.scheduled_at + visit.duration.minutes
+
+      conflicting = Visit.where(user_id: visit.user_id)
+                         .where.not(id: visit.id)
+                         .where.not(status: %w[cancelled completed])
+                         .where("scheduled_at < ? AND scheduled_at + (duration * interval '1 minute') > ?",
+                                end_time, visit.scheduled_at)
+                         .lock
+                         .exists?
+
+      raise "スタッフは既に別の訪問が予定されています" if conflicting
+    end
+
+    def check_patient_conflicts!(visit)
+      end_time = visit.scheduled_at + visit.duration.minutes
+
+      conflicting = Visit.where(patient_id: visit.patient_id)
+                         .where.not(id: visit.id)
+                         .where.not(status: %w[cancelled completed])
+                         .where("scheduled_at < ? AND scheduled_at + (duration * interval '1 minute') > ?",
+                                end_time, visit.scheduled_at)
+                         .lock
+                         .exists?
+
+      raise "患者は既に別の訪問が予定されています" if conflicting
     end
   end
 end

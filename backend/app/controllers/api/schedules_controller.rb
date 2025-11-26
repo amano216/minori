@@ -75,16 +75,19 @@ module Api
 
       visits = Visit.where(scheduled_at: start_date.beginning_of_day..end_date.end_of_day)
 
+      # 最適化: 1回のクエリで全ステータスの集計を取得
+      status_counts = visits.group(:status).count
+
       render json: {
         start_date: start_date.to_s,
         end_date: end_date.to_s,
         total_visits: visits.count,
         by_status: {
-          scheduled: visits.where(status: "scheduled").count,
-          in_progress: visits.where(status: "in_progress").count,
-          completed: visits.where(status: "completed").count,
-          cancelled: visits.where(status: "cancelled").count,
-          unassigned: visits.where(status: "unassigned").count
+          scheduled: status_counts["scheduled"] || 0,
+          in_progress: status_counts["in_progress"] || 0,
+          completed: status_counts["completed"] || 0,
+          cancelled: status_counts["cancelled"] || 0,
+          unassigned: status_counts["unassigned"] || 0
         },
         unassigned_visits: visits.where(user_id: nil).count
       }
