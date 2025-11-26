@@ -49,13 +49,13 @@ Rails.application.configure do
       namespace: "minori_cache",
       reconnect_attempts: 3,
       error_handler: ->(method:, returning:, exception:) {
-        Rails.logger.error("Redis error in #{method}: #{exception.message}")
+        Rails.logger&.error("Redis error in #{method}: #{exception.message}")
       }
     }
   else
     # Fallback to memory store if Redis is not available
     config.cache_store = :memory_store
-    Rails.logger.warn("REDIS_URL not set, using memory store. This is not recommended for production.")
+    # Note: Logger not available at config time, warning will be logged after initialization
   end
 
   # Use async queue adapter for MVP (switch to solid_queue when DB is ready)
