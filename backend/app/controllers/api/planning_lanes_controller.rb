@@ -35,7 +35,7 @@ module Api
     end
 
     def planning_lane_params
-      params.require(:planning_lane).permit(:name, :position)
+      params.require(:planning_lane).permit(:name, :position, :group_id)
     end
   end
 end

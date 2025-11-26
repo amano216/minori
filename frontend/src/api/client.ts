@@ -438,16 +438,17 @@ export interface PlanningLane {
   name: string;
   position: number;
   organization_id: number;
+  group_id?: number | null;
 }
 
 export async function fetchPlanningLanes(): Promise<PlanningLane[]> {
   return apiRequest('/api/planning_lanes');
 }
 
-export async function createPlanningLane(name: string, position: number): Promise<PlanningLane> {
+export async function createPlanningLane(name: string, position: number, groupId?: number | null): Promise<PlanningLane> {
   return apiRequest('/api/planning_lanes', {
     method: 'POST',
-    body: JSON.stringify({ planning_lane: { name, position } }),
+    body: JSON.stringify({ planning_lane: { name, position, group_id: groupId } }),
   });
 }
 
