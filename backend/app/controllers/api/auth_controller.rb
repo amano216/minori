@@ -30,6 +30,7 @@ class Api::AuthController < ApplicationController
         email: params[:email]&.downcase,
         password: params[:password],
         password_confirmation: params[:password_confirmation],
+        name: params[:name],
         role: User::ORGANIZATION_ADMIN,
         organization: organization
       )
@@ -37,17 +38,6 @@ class Api::AuthController < ApplicationController
       # Create organization membership
       OrganizationMembership.create!(
         user: user,
-        organization: organization
-      )
-
-      # Create admin role for the user
-      admin_role = Role.find_or_create_by!(name: Role::ORGANIZATION_ADMIN) do |role|
-        role.description = "Organization Administrator"
-      end
-
-      UserRole.create!(
-        user: user,
-        role: admin_role,
         organization: organization
       )
 
