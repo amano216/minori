@@ -88,6 +88,7 @@ export function UnifiedSchedulePage() {
         setGroups(groupsData);
         setSelectedGroupIds(groupsData.map(g => g.id));
         setStaffs(staffsData);
+        // Don't set loading false here - let loadScheduleData handle it
       } catch (err) {
         console.error('Failed to load master data:', err);
         setError('マスターデータの取得に失敗しました');
