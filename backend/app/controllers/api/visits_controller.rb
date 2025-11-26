@@ -39,7 +39,7 @@ module Api
       end
     rescue DoubleBookingError => e
       render json: {
-        errors: [e.message],
+        errors: [ e.message ],
         error_type: "double_booking",
         conflict_type: e.conflict_type,
         resource_id: e.resource_id
@@ -70,14 +70,15 @@ module Api
         render json: visit_json(@visit)
       end
     rescue ConcurrentModificationError, ActiveRecord::StaleObjectError => e
+      stale_message = "この訪問予定は他のユーザーによって更新されました。ページを再読み込みしてください。"
       render json: {
-        errors: [e.is_a?(ConcurrentModificationError) ? e.message : "この訪問予定は他のユーザーによって更新されました。ページを再読み込みしてください。"],
+        errors: [ e.is_a?(ConcurrentModificationError) ? e.message : stale_message ],
         error_type: "stale_object",
         current_version: @visit.reload.lock_version
       }, status: :conflict
     rescue DoubleBookingError => e
       render json: {
-        errors: [e.message],
+        errors: [ e.message ],
         error_type: "double_booking",
         conflict_type: e.conflict_type,
         resource_id: e.resource_id

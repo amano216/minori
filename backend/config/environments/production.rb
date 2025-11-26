@@ -48,7 +48,7 @@ Rails.application.configure do
       expires_in: 90.minutes,
       namespace: "minori_cache",
       reconnect_attempts: 3,
-      error_handler: -> (method:, returning:, exception:) {
+      error_handler: ->(method:, returning:, exception:) {
         Rails.logger.error("Redis error in #{method}: #{exception.message}")
       }
     }
