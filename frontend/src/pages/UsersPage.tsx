@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { organizationApi } from '../api/organizationApi';
+import { forgotPassword } from '../api/client';
 import type { User, Group } from '../types/organization';
 import { Icon } from '../components/atoms/Icon';
 
@@ -159,6 +160,27 @@ export function UsersPage() {
     }
   };
 
+  const handleSendPasswordReset = async () => {
+    if (!formData.email) {
+      setError('メールアドレスを入力してください');
+      return;
+    }
+    if (!confirm(`${formData.email} 宛にパスワードリセットメールを送信しますか？`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await forgotPassword(formData.email);
+      alert('パスワードリセットメールを送信しました');
+    } catch (err) {
+      const error = err as { message?: string };
+      setError(error.message || 'メール送信に失敗しました');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getQualificationLabels = (qualifications?: string[]) => {
     if (!qualifications || qualifications.length === 0) return '-';
     return qualifications
@@ -303,13 +325,28 @@ export function UsersPage() {
                     <label className="block text-sm font-medium text-text-primary mb-1">
                       パスワード {editingUser && '（変更する場合のみ入力）'}
                     </label>
-                    <input
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-main"
-                      required={!editingUser}
-                    />
+                    {editingUser ? (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleSendPasswordReset}
+                          className="px-3 py-2 bg-gray-100 text-text-primary rounded border border-border hover:bg-gray-200 transition-colors text-sm"
+                        >
+                          パスワードリセットメールを送信
+                        </button>
+                        <span className="text-xs text-text-grey">
+                          ※ユーザー自身で再設定を行います
+                        </span>
+                      </div>
+                    ) : (
+                      <input
+                        type="password"
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-main"
+                        required={!editingUser}
+                      />
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">

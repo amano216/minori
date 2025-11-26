@@ -7,6 +7,7 @@ interface WeeklyResourceViewProps {
   startDate: Date;
   staffs: Staff[];
   groups: Group[];
+  selectedGroupIds?: number[];
   visits: Visit[];
   onVisitClick: (visit: Visit) => void;
   onCellClick?: (staffId: number, date: Date) => void;
@@ -114,6 +115,7 @@ export function WeeklyResourceView({
   startDate,
   staffs,
   groups,
+  selectedGroupIds,
   visits,
   onVisitClick,
   onCellClick,
@@ -196,12 +198,18 @@ export function WeeklyResourceView({
       {/* Body: Staff Rows */}
       <div className="flex-1 overflow-y-auto overflow-x-auto">
         {hierarchy.offices.map((office) => {
-          const isCollapsed = collapsedGroups.has(office.id);
+          const isOfficeSelected = !selectedGroupIds || selectedGroupIds.includes(office.id);
           const teams = hierarchy.officeTeams.get(office.id) || [];
-          const directStaffs = hierarchy.groupStaffs.get(office.id) || [];
-          const totalStaffCount = directStaffs.length + teams.reduce((acc, team) => acc + (hierarchy.groupStaffs.get(team.id)?.length || 0), 0);
+          const visibleTeams = teams.filter(t => !selectedGroupIds || selectedGroupIds.includes(t.id));
+          
+          if (!isOfficeSelected && visibleTeams.length === 0) return null;
 
-          if (totalStaffCount === 0 && teams.length === 0) return null;
+          const isCollapsed = collapsedGroups.has(office.id);
+          const directStaffs = hierarchy.groupStaffs.get(office.id) || [];
+          const visibleDirectStaffs = isOfficeSelected ? directStaffs : [];
+          const totalStaffCount = visibleDirectStaffs.length + visibleTeams.reduce((acc, team) => acc + (hierarchy.groupStaffs.get(team.id)?.length || 0), 0);
+
+          if (totalStaffCount === 0 && visibleTeams.length === 0) return null;
 
           return (
             <div key={office.id} className="min-w-fit">
@@ -223,7 +231,7 @@ export function WeeklyResourceView({
               {!isCollapsed && (
                 <>
                   {/* Direct Staffs */}
-                  {directStaffs.map(staff => {
+                  {isOfficeSelected && directStaffs.map(staff => {
                     const staffVisits = visits.filter(v => v.staff_id === staff.id);
                     return (
                       <WeeklyStaffRow
@@ -238,7 +246,7 @@ export function WeeklyResourceView({
                   })}
 
                   {/* Teams */}
-                  {teams.map(team => {
+                  {visibleTeams.map(team => {
                     const teamStaffs = hierarchy.groupStaffs.get(team.id) || [];
                     if (teamStaffs.length === 0) return null;
                     

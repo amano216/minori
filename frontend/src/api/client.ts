@@ -90,6 +90,13 @@ export async function fetchCurrentUser(): Promise<{ user: User }> {
   return apiRequest('/api/auth/me');
 }
 
+export async function forgotPassword(email: string): Promise<void> {
+  await apiRequest('/api/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
 // Staff API (Userモデルに統合済み - 後方互換性のためStaff APIを維持)
 export interface Staff {
   id: number;

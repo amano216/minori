@@ -1,12 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import type { Staff, Group, Visit } from '../../api/client';
 
 interface TimelineResourceViewProps {
   date: Date;
   staffs: Staff[];
-  groups: Group[]; // Not used yet, but good for future grouping
+  groups: Group[];
+  selectedGroupIds?: number[];
   visits: Visit[];
   onVisitClick: (visit: Visit) => void;
   onTimeSlotClick?: (staffId: number, time: Date) => void;
@@ -18,6 +18,7 @@ const TOTAL_HOURS = END_HOUR - START_HOUR;
 
 interface TimelineStaffRowProps {
   staff: Staff;
+  groupName?: string;
   visits: Visit[];
   hours: number[];
   date: Date;
@@ -25,7 +26,7 @@ interface TimelineStaffRowProps {
   onTimeSlotClick?: (staffId: number, time: Date) => void;
 }
 
-function TimelineStaffRow({ staff, visits, hours, date, onVisitClick, onTimeSlotClick }: TimelineStaffRowProps) {
+function TimelineStaffRow({ staff, groupName, visits, hours, date, onVisitClick, onTimeSlotClick }: TimelineStaffRowProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `staff-${staff.id}`,
     data: { staff },
@@ -82,7 +83,11 @@ function TimelineStaffRow({ staff, visits, hours, date, onVisitClick, onTimeSlot
         </div>
         <div>
           <div className="text-sm font-medium text-gray-900">{staff.name}</div>
-          <div className="text-xs text-gray-500">スタッフ</div>
+          {groupName && (
+            <div className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded inline-block mt-0.5">
+              {groupName}
+            </div>
+          )}
         </div>
       </div>
       <div 
@@ -126,22 +131,12 @@ export function TimelineResourceView({
   date,
   staffs,
   groups,
+  selectedGroupIds,
   visits,
   onVisitClick,
   onTimeSlotClick,
 }: TimelineResourceViewProps) {
   const hours = Array.from({ length: TOTAL_HOURS + 1 }, (_, i) => START_HOUR + i);
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<number>>(new Set());
-
-  const toggleGroup = (groupId: number) => {
-    const newCollapsed = new Set(collapsedGroups);
-    if (newCollapsed.has(groupId)) {
-      newCollapsed.delete(groupId);
-    } else {
-      newCollapsed.add(groupId);
-    }
-    setCollapsedGroups(newCollapsed);
-  };
 
   const hierarchy = useMemo(() => {
     // 1. Identify Offices (Roots) - those without parent_id
@@ -177,13 +172,14 @@ export function TimelineResourceView({
     return { offices, officeTeams, groupStaffs, unassignedStaffs };
   }, [staffs, groups]);
 
-  const renderStaffRows = (staffList: Staff[]) => {
+  const renderStaffRows = (staffList: Staff[], groupName?: string) => {
     return staffList.map(staff => {
       const staffVisits = visits.filter(v => v.staff_id === staff.id);
       return (
         <TimelineStaffRow
           key={staff.id}
           staff={staff}
+          groupName={groupName}
           visits={staffVisits}
           hours={hours}
           date={date}
@@ -217,64 +213,36 @@ export function TimelineResourceView({
       {/* Body: Staff Rows */}
       <div className="flex-1 overflow-y-auto">
         {hierarchy.offices.map((office) => {
-          const isCollapsed = collapsedGroups.has(office.id);
+          const isOfficeSelected = !selectedGroupIds || selectedGroupIds.includes(office.id);
           const teams = hierarchy.officeTeams.get(office.id) || [];
+          const visibleTeams = teams.filter(t => !selectedGroupIds || selectedGroupIds.includes(t.id));
+          
+          if (!isOfficeSelected && visibleTeams.length === 0) return null;
+
           const directStaffs = hierarchy.groupStaffs.get(office.id) || [];
           
           // Calculate total staff in this office (direct + teams)
-          const totalStaffCount = directStaffs.length + teams.reduce((acc, team) => acc + (hierarchy.groupStaffs.get(team.id)?.length || 0), 0);
+          const visibleDirectStaffs = isOfficeSelected ? directStaffs : [];
+          const totalStaffCount = visibleDirectStaffs.length + visibleTeams.reduce((acc, team) => acc + (hierarchy.groupStaffs.get(team.id)?.length || 0), 0);
 
-          if (totalStaffCount === 0 && teams.length === 0) return null;
+          if (totalStaffCount === 0 && visibleTeams.length === 0) return null;
 
           return (
-            <div key={office.id} className="border-b border-gray-200">
-              {/* Office Header */}
-              <div 
-                className="flex items-center bg-gray-100 px-2 py-1.5 cursor-pointer hover:bg-gray-200 transition-colors sticky top-0 z-20"
-                onClick={() => toggleGroup(office.id)}
-              >
-                <div className="w-48 flex-shrink-0 flex items-center">
-                  {isCollapsed ? (
-                    <ChevronRightIcon className="w-4 h-4 text-gray-500 mr-2" />
-                  ) : (
-                    <ChevronDownIcon className="w-4 h-4 text-gray-500 mr-2" />
-                  )}
-                  <span className="text-sm font-bold text-gray-800">{office.name}</span>
-                  <span className="ml-2 text-xs text-gray-500 bg-white px-1.5 rounded-full border border-gray-200">
-                    {totalStaffCount}
-                  </span>
-                </div>
-                <div className="flex-1 border-l border-gray-200 h-full"></div>
-              </div>
+            <div key={office.id}>
+              {/* Direct Staffs */}
+              {isOfficeSelected && renderStaffRows(directStaffs, office.name)}
 
-              {!isCollapsed && (
-                <>
-                  {/* Direct Staffs */}
-                  {renderStaffRows(directStaffs)}
-
-                  {/* Teams */}
-                  {teams.map(team => {
-                    const teamStaffs = hierarchy.groupStaffs.get(team.id) || [];
-                    if (teamStaffs.length === 0) return null;
-                    
-                    return (
-                      <div key={team.id} className="pl-0">
-                         {/* Team Header */}
-                         <div className="flex items-center bg-gray-50 border-b border-gray-100 px-2 py-1">
-                            <div className="w-48 flex-shrink-0 flex items-center pl-6">
-                              <span className="text-xs font-semibold text-gray-600">{team.name}</span>
-                              <span className="ml-2 text-[10px] text-gray-400 bg-white px-1.5 rounded-full border border-gray-200">
-                                {teamStaffs.length}
-                              </span>
-                            </div>
-                            <div className="flex-1 border-l border-gray-200 h-full"></div>
-                         </div>
-                         {renderStaffRows(teamStaffs)}
-                      </div>
-                    );
-                  })}
-                </>
-              )}
+              {/* Teams */}
+              {visibleTeams.map(team => {
+                const teamStaffs = hierarchy.groupStaffs.get(team.id) || [];
+                if (teamStaffs.length === 0) return null;
+                
+                return (
+                  <div key={team.id}>
+                      {renderStaffRows(teamStaffs, team.name)}
+                  </div>
+                );
+              })}
             </div>
           );
         })}
@@ -282,16 +250,7 @@ export function TimelineResourceView({
         {/* Unassigned Staffs */}
         {hierarchy.unassignedStaffs.length > 0 && (
           <div>
-            <div className="flex items-center bg-gray-100 border-b border-gray-200 px-2 py-1 sticky top-0 z-20">
-              <div className="w-48 flex-shrink-0 flex items-center pl-2">
-                <span className="text-sm font-bold text-gray-700">未所属</span>
-                <span className="ml-2 text-xs text-gray-500 bg-white px-1.5 rounded-full border border-gray-200">
-                  {hierarchy.unassignedStaffs.length}
-                </span>
-              </div>
-              <div className="flex-1 border-l border-gray-200 h-full"></div>
-            </div>
-            {renderStaffRows(hierarchy.unassignedStaffs)}
+            {renderStaffRows(hierarchy.unassignedStaffs, '未所属')}
           </div>
         )}
         
