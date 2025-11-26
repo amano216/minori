@@ -9,7 +9,9 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     hmr: {
-      clientPort: 443,
+      // Use default settings for local development
+      // clientPort is only needed for reverse proxy setups
+      host: 'localhost',
     },
     proxy: {
       '/api': {

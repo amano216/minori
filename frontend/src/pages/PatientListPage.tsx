@@ -69,8 +69,9 @@ export function PatientListPage() {
     {
       key: 'name',
       header: '名前',
+      minWidth: 'min-w-[100px]',
       render: (patient: Patient) => (
-        <Link to={`/patients/${patient.id}`} className="text-main hover:underline font-medium">
+        <Link to={`/patients/${patient.id}`} className="text-main hover:underline font-medium whitespace-nowrap">
           {patient.name}
         </Link>
       ),
@@ -78,20 +79,23 @@ export function PatientListPage() {
     {
       key: 'address',
       header: '住所',
+      minWidth: 'min-w-[120px]',
       render: (patient: Patient) => (
-        <span className="text-text-grey">{patient.address || '-'}</span>
+        <span className="text-text-grey text-xs sm:text-sm">{patient.address || '-'}</span>
       ),
     },
     {
       key: 'phone',
       header: '電話番号',
+      minWidth: 'min-w-[100px]',
       render: (patient: Patient) => (
-        <span className="text-text-grey">{patient.phone || '-'}</span>
+        <span className="text-text-grey whitespace-nowrap">{patient.phone || '-'}</span>
       ),
     },
     {
       key: 'care_requirements',
       header: 'ケア内容',
+      minWidth: 'min-w-[120px]',
       render: (patient: Patient) => (
         <div className="flex flex-wrap gap-1">
           {patient.care_requirements.length > 0 ? (
@@ -114,6 +118,7 @@ export function PatientListPage() {
     {
       key: 'status',
       header: 'ステータス',
+      minWidth: 'min-w-[80px]',
       render: (patient: Patient) => (
         <Badge variant={STATUS_VARIANTS[patient.status] || 'default'}>
           {STATUS_LABELS[patient.status] || patient.status}
@@ -123,8 +128,9 @@ export function PatientListPage() {
     {
       key: 'actions',
       header: '操作',
+      minWidth: 'min-w-[120px]',
       render: (patient: Patient) => (
-        <div className="flex gap-2">
+        <div className="flex gap-1 sm:gap-2">
           <Button
             variant="secondary"
             size="sm"
