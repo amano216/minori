@@ -324,116 +324,139 @@ export function UnifiedSchedulePage() {
   return (
     <DndContext onDragEnd={handleDragEnd}>
       <div className="h-screen flex flex-col overflow-hidden bg-gray-100">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shadow-sm z-20 h-16">
-          <div className="flex items-center space-x-4">
+        {/* Header - Mobile Responsive */}
+        <div className="bg-white border-b border-gray-200 px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between shadow-sm z-20 min-h-[56px] sm:h-16">
+          {/* Left Section */}
+          <div className="flex items-center space-x-1 sm:space-x-4">
             <button 
               onClick={() => setIsInboxOpen(!isInboxOpen)}
               className={`p-2 rounded-lg transition-colors ${isInboxOpen ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-50'}`}
               title={isInboxOpen ? "未割当リストを閉じる" : "未割当リストを開く"}
             >
-              {isInboxOpen ? <ChevronDoubleLeftIcon className="w-6 h-6" /> : <InboxIcon className="w-6 h-6" />}
+              {isInboxOpen ? <ChevronDoubleLeftIcon className="w-5 h-5 sm:w-6 sm:h-6" /> : <InboxIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
             </button>
-            <h1 className="text-xl font-bold text-gray-800 tracking-tight hidden md:block">Minori</h1>
-            <div className="h-8 w-px bg-gray-200 mx-2"></div>
-            <MultiGroupSelector 
-              groups={groups} 
-              selectedGroupIds={selectedGroupIds} 
-              onChange={setSelectedGroupIds} 
-            />
+            <h1 className="text-lg sm:text-xl font-bold text-gray-800 tracking-tight hidden lg:block">Minori</h1>
+            <div className="h-8 w-px bg-gray-200 mx-1 sm:mx-2 hidden sm:block"></div>
+            <div className="hidden sm:block">
+              <MultiGroupSelector 
+                groups={groups} 
+                selectedGroupIds={selectedGroupIds} 
+                onChange={setSelectedGroupIds} 
+              />
+            </div>
           </div>
           
-                    <div className="flex items-center space-x-4">
-             <div className="flex items-center bg-gray-100 rounded-xl p-1 border border-gray-200 relative">
-               <button onClick={handlePrevious} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all text-gray-600">
-                 <ChevronLeftIcon className="w-6 h-6" />
-               </button>
-               
-               <div 
-                 className="px-4 font-bold text-gray-800 min-w-[160px] text-center text-lg cursor-pointer hover:bg-gray-200 rounded transition-colors select-none flex items-center justify-center"
-                 onClick={handleDateClick}
-               >
-                 {currentDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
-               </div>
-               
-               <input
-                 type="date"
-                 ref={dateInputRef}
-                 className="absolute top-10 left-1/2 transform -translate-x-1/2 opacity-0 w-0 h-0 pointer-events-none"
-                 value={currentDate.toISOString().split('T')[0]}
-                 onChange={handleDateChange}
-               />
+          {/* Center Section - Date Navigation */}
+          <div className="flex items-center">
+            <div className="flex items-center bg-gray-100 rounded-lg sm:rounded-xl p-0.5 sm:p-1 border border-gray-200 relative">
+              <button onClick={handlePrevious} className="p-1.5 sm:p-2 hover:bg-white hover:shadow-sm rounded-md sm:rounded-lg transition-all text-gray-600">
+                <ChevronLeftIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+              
+              <div 
+                className="px-2 sm:px-4 font-bold text-gray-800 min-w-[100px] sm:min-w-[160px] text-center text-sm sm:text-lg cursor-pointer hover:bg-gray-200 rounded transition-colors select-none flex items-center justify-center"
+                onClick={handleDateClick}
+              >
+                {/* Short format for mobile, full format for desktop */}
+                <span className="sm:hidden">
+                  {currentDate.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', weekday: 'short' })}
+                </span>
+                <span className="hidden sm:inline">
+                  {currentDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
+                </span>
+              </div>
+              
+              <input
+                type="date"
+                ref={dateInputRef}
+                className="absolute top-10 left-1/2 transform -translate-x-1/2 opacity-0 w-0 h-0 pointer-events-none"
+                value={currentDate.toISOString().split('T')[0]}
+                onChange={handleDateChange}
+              />
 
-               <button onClick={handleNext} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all text-gray-600">
-                 <ChevronRightIcon className="w-6 h-6" />
-               </button>
-             </div>
-             <div className="relative">
-               <button 
-                 onClick={() => setIsMonthlyCalendarOpen(!isMonthlyCalendarOpen)} 
-                 className={`p-2 rounded-lg transition-colors ${isMonthlyCalendarOpen ? 'bg-indigo-50 text-indigo-800' : 'text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50'}`}
-                 title="月次カレンダー"
-               >
-                 <CalendarDaysIcon className="w-6 h-6" />
-               </button>
-               {isMonthlyCalendarOpen && (
-                 <MonthlyCalendarView
-                   currentDate={currentDate}
-                   visits={allWeeklyVisits}
-                   onDateClick={(date) => {
-                     setCurrentDate(date);
-                     setIsMonthlyCalendarOpen(false);
-                   }}
-                   onClose={() => setIsMonthlyCalendarOpen(false)}
-                 />
-               )}
-             </div>
+              <button onClick={handleNext} className="p-1.5 sm:p-2 hover:bg-white hover:shadow-sm rounded-md sm:rounded-lg transition-all text-gray-600">
+                <ChevronRightIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+            </div>
+            
+            {/* Monthly Calendar - Hidden on very small screens */}
+            <div className="relative ml-1 sm:ml-2 hidden xs:block">
+              <button 
+                onClick={() => setIsMonthlyCalendarOpen(!isMonthlyCalendarOpen)} 
+                className={`p-1.5 sm:p-2 rounded-lg transition-colors ${isMonthlyCalendarOpen ? 'bg-indigo-50 text-indigo-800' : 'text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50'}`}
+                title="月次カレンダー"
+              >
+                <CalendarDaysIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+              {isMonthlyCalendarOpen && (
+                <MonthlyCalendarView
+                  currentDate={currentDate}
+                  visits={allWeeklyVisits}
+                  onDateClick={(date) => {
+                    setCurrentDate(date);
+                    setIsMonthlyCalendarOpen(false);
+                  }}
+                  onClose={() => setIsMonthlyCalendarOpen(false)}
+                />
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-             <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
-               <button
-                 onClick={() => setViewMode('patient')}
-                 className={`p-2 rounded-md transition-all ${viewMode === 'patient' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
-                 title="患者カレンダー"
-               >
-                 <UserGroupIcon className="w-5 h-5" />
-               </button>
-               <button
-                 onClick={() => setViewMode('day')}
-                 className={`p-2 rounded-md transition-all ${viewMode === 'day' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
-                 title="日次タイムライン"
-               >
-                 <ClockIcon className="w-5 h-5" />
-               </button>
-             </div>
+          {/* Right Section - Actions */}
+          <div className="flex items-center gap-1 sm:gap-2">
+            <div className="flex bg-gray-100 p-0.5 sm:p-1 rounded-lg border border-gray-200">
+              <button
+                onClick={() => setViewMode('patient')}
+                className={`p-1.5 sm:p-2 rounded-md transition-all ${viewMode === 'patient' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+                title="患者カレンダー"
+              >
+                <UserGroupIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+              <button
+                onClick={() => setViewMode('day')}
+                className={`p-1.5 sm:p-2 rounded-md transition-all ${viewMode === 'day' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+                title="日次タイムライン"
+              >
+                <ClockIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+            </div>
 
-             <button 
-               onClick={handleNewVisitClick}
-               className="bg-indigo-600 text-white p-3 rounded-full shadow-lg hover:bg-indigo-700 hover:shadow-xl transition-all flex items-center justify-center"
-               title="新規訪問"
-             >
-               <PlusIcon className="w-6 h-6" />
-             </button>
+            <button 
+              onClick={handleNewVisitClick}
+              className="bg-indigo-600 text-white p-2 sm:p-3 rounded-full shadow-lg hover:bg-indigo-700 hover:shadow-xl transition-all flex items-center justify-center"
+              title="新規訪問"
+            >
+              <PlusIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
           </div>
         </div>
 
-        {/* Main Content (3-pane) */}
+        {/* Main Content (3-pane) - Mobile Responsive */}
         <div className="flex-1 flex overflow-hidden relative">
-          {/* Left Pane: Inbox */}
+          {/* Left Pane: Inbox - Overlay on mobile, side panel on desktop */}
           <div 
             className={`
               flex-shrink-0 bg-white border-r border-gray-200 z-10 shadow-[4px_0_24px_rgba(0,0,0,0.02)] transition-all duration-300 ease-in-out overflow-hidden
-              ${isInboxOpen ? 'w-80 opacity-100' : 'w-0 opacity-0 border-none'}
+              ${isInboxOpen 
+                ? 'fixed inset-y-0 left-0 w-[280px] sm:w-80 sm:relative sm:inset-auto mt-14 sm:mt-0 opacity-100' 
+                : 'w-0 opacity-0 border-none'}
             `}
           >
-            <div className="w-80 h-full">
+          <div className="w-[280px] sm:w-80 h-full">
               <UnassignedVisitInbox 
                 visits={unassignedVisits} 
                 onVisitClick={handleVisitSelect} 
               />
             </div>
           </div>
+          
+          {/* Mobile Inbox Backdrop */}
+          {isInboxOpen && (
+            <div 
+              className="fixed inset-0 bg-black/20 z-[5] sm:hidden mt-14"
+              onClick={() => setIsInboxOpen(false)}
+            />
+          )}
 
           {/* Center Pane: Timeline or Weekly View */}
           <div className="flex-1 overflow-hidden relative bg-white">

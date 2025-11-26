@@ -75,11 +75,12 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_26_044638) do
 
   create_table "planning_lanes", force: :cascade do |t|
     t.datetime "created_at", null: false
-    t.integer "group_id"
+    t.bigint "group_id"
     t.string "name"
     t.bigint "organization_id", null: false
     t.integer "position"
     t.datetime "updated_at", null: false
+    t.index ["group_id"], name: "index_planning_lanes_on_group_id"
     t.index ["organization_id"], name: "index_planning_lanes_on_organization_id"
   end
 
@@ -138,6 +139,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_26_044638) do
   add_foreign_key "organization_memberships", "users"
   add_foreign_key "patients", "groups"
   add_foreign_key "patients", "organizations"
+  add_foreign_key "planning_lanes", "groups"
   add_foreign_key "planning_lanes", "organizations"
   add_foreign_key "users", "groups"
   add_foreign_key "users", "organizations"
