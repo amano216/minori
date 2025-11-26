@@ -16,9 +16,9 @@ export function AppContainerLayout({ app, routes, children }: AppContainerLayout
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Desktop: Sub Sidebar open state
+  // Desktop: Sub Sidebar open state (default: open for better UX)
   // Mobile: Drawer open state (for sub-menu)
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(true);
 
   const handleLogout = () => {
     logout();
