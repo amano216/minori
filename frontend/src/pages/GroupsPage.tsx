@@ -246,7 +246,7 @@ export function GroupsPage() {
     return (
       <div className="h-full flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6 pb-4 border-b border-border">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className={`px-2 py-0.5 rounded text-xs ${
@@ -257,22 +257,23 @@ export function GroupsPage() {
                 {selectedNode.type === 'organization' ? '組織' :
                  selectedNode.type === 'office' ? '事業所' : 'チーム'}
               </span>
-              <h2 className="text-2xl font-bold text-text-primary">{selectedNode.name}</h2>
+              <h2 className="text-lg sm:text-2xl font-bold text-text-primary">{selectedNode.name}</h2>
             </div>
             {group?.description && (
-              <p className="text-text-grey text-sm">{group.description}</p>
+              <p className="text-text-grey text-xs sm:text-sm">{group.description}</p>
             )}
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {/* Actions based on type */}
             {selectedNode.type === 'organization' && (
               <button
                 onClick={() => handleOpenModal()}
-                className="px-3 py-1.5 bg-main text-white rounded hover:bg-main-dark text-sm flex items-center gap-1"
+                className="px-2 sm:px-3 py-1.5 bg-main text-white rounded hover:bg-main-dark text-xs sm:text-sm flex items-center gap-1"
               >
-                <Icon name="Plus" size={16} />
-                事業所を追加
+                <Icon name="Plus" size={14} />
+                <span className="hidden sm:inline">事業所を追加</span>
+                <span className="sm:hidden">追加</span>
               </button>
             )}
             
@@ -280,24 +281,25 @@ export function GroupsPage() {
               <>
                 <button
                   onClick={() => handleOpenModal(group!)}
-                  className="px-3 py-1.5 bg-main text-white rounded hover:bg-main-dark text-sm flex items-center gap-1"
+                  className="px-2 sm:px-3 py-1.5 bg-main text-white rounded hover:bg-main-dark text-xs sm:text-sm flex items-center gap-1"
                 >
-                  <Icon name="Plus" size={16} />
-                  チームを追加
+                  <Icon name="Plus" size={14} />
+                  <span className="hidden sm:inline">チームを追加</span>
+                  <span className="sm:hidden">追加</span>
                 </button>
                 <button
                   onClick={() => handleOpenModal(undefined, group!)}
-                  className="px-3 py-1.5 border border-border rounded hover:bg-gray-50 text-sm flex items-center gap-1"
+                  className="px-2 sm:px-3 py-1.5 border border-border rounded hover:bg-gray-50 text-xs sm:text-sm flex items-center gap-1"
                 >
-                  <Icon name="Edit" size={16} />
-                  編集
+                  <Icon name="Edit" size={14} />
+                  <span className="hidden sm:inline">編集</span>
                 </button>
                 <button
                   onClick={() => handleDelete(group!.id)}
-                  className="px-3 py-1.5 border border-red-200 text-red-600 rounded hover:bg-red-50 text-sm flex items-center gap-1"
+                  className="px-2 sm:px-3 py-1.5 border border-red-200 text-red-600 rounded hover:bg-red-50 text-xs sm:text-sm flex items-center gap-1"
                 >
-                  <Icon name="Trash2" size={16} />
-                  削除
+                  <Icon name="Trash2" size={14} />
+                  <span className="hidden sm:inline">削除</span>
                 </button>
               </>
             )}
@@ -306,17 +308,17 @@ export function GroupsPage() {
               <>
                 <button
                   onClick={() => handleOpenModal(undefined, group!)}
-                  className="px-3 py-1.5 border border-border rounded hover:bg-gray-50 text-sm flex items-center gap-1"
+                  className="px-2 sm:px-3 py-1.5 border border-border rounded hover:bg-gray-50 text-xs sm:text-sm flex items-center gap-1"
                 >
-                  <Icon name="Edit" size={16} />
-                  編集
+                  <Icon name="Edit" size={14} />
+                  <span className="hidden sm:inline">編集</span>
                 </button>
                 <button
                   onClick={() => handleDelete(group!.id)}
-                  className="px-3 py-1.5 border border-red-200 text-red-600 rounded hover:bg-red-50 text-sm flex items-center gap-1"
+                  className="px-2 sm:px-3 py-1.5 border border-red-200 text-red-600 rounded hover:bg-red-50 text-xs sm:text-sm flex items-center gap-1"
                 >
-                  <Icon name="Trash2" size={16} />
-                  削除
+                  <Icon name="Trash2" size={14} />
+                  <span className="hidden sm:inline">削除</span>
                 </button>
               </>
             )}
@@ -325,39 +327,39 @@ export function GroupsPage() {
 
         {/* Members List */}
         <div className="flex-1 overflow-hidden flex flex-col">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-text-primary flex items-center gap-2">
-              <Icon name="Users" size={20} />
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 className="text-base sm:text-lg font-semibold text-text-primary flex items-center gap-2">
+              <Icon name="Users" size={18} />
               所属メンバー
-              <span className="text-sm font-normal text-text-grey ml-2">
+              <span className="text-xs sm:text-sm font-normal text-text-grey ml-1 sm:ml-2">
                 ({selectedNode.users?.length || 0}名)
               </span>
             </h3>
             {/* Add Member Button could go here */}
           </div>
 
-          <div className="flex-1 overflow-y-auto border border-border rounded-lg bg-white">
+          <div className="flex-1 overflow-y-auto overflow-x-auto border border-border rounded-lg bg-white">
             {selectedNode.users && selectedNode.users.length > 0 ? (
-              <table className="w-full text-left border-collapse">
+              <table className="w-full text-left border-collapse min-w-[400px]">
                 <thead className="bg-gray-50 sticky top-0">
                   <tr>
-                    <th className="p-3 text-xs font-medium text-text-grey border-b border-border">名前</th>
-                    <th className="p-3 text-xs font-medium text-text-grey border-b border-border">メールアドレス</th>
-                    <th className="p-3 text-xs font-medium text-text-grey border-b border-border">ロール</th>
-                    <th className="p-3 text-xs font-medium text-text-grey border-b border-border">資格</th>
+                    <th className="p-2 sm:p-3 text-xs font-medium text-text-grey border-b border-border whitespace-nowrap">名前</th>
+                    <th className="p-2 sm:p-3 text-xs font-medium text-text-grey border-b border-border whitespace-nowrap">メールアドレス</th>
+                    <th className="p-2 sm:p-3 text-xs font-medium text-text-grey border-b border-border whitespace-nowrap">ロール</th>
+                    <th className="p-2 sm:p-3 text-xs font-medium text-text-grey border-b border-border whitespace-nowrap hidden sm:table-cell">資格</th>
                   </tr>
                 </thead>
                 <tbody>
                   {selectedNode.users.map(user => (
                     <tr key={user.id} className="border-b border-border hover:bg-gray-50">
-                      <td className="p-3 text-sm text-text-primary">{user.name || '未設定'}</td>
-                      <td className="p-3 text-sm text-text-primary">{user.email}</td>
-                      <td className="p-3 text-sm">
+                      <td className="p-2 sm:p-3 text-xs sm:text-sm text-text-primary whitespace-nowrap">{user.name || '未設定'}</td>
+                      <td className="p-2 sm:p-3 text-xs sm:text-sm text-text-primary">{user.email}</td>
+                      <td className="p-2 sm:p-3 text-xs sm:text-sm">
                         <span className="px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-700">
                           {user.role}
                         </span>
                       </td>
-                      <td className="p-3 text-sm text-text-grey">
+                      <td className="p-2 sm:p-3 text-xs sm:text-sm text-text-grey hidden sm:table-cell">
                         {user.qualifications?.join(', ') || '-'}
                       </td>
                     </tr>
@@ -384,21 +386,21 @@ export function GroupsPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-64px)] bg-white">
-      {/* Sidebar */}
-      <div className="w-80 border-r border-border bg-gray-50 flex flex-col">
-        <div className="p-4 border-b border-border bg-white">
-          <h2 className="font-bold text-text-primary">組織構成</h2>
+    <div className="flex flex-col sm:flex-row h-[calc(100vh-64px)] bg-white">
+      {/* Sidebar - Tree View */}
+      <div className="w-full sm:w-64 lg:w-80 border-b sm:border-b-0 sm:border-r border-border bg-gray-50 flex flex-col max-h-[40vh] sm:max-h-none">
+        <div className="p-3 sm:p-4 border-b border-border bg-white">
+          <h2 className="font-bold text-text-primary text-sm sm:text-base">組織構成</h2>
         </div>
         <div className="flex-1 overflow-y-auto p-2">
           {treeData && renderTree(treeData)}
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 p-6 overflow-hidden bg-white">
+      {/* Main Content - Detail View */}
+      <div className="flex-1 p-3 sm:p-6 overflow-hidden bg-white">
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 text-red-700 text-sm">
             {error}
           </div>
         )}
@@ -407,8 +409,8 @@ export function GroupsPage() {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="bg-white rounded-t-xl sm:rounded-lg p-4 sm:p-6 w-full sm:max-w-md shadow-xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold text-text-primary mb-4">
               {editingGroup ? 'グループ編集' : '新規グループ作成'}
             </h2>
