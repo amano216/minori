@@ -19,7 +19,7 @@ module Api
         Rails.logger.info "👤 Creating new user: params=#{params[:user].inspect}"
         @user = User.new(user_params)
         @user.organization = current_user.organization
-        
+
         # Set default role if not provided
         @user.role ||= User::STAFF
 

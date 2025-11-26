@@ -8,14 +8,14 @@ module Api
         @groups = current_user.organization.groups
                               .includes(:users, :children)
                               .order(:name)
-        
+
         # Build response with hierarchical users
         groups_with_all_users = @groups.map do |group|
           group.as_json.merge(
             users: group.all_users_including_descendants.as_json(only: [ :id, :name, :email, :role, :group_id ])
           )
         end
-        
+
         render json: groups_with_all_users
       end
 

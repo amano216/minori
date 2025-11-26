@@ -19,12 +19,12 @@ class Group < ApplicationRecord
   def all_users_including_descendants
     # Get direct users
     direct_user_ids = group_memberships.pluck(:user_id)
-    
+
     # Get users from all descendant groups
     descendant_user_ids = descendant_groups.flat_map do |child_group|
       child_group.group_memberships.pluck(:user_id)
     end
-    
+
     # Combine and return unique users
     all_user_ids = (direct_user_ids + descendant_user_ids).uniq
     User.where(id: all_user_ids)
@@ -32,6 +32,6 @@ class Group < ApplicationRecord
 
   # Get all descendant groups recursively
   def descendant_groups
-    children.flat_map { |child| [child] + child.descendant_groups }
+    children.flat_map { |child| [ child ] + child.descendant_groups }
   end
 end
