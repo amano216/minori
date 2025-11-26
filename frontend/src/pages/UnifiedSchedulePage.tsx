@@ -308,8 +308,8 @@ export function UnifiedSchedulePage() {
     }
   };
 
-  // Show loading only during initial load (before master data is loaded)
-  if (!masterDataLoaded) {
+  // Show loading only during initial master data load
+  if (!masterDataLoaded && loading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Spinner size="lg" />
