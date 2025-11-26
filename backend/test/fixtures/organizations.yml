@@ -1,0 +1,3 @@
+default:
+  name: "Test Organization"
+  subdomain: "test-org"

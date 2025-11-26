@@ -1,0 +1,23 @@
+admin:
+  email: "admin@test.com"
+  password_digest: <%= BCrypt::Password.create('password', cost: 4) %>
+  role: "organization_admin"
+  organization_id: <%= ActiveRecord::FixtureSet.identify(:default, :organizations) %>
+  email_confirmed_at: <%= Time.current %>
+  staff_status: "active"
+
+staff:
+  email: "staff@test.com"
+  password_digest: <%= BCrypt::Password.create('password', cost: 4) %>
+  role: "staff"
+  organization_id: <%= ActiveRecord::FixtureSet.identify(:default, :organizations) %>
+  email_confirmed_at: <%= Time.current %>
+  staff_status: "active"
+
+staff2:
+  email: "staff2@test.com"
+  password_digest: <%= BCrypt::Password.create('password', cost: 4) %>
+  role: "staff"
+  organization_id: <%= ActiveRecord::FixtureSet.identify(:default, :organizations) %>
+  email_confirmed_at: <%= Time.current %>
+  staff_status: "active"

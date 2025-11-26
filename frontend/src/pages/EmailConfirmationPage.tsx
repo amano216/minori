@@ -33,12 +33,12 @@ export function EmailConfirmationPage() {
           setStatus('success');
           setMessage(data.message);
           
-          // Save token and redirect
+          // Save token and redirect to main schedule page
           localStorage.setItem('minori_auth_token', data.token);
           showToast('success', 'メールアドレスを確認しました！');
           
           setTimeout(() => {
-            window.location.href = '/onboarding';
+            window.location.href = '/schedule';
           }, 2000);
         } else {
           setStatus('error');

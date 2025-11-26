@@ -10,7 +10,6 @@ import { AdminApp } from './apps/AdminApp'
 import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
 import { SignupPage } from './pages/SignupPage'
-import { OnboardingPage } from './pages/OnboardingPage'
 import { EmailConfirmationPage } from './pages/EmailConfirmationPage'
 import { EmailConfirmationSentPage } from './pages/EmailConfirmationSentPage'
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
@@ -43,12 +42,6 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/two-factor" element={<TwoFactorPage />} />
-
-            {/* Onboarding Route (認証必須) */}
-            <Route
-              path="/onboarding"
-              element={<PrivateRoute><OnboardingPage /></PrivateRoute>}
-            />
 
             {/* Schedule App */}
             <Route

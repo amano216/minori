@@ -89,10 +89,10 @@ export function SignupPage() {
 
       showToast('success', data.message);
 
-      // If token is returned (dev mode with auto-confirm), save and redirect to onboarding
+      // If token is returned (dev mode with auto-confirm), save and redirect to schedule
       if (data.token) {
         localStorage.setItem('minori_auth_token', data.token);
-        window.location.href = '/onboarding';
+        window.location.href = '/schedule';
       } else {
         // Otherwise, show email confirmation page
         navigate('/email-confirmation-sent', { state: { email: adminEmail } });
