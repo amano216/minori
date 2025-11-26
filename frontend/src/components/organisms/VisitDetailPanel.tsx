@@ -220,20 +220,31 @@ export function VisitDetailPanel({
 
   return (
     <>
+      {/* Mobile Backdrop */}
+      <div 
+        className={`fixed inset-0 bg-black/30 z-30 sm:hidden transition-opacity ${
+          isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={handleClose}
+      />
       {/* Panel */}
       <div
-        className={`fixed top-16 right-4 bottom-4 w-96 bg-white shadow-2xl border border-gray-200 rounded-xl z-40 transform transition-transform duration-300 ease-in-out flex flex-col ${
-          isVisible ? 'translate-x-0' : 'translate-x-[120%]'
+        className={`fixed inset-x-0 bottom-0 sm:inset-auto sm:top-16 sm:right-4 sm:bottom-4 w-full sm:w-96 bg-white shadow-2xl sm:border sm:border-gray-200 sm:rounded-xl z-40 transform transition-transform duration-300 ease-in-out flex flex-col max-h-[85vh] sm:max-h-none rounded-t-2xl sm:rounded-xl ${
+          isVisible ? 'translate-y-0 sm:translate-x-0' : 'translate-y-full sm:translate-y-0 sm:translate-x-[120%]'
         }`}
       >
+        {/* Drag Handle for Mobile */}
+        <div className="sm:hidden flex justify-center pt-2 pb-1">
+          <div className="w-10 h-1 bg-gray-300 rounded-full" />
+        </div>
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-100">
           <div className="flex gap-2 items-center">
              <Badge className={STATUS_COLORS[visit.status]}>
                 {STATUS_LABELS[visit.status]}
              </Badge>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-1 sm:gap-2">
             <button
               onClick={() => setActiveTab(activeTab === 'details' ? 'calendar' : 'details')}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors text-indigo-600"
@@ -251,7 +262,7 @@ export function VisitDetailPanel({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4">
           {activeTab === 'details' ? (
             <div className="space-y-6">
               {/* Patient */}

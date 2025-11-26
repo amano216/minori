@@ -88,8 +88,9 @@ export function VisitListPage() {
     {
       key: 'scheduled_at',
       header: '日時',
+      minWidth: 'min-w-[130px]',
       render: (visit: Visit) => (
-        <Link to={`/visits/${visit.id}`} className="text-main hover:underline font-medium">
+        <Link to={`/visits/${visit.id}`} className="text-main hover:underline font-medium whitespace-nowrap text-xs sm:text-sm">
           {formatDateTime(visit.scheduled_at)}
         </Link>
       ),
@@ -97,15 +98,17 @@ export function VisitListPage() {
     {
       key: 'patient',
       header: '患者',
+      minWidth: 'min-w-[80px]',
       render: (visit: Visit) => (
-        <span className="text-text-black">{visit.patient?.name || '-'}</span>
+        <span className="text-text-black whitespace-nowrap">{visit.patient?.name || '-'}</span>
       ),
     },
     {
       key: 'staff',
       header: '担当スタッフ',
+      minWidth: 'min-w-[80px]',
       render: (visit: Visit) => (
-        <span className={visit.staff ? 'text-text-black' : 'text-text-grey'}>
+        <span className={`whitespace-nowrap ${visit.staff ? 'text-text-black' : 'text-text-grey'}`}>
           {visit.staff?.name || '未割当'}
         </span>
       ),
@@ -113,13 +116,15 @@ export function VisitListPage() {
     {
       key: 'duration',
       header: '時間',
+      minWidth: 'min-w-[50px]',
       render: (visit: Visit) => (
-        <span className="text-text-grey">{visit.duration}分</span>
+        <span className="text-text-grey whitespace-nowrap">{visit.duration}分</span>
       ),
     },
     {
       key: 'status',
       header: 'ステータス',
+      minWidth: 'min-w-[70px]',
       render: (visit: Visit) => (
         <Badge variant={STATUS_VARIANTS[visit.status] || 'default'}>
           {STATUS_LABELS[visit.status] || visit.status}
@@ -129,8 +134,9 @@ export function VisitListPage() {
     {
       key: 'actions',
       header: '操作',
+      minWidth: 'min-w-[100px]',
       render: (visit: Visit) => (
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-1 sm:gap-2 flex-wrap">
           {visit.status === 'scheduled' && (
             <>
               <Button

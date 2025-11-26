@@ -167,66 +167,73 @@ const CreateLaneModal: React.FC<CreateLaneModalProps> = ({ isOpen, onClose, onSu
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-y-0 right-0 w-96 bg-white shadow-2xl z-[10000] flex flex-col animate-slide-in-right">
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        <h3 className="text-lg font-bold">新規レーン作成</h3>
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-gray-600"
-          type="button"
-        >
-          ✕
-        </button>
-      </div>
-      <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4">
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">レーン名</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2"
-            placeholder="例: 訪問ルートA"
-            required
-            autoFocus
-          />
-        </div>
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-1">担当チーム <span className="text-red-500">*</span></label>
-          <select
-            value={groupId}
-            onChange={(e) => {
-              console.log('Group selected:', e.target.value);
-              setGroupId(e.target.value ? Number(e.target.value) : '');
-            }}
-            className="w-full border border-gray-300 rounded px-3 py-2"
-            required
-          >
-            <option value="">選択してください</option>
-            {labeledGroups.map(g => (
-               <option key={g.id} value={g.id}>{g.displayName}</option>
-            ))}
-          </select>
-        </div>
-        <div className="flex justify-end gap-2">
+    <>
+      {/* Mobile Backdrop */}
+      <div 
+        className="fixed inset-0 bg-black/30 z-[9999] sm:hidden"
+        onClick={onClose}
+      />
+      <div className="fixed inset-y-0 right-0 w-full sm:w-96 bg-white shadow-2xl z-[10000] flex flex-col animate-slide-in-right">
+        <div className="p-3 sm:p-4 border-b border-gray-200 flex items-center justify-between">
+          <h3 className="text-base sm:text-lg font-bold">新規レーン作成</h3>
           <button
-            type="button"
             onClick={onClose}
-            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
-            disabled={submitting}
+            className="text-gray-400 hover:text-gray-600 p-1"
+            type="button"
           >
-            キャンセル
-          </button>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50"
-            disabled={submitting}
-          >
-            作成
+            ✕
           </button>
         </div>
-      </form>
-    </div>,
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-3 sm:p-4">
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">レーン名</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-base sm:text-sm"
+              placeholder="例: 訪問ルートA"
+              required
+              autoFocus
+            />
+          </div>
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-1">担当チーム <span className="text-red-500">*</span></label>
+            <select
+              value={groupId}
+              onChange={(e) => {
+                console.log('Group selected:', e.target.value);
+                setGroupId(e.target.value ? Number(e.target.value) : '');
+              }}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-base sm:text-sm"
+              required
+            >
+              <option value="">選択してください</option>
+              {labeledGroups.map(g => (
+                 <option key={g.id} value={g.id}>{g.displayName}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3 sm:px-4 py-2 text-gray-600 hover:bg-gray-100 rounded text-sm"
+              disabled={submitting}
+            >
+              キャンセル
+            </button>
+            <button
+              type="submit"
+              className="px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 text-sm"
+              disabled={submitting}
+            >
+              作成
+            </button>
+          </div>
+        </form>
+      </div>
+    </>,
     document.body
   );
 };
@@ -295,63 +302,70 @@ const EditLanePanel: React.FC<EditLanePanelProps> = ({ lane, onClose, onSave, gr
   if (!lane) return null;
 
   return createPortal(
-    <div className="fixed inset-y-0 right-0 w-96 bg-white shadow-2xl z-[10000] flex flex-col animate-slide-in-right">
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        <h3 className="text-lg font-bold">レーン編集</h3>
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-gray-600"
-          type="button"
-        >
-          ✕
-        </button>
-      </div>
-      <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4">
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">レーン名</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2"
-            placeholder="例: 訪問ルートA"
-            required
-            autoFocus
-          />
-        </div>
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-1">担当チーム <span className="text-red-500">*</span></label>
-          <select
-            value={groupId}
-            onChange={(e) => setGroupId(e.target.value ? Number(e.target.value) : '')}
-            className="w-full border border-gray-300 rounded px-3 py-2"
-            required
-          >
-            <option value="">選択してください</option>
-            {labeledGroups.map(g => (
-              <option key={g.id} value={g.id}>{g.displayName}</option>
-            ))}
-          </select>
-        </div>
-        <div className="flex justify-end gap-2">
+    <>
+      {/* Mobile Backdrop */}
+      <div 
+        className="fixed inset-0 bg-black/30 z-[9999] sm:hidden"
+        onClick={onClose}
+      />
+      <div className="fixed inset-y-0 right-0 w-full sm:w-96 bg-white shadow-2xl z-[10000] flex flex-col animate-slide-in-right">
+        <div className="p-3 sm:p-4 border-b border-gray-200 flex items-center justify-between">
+          <h3 className="text-base sm:text-lg font-bold">レーン編集</h3>
           <button
-            type="button"
             onClick={onClose}
-            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
-            disabled={saving}
+            className="text-gray-400 hover:text-gray-600 p-1"
+            type="button"
           >
-            キャンセル
-          </button>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50"
-            disabled={saving}
-          >
-            保存
+            ✕
           </button>
         </div>
-      </form>
-    </div>,
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-3 sm:p-4">
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">レーン名</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-base sm:text-sm"
+              placeholder="例: 訪問ルートA"
+              required
+              autoFocus
+            />
+          </div>
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-1">担当チーム <span className="text-red-500">*</span></label>
+            <select
+              value={groupId}
+              onChange={(e) => setGroupId(e.target.value ? Number(e.target.value) : '')}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-base sm:text-sm"
+              required
+            >
+              <option value="">選択してください</option>
+              {labeledGroups.map(g => (
+                <option key={g.id} value={g.id}>{g.displayName}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3 sm:px-4 py-2 text-gray-600 hover:bg-gray-100 rounded text-sm"
+              disabled={saving}
+            >
+              キャンセル
+            </button>
+            <button
+              type="submit"
+              className="px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 text-sm"
+              disabled={saving}
+            >
+              保存
+            </button>
+          </div>
+        </form>
+      </div>
+    </>,
     document.body
   );
 };
@@ -408,16 +422,16 @@ const LaneRow: React.FC<LaneRowProps> = ({
   };
 
   return (
-    <div className={`flex border-b border-gray-200 ${lane.color}`}>
-      {/* Lane Label */}
-      <div className="w-48 flex-shrink-0 p-3 border-r border-gray-200 flex items-center justify-between gap-2">
+    <div className={`flex border-b border-gray-200 min-w-[600px] sm:min-w-0 ${lane.color}`}>
+      {/* Lane Label - Mobile Responsive */}
+      <div className="w-24 sm:w-48 flex-shrink-0 p-2 sm:p-3 border-r border-gray-200 flex items-center justify-between gap-1 sm:gap-2">
         {isEditing ? (
           <div className="flex items-center gap-1 flex-1">
             <input
               type="text"
               value={editLabel}
               onChange={(e) => setEditLabel(e.target.value)}
-              className="w-full text-sm px-1 py-0.5 border rounded"
+              className="w-full text-xs sm:text-sm px-1 py-0.5 border rounded"
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleLabelSave();
@@ -430,7 +444,7 @@ const LaneRow: React.FC<LaneRowProps> = ({
           </div>
         ) : (
           <span 
-            className="font-medium text-sm flex-1 text-indigo-700 cursor-pointer hover:underline"
+            className="font-medium text-xs sm:text-sm flex-1 text-indigo-700 cursor-pointer hover:underline truncate"
             onClick={() => setIsEditing(true)}
             title="クリックして名称変更"
           >
@@ -438,7 +452,7 @@ const LaneRow: React.FC<LaneRowProps> = ({
           </span>
         )}
         
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 sm:gap-1">
           {!isEditing && (
             <>
               <button 
@@ -460,7 +474,7 @@ const LaneRow: React.FC<LaneRowProps> = ({
         </div>
       </div>
 
-      {/* Timeline Grid */}
+      {/* Timeline Grid - Mobile Responsive */}
       <div className="flex-1 flex">
         {visibleHours.map(hour => {
           const hourVisits = getVisitsForHour(hour);
@@ -469,8 +483,8 @@ const LaneRow: React.FC<LaneRowProps> = ({
           return (
             <div
               key={hour}
-              className={`flex-1 min-w-[100px] border-r border-gray-100 p-2 cursor-pointer hover:bg-indigo-50/50 transition-colors relative group ${hasConflict ? 'bg-red-50' : ''}`}
-              style={{ minHeight: '80px' }}
+              className={`flex-1 min-w-[60px] sm:min-w-[100px] border-r border-gray-100 p-1 sm:p-2 cursor-pointer hover:bg-indigo-50/50 transition-colors relative group ${hasConflict ? 'bg-red-50' : ''}`}
+              style={{ minHeight: '60px' }}
               onClick={() => {
                 console.log('Time slot clicked:', hour, lane.id);
                 onTimeSlotClick?.(hour, String(lane.id));
@@ -636,53 +650,53 @@ export default function PatientCalendarView({
 
   return (
     <div className="h-full flex flex-col bg-white">
-      {/* Header */}
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+      {/* Header - Mobile Responsive */}
+      <div className="p-2 sm:p-4 border-b border-gray-200 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <button
             onClick={() => {
               console.log('Plus button clicked');
               setIsCreateModalOpen(true);
             }}
-            className="p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors shadow-sm flex items-center justify-center"
+            className="p-1.5 sm:p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors shadow-sm flex items-center justify-center"
             title="レーン追加"
           >
-            <PlusIcon className="w-6 h-6" />
+            <PlusIcon className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <button
             onClick={scrollEarlier}
             disabled={!canScrollEarlier}
-            className="p-2 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed rounded-full transition-colors"
+            className="p-1.5 sm:p-2 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed rounded-full transition-colors"
             title="前の時間帯"
           >
-            <ChevronLeftIcon className="w-6 h-6" />
+            <ChevronLeftIcon className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
           
-          <span className="text-sm font-medium text-gray-600 min-w-[100px] text-center">
+          <span className="text-xs sm:text-sm font-medium text-gray-600 min-w-[80px] sm:min-w-[100px] text-center">
             {visibleHours[0]}:00 - {visibleHours[visibleHours.length - 1]}:59
           </span>
 
           <button
             onClick={scrollLater}
             disabled={!canScrollLater}
-            className="p-2 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed rounded-full transition-colors"
+            className="p-1.5 sm:p-2 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed rounded-full transition-colors"
             title="次の時間帯"
           >
-            <ChevronRightIcon className="w-6 h-6" />
+            <ChevronRightIcon className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         </div>
       </div>
 
-      {/* Timeline */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Timeline - Mobile Responsive */}
+      <div className="flex-1 overflow-y-auto overflow-x-auto">
         {/* Time Header */}
-        <div className="flex sticky top-0 bg-white z-10 border-b-2 border-gray-300">
-          <div className="w-48 flex-shrink-0 p-3 border-r border-gray-200 bg-gray-100 font-semibold text-sm text-gray-700 flex items-center gap-2">
-            <span>計画レーン</span>
-            <span className="text-xs font-normal text-gray-500 bg-gray-200 px-1.5 py-0.5 rounded">
+        <div className="flex sticky top-0 bg-white z-10 border-b-2 border-gray-300 min-w-[600px] sm:min-w-0">
+          <div className="w-24 sm:w-48 flex-shrink-0 p-2 sm:p-3 border-r border-gray-200 bg-gray-100 font-semibold text-xs sm:text-sm text-gray-700 flex items-center gap-1 sm:gap-2">
+            <span className="truncate">計画レーン</span>
+            <span className="text-[10px] sm:text-xs font-normal text-gray-500 bg-gray-200 px-1 sm:px-1.5 py-0.5 rounded">
               {filteredLanes.length}
             </span>
           </div>
@@ -690,7 +704,7 @@ export default function PatientCalendarView({
             {visibleHours.map(hour => (
               <div
                 key={hour}
-                className="flex-1 min-w-[100px] p-2 text-center border-r border-gray-200 bg-gray-100 text-xs font-medium text-gray-600"
+                className="flex-1 min-w-[60px] sm:min-w-[100px] p-1 sm:p-2 text-center border-r border-gray-200 bg-gray-100 text-[10px] sm:text-xs font-medium text-gray-600"
               >
                 {String(hour).padStart(2, '0')}:00
               </div>
@@ -700,10 +714,10 @@ export default function PatientCalendarView({
 
         {/* Lane Rows */}
         {filteredLanes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-            <ExclamationTriangleIcon className="w-12 h-12 mb-2 opacity-50" />
-            <p className="text-sm">選択されたグループのレーンがありません</p>
-            <p className="text-xs mt-1">+ボタンで新規作成</p>
+          <div className="flex flex-col items-center justify-center h-48 sm:h-64 text-gray-400 min-w-[600px] sm:min-w-0">
+            <ExclamationTriangleIcon className="w-8 h-8 sm:w-12 sm:h-12 mb-2 opacity-50" />
+            <p className="text-xs sm:text-sm">選択されたグループのレーンがありません</p>
+            <p className="text-[10px] sm:text-xs mt-1">+ボタンで新規作成</p>
           </div>
         ) : (
           filteredLanes.map(lane => (

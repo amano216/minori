@@ -6,6 +6,10 @@ interface Column<T> {
   header: string;
   render?: (item: T) => ReactNode;
   className?: string;
+  /** Minimum width for the column (e.g., 'min-w-[120px]') */
+  minWidth?: string;
+  /** Whether to hide this column on mobile */
+  hideOnMobile?: boolean;
 }
 
 interface DataTableProps<T> {
@@ -44,16 +48,18 @@ export function DataTable<T>({
   }
 
   return (
-    <div className={`overflow-x-auto ${className}`}>
-      <table className="w-full text-sm">
-        <thead>
+    <div className={`overflow-x-auto overflow-y-auto max-h-[70vh] ${className}`}>
+      <table className="w-full text-sm min-w-[640px]">
+        <thead className="sticky top-0 z-10">
           <tr>
             {columns.map((column) => (
               <th
                 key={column.key}
                 className={`
-                  px-4 py-3 text-left text-xs font-bold text-secondary-700
-                  bg-secondary-100 border-b border-border
+                  px-3 sm:px-4 py-2 sm:py-3 text-left text-xs font-bold text-secondary-700
+                  bg-secondary-100 border-b border-border whitespace-nowrap
+                  ${column.minWidth || ''}
+                  ${column.hideOnMobile ? 'hidden sm:table-cell' : ''}
                   ${column.className || ''}
                 `}
               >
@@ -77,7 +83,9 @@ export function DataTable<T>({
                 <td
                   key={column.key}
                   className={`
-                    px-4 py-3 text-secondary-900
+                    px-3 sm:px-4 py-2 sm:py-3 text-secondary-900
+                    ${column.minWidth || ''}
+                    ${column.hideOnMobile ? 'hidden sm:table-cell' : ''}
                     ${column.className || ''}
                   `}
                 >
