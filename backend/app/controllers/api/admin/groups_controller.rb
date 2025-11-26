@@ -6,13 +6,25 @@ module Api
 
       def index
         @groups = current_user.organization.groups
-                              .includes(:users)
+                              .includes(:users, :children)
                               .order(:name)
-        render json: @groups, include: [ :users ]
+
+        # Build response with hierarchical users
+        groups_with_all_users = @groups.map do |group|
+          group.as_json.merge(
+            users: group.all_users_including_descendants.as_json(only: [ :id, :name, :email, :role, :group_id ])
+          )
+        end
+
+        render json: groups_with_all_users
       end
 
       def show
-        render json: @group, include: [ :users, :patients ]
+        @group_with_users = @group.as_json.merge(
+          users: @group.all_users_including_descendants.as_json(only: [ :id, :name, :email, :role, :group_id ]),
+          patients: @group.patients.as_json
+        )
+        render json: @group_with_users
       end
 
       def create

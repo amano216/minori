@@ -452,10 +452,14 @@ export async function createPlanningLane(name: string, position: number, groupId
   });
 }
 
-export async function updatePlanningLane(id: number, name: string): Promise<PlanningLane> {
+export async function updatePlanningLane(id: number, name: string, groupId?: number | null): Promise<PlanningLane> {
+  const body: { name: string; group_id?: number | null } = { name };
+  if (groupId !== undefined) {
+    body.group_id = groupId;
+  }
   return apiRequest(`/api/planning_lanes/${id}`, {
     method: 'PUT',
-    body: JSON.stringify({ planning_lane: { name } }),
+    body: JSON.stringify({ planning_lane: body }),
   });
 }
 

@@ -289,6 +289,12 @@ export function UsersPage() {
               {editingUser ? 'ユーザー編集' : '新規ユーザー'}
             </h2>
 
+            {error && (
+              <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">
+                {error}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* 基本情報 */}
               <div className="border-b pb-4">
@@ -323,7 +329,7 @@ export function UsersPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-text-primary mb-1">
-                      パスワード {editingUser && '（変更する場合のみ入力）'}
+                      パスワード {editingUser ? '（変更する場合のみ入力）' : <span className="text-red-500">*</span>}
                     </label>
                     {editingUser ? (
                       <div className="flex items-center gap-2">
@@ -344,10 +350,29 @@ export function UsersPage() {
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                         className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-main"
-                        required={!editingUser}
+                        required
+                        minLength={8}
+                        placeholder="8文字以上"
                       />
                     )}
                   </div>
+
+                  {!editingUser && (
+                    <div>
+                      <label className="block text-sm font-medium text-text-primary mb-1">
+                        パスワード確認 <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="password"
+                        value={formData.password_confirmation}
+                        onChange={(e) => setFormData({ ...formData, password_confirmation: e.target.value })}
+                        className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-main"
+                        required
+                        minLength={8}
+                        placeholder="パスワードを再入力"
+                      />
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>

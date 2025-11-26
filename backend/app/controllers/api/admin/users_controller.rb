@@ -16,20 +16,29 @@ module Api
       end
 
       def create
+        Rails.logger.info "👤 Creating new user: params=#{params[:user].inspect}"
         @user = User.new(user_params)
         @user.organization = current_user.organization
 
+        # Set default role if not provided
+        @user.role ||= User::STAFF
+
         if @user.save
+          Rails.logger.info "✅ User created successfully. id=#{@user.id}, group_id=#{@user.group_id}, role=#{@user.role}"
           render json: @user, status: :created
         else
+          Rails.logger.error "❌ User creation failed: #{@user.errors.full_messages.inspect}"
           render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
         end
       end
 
       def update
+        Rails.logger.info "👤 Updating user #{@user.id}: params=#{user_params.inspect}"
         if @user.update(user_params)
+          Rails.logger.info "✅ User updated successfully. group_id=#{@user.group_id}"
           render json: @user
         else
+          Rails.logger.error "❌ User update failed: #{@user.errors.full_messages}"
           render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
         end
       end
