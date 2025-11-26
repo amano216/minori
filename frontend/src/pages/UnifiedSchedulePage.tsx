@@ -74,6 +74,7 @@ export function UnifiedSchedulePage() {
   
   const [isInboxOpen, setIsInboxOpen] = useState(true);
   const [isMonthlyCalendarOpen, setIsMonthlyCalendarOpen] = useState(false);
+  const [masterDataLoaded, setMasterDataLoaded] = useState(false);
 
   // Load master data
   useEffect(() => {
@@ -88,7 +89,7 @@ export function UnifiedSchedulePage() {
         setGroups(groupsData);
         setSelectedGroupIds(groupsData.map(g => g.id));
         setStaffs(staffsData);
-        // Don't set loading false here - let loadScheduleData handle it
+        setMasterDataLoaded(true);
       } catch (err) {
         console.error('Failed to load master data:', err);
         setError('マスターデータの取得に失敗しました');
@@ -100,6 +101,11 @@ export function UnifiedSchedulePage() {
 
   // Load schedule data
   const loadScheduleData = useCallback(async () => {
+    if (!masterDataLoaded) {
+      console.log('Waiting for master data to load...');
+      return;
+    }
+    
     try {
       console.log('Loading schedule data...', { currentDate });
       setLoading(true);
@@ -146,11 +152,13 @@ export function UnifiedSchedulePage() {
       console.log('Loading complete');
       setLoading(false);
     }
-  }, [currentDate, staffs]);
+  }, [currentDate, staffs, masterDataLoaded]);
 
   useEffect(() => {
-    loadScheduleData();
-  }, [loadScheduleData]); // Reload when loadScheduleData callback changes (depends on currentDate and staffs)
+    if (masterDataLoaded) {
+      loadScheduleData();
+    }
+  }, [loadScheduleData, masterDataLoaded]);
 
   const handlePrevious = () => {
     const newDate = new Date(currentDate);
