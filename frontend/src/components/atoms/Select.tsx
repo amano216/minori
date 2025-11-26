@@ -1,14 +1,14 @@
-import type { InputHTMLAttributes } from 'react';
+import type { SelectHTMLAttributes } from 'react';
 import { forwardRef } from 'react';
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   error?: boolean;
 }
 
-export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ error, className = '', ...props }, ref) => {
+export const Select = forwardRef<HTMLSelectElement, SelectProps>(
+  ({ error, className = '', children, ...props }, ref) => {
     return (
-      <input
+      <select
         ref={ref}
         className={`
           w-full px-3 py-2
@@ -17,7 +17,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           bg-white
           border rounded
           transition-all duration-150
-          placeholder:text-secondary-400
           hover:border-secondary-500
           focus:border-main focus:ring-2 focus:ring-main/40 focus:outline-none
           disabled:bg-secondary-100 disabled:cursor-not-allowed disabled:text-secondary-400
@@ -28,9 +27,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ${className}
         `}
         {...props}
-      />
+      >
+        {children}
+      </select>
     );
   }
 );
 
-Input.displayName = 'Input';
+Select.displayName = 'Select';
