@@ -27,11 +27,11 @@ import { Spinner } from '../components/atoms/Spinner';
 import { NewVisitPanel } from '../components/organisms/NewVisitPanel';
 import { VisitDetailPanel } from '../components/organisms/VisitDetailPanel';
 import { TimelineResourceView } from '../components/organisms/TimelineResourceView';
-import { WeeklyResourceView } from '../components/organisms/WeeklyResourceView';
 import PatientCalendarView from '../components/organisms/PatientCalendarView';
 import { UnassignedVisitInbox } from '../components/organisms/UnassignedVisitInbox';
 import { UserGroupIcon } from '@heroicons/react/24/outline';
-import { OfficeSwitcher } from '../components/organisms/OfficeSwitcher';
+import { MonthlyCalendarView } from '../components/organisms/MonthlyCalendarView';
+import { MultiGroupSelector } from '../components/organisms/MultiGroupSelector';
 
 function convertScheduleVisitToVisit(sv: ScheduleVisit): Visit {
   return {
@@ -54,9 +54,10 @@ export function UnifiedSchedulePage() {
   const navigate = useNavigate();
   const dateInputRef = useRef<HTMLInputElement>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'day' | 'week' | 'patient'>('patient');
+  const [viewMode, setViewMode] = useState<'day' | 'patient'>('patient');
   
   const [groups, setGroups] = useState<Group[]>([]);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<number[]>([]);
   const [staffs, setStaffs] = useState<Staff[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [allWeeklyVisits, setAllWeeklyVisits] = useState<Visit[]>([]);
@@ -72,6 +73,7 @@ export function UnifiedSchedulePage() {
   const [newVisitInitialPlanningLaneId, setNewVisitInitialPlanningLaneId] = useState<number | undefined>(undefined);
   
   const [isInboxOpen, setIsInboxOpen] = useState(true);
+  const [isMonthlyCalendarOpen, setIsMonthlyCalendarOpen] = useState(false);
 
   // Load master data
   useEffect(() => {
@@ -84,6 +86,7 @@ export function UnifiedSchedulePage() {
         ]);
         console.log('Master data loaded:', { groups: groupsData.length, staffs: staffsData.length });
         setGroups(groupsData);
+        setSelectedGroupIds(groupsData.map(g => g.id));
         setStaffs(staffsData);
       } catch (err) {
         console.error('Failed to load master data:', err);
@@ -175,10 +178,6 @@ export function UnifiedSchedulePage() {
     if (e.target.value) {
       setCurrentDate(new Date(e.target.value));
     }
-  };
-
-  const handleToday = () => {
-    setCurrentDate(new Date());
   };
 
   const handleVisitCancel = async (visitId: number) => {
@@ -326,7 +325,12 @@ export function UnifiedSchedulePage() {
               {isInboxOpen ? <ChevronDoubleLeftIcon className="w-6 h-6" /> : <InboxIcon className="w-6 h-6" />}
             </button>
             <h1 className="text-xl font-bold text-gray-800 tracking-tight hidden md:block">Minori</h1>
-            <OfficeSwitcher />
+            <div className="h-8 w-px bg-gray-200 mx-2"></div>
+            <MultiGroupSelector 
+              groups={groups} 
+              selectedGroupIds={selectedGroupIds} 
+              onChange={setSelectedGroupIds} 
+            />
           </div>
           
                     <div className="flex items-center space-x-4">
@@ -339,10 +343,7 @@ export function UnifiedSchedulePage() {
                  className="px-4 font-bold text-gray-800 min-w-[160px] text-center text-lg cursor-pointer hover:bg-gray-200 rounded transition-colors select-none flex items-center justify-center"
                  onClick={handleDateClick}
                >
-                 {viewMode === 'week'
-                   ? `${currentDate.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })} - ${new Date(currentDate.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}`
-                   : currentDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })
-                 }
+                 {currentDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
                </div>
                
                <input
@@ -357,13 +358,26 @@ export function UnifiedSchedulePage() {
                  <ChevronRightIcon className="w-6 h-6" />
                </button>
              </div>
-             <button 
-               onClick={handleToday} 
-               className="text-indigo-600 hover:text-indigo-800 p-2 rounded-lg hover:bg-indigo-50 transition-colors"
-               title="今日"
-             >
-               <CalendarDaysIcon className="w-6 h-6" />
-             </button>
+             <div className="relative">
+               <button 
+                 onClick={() => setIsMonthlyCalendarOpen(!isMonthlyCalendarOpen)} 
+                 className={`p-2 rounded-lg transition-colors ${isMonthlyCalendarOpen ? 'bg-indigo-50 text-indigo-800' : 'text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50'}`}
+                 title="月次カレンダー"
+               >
+                 <CalendarDaysIcon className="w-6 h-6" />
+               </button>
+               {isMonthlyCalendarOpen && (
+                 <MonthlyCalendarView
+                   currentDate={currentDate}
+                   visits={allWeeklyVisits}
+                   onDateClick={(date) => {
+                     setCurrentDate(date);
+                     setIsMonthlyCalendarOpen(false);
+                   }}
+                   onClose={() => setIsMonthlyCalendarOpen(false)}
+                 />
+               )}
+             </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -381,13 +395,6 @@ export function UnifiedSchedulePage() {
                  title="日次タイムライン"
                >
                  <ClockIcon className="w-5 h-5" />
-               </button>
-               <button
-                 onClick={() => setViewMode('week')}
-                 className={`p-2 rounded-md transition-all ${viewMode === 'week' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
-                 title="週次グリッド"
-               >
-                 <CalendarDaysIcon className="w-5 h-5" />
                </button>
              </div>
 
@@ -429,6 +436,7 @@ export function UnifiedSchedulePage() {
               <PatientCalendarView
                 date={currentDate}
                 visits={visits}
+                groups={groups}
                 onVisitClick={handleVisitSelect}
                 onTimeSlotClick={(hour, laneId) => {
                   const selectedDate = new Date(currentDate);
@@ -440,23 +448,15 @@ export function UnifiedSchedulePage() {
                   setSelectedVisit(null);
                 }}
               />
-            ) : viewMode === 'day' ? (
+            ) : (
               <TimelineResourceView
                 date={currentDate}
                 staffs={staffs}
                 groups={groups}
+                selectedGroupIds={selectedGroupIds}
                 visits={assignedVisits}
                 onVisitClick={handleVisitSelect}
                 onTimeSlotClick={handleTimeSlotClick}
-              />
-            ) : (
-              <WeeklyResourceView
-                startDate={currentDate}
-                staffs={staffs}
-                groups={groups}
-                visits={assignedVisits}
-                onVisitClick={handleVisitSelect}
-                onCellClick={(staffId, date) => handleTimeSlotClick(staffId, date)}
               />
             )}
           </div>
@@ -483,6 +483,8 @@ export function UnifiedSchedulePage() {
             initialStaffId={newVisitInitialStaffId}
             initialPlanningLaneId={newVisitInitialPlanningLaneId}
           />
+
+          {/* Monthly Calendar Modal - Removed as it is now a popover */}
         </div>
       </div>
     </DndContext>
