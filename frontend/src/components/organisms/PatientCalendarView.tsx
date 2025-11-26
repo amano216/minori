@@ -1,4 +1,6 @@
+// Updated: 2025-11-26 03:30 - Force sync
 import { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   PlusIcon, 
   TrashIcon, 
@@ -14,12 +16,14 @@ import {
   updatePlanningLane, 
   deletePlanningLane,
   type PlanningLane,
-  type Visit
+  type Visit,
+  type Group
 } from '../../api/client';
 
 interface PatientCalendarViewProps {
   date: Date;
   visits: Visit[];
+  groups: Group[];
   onVisitClick: (visit: Visit) => void;
   onTimeSlotClick?: (hour: number, laneId: string) => void;
 }
@@ -29,8 +33,9 @@ const END_HOUR = 24;
 const TOTAL_HOURS = END_HOUR - START_HOUR;
 const VISIBLE_HOURS = 12; // 一度に表示する時間数
 
-// TODO: Future improvement - Sync lane colors with Group colors to improve visibility
-const LANE_COLORS = [
+// Group-based color mapping for consistent visual hierarchy
+const GROUP_COLORS: Record<number, string> = {};
+const COLOR_PALETTE = [
   'bg-blue-50',
   'bg-green-50',
   'bg-purple-50',
@@ -42,6 +47,19 @@ const LANE_COLORS = [
   'bg-red-50',
   'bg-teal-50',
 ];
+
+const getGroupColor = (groupId: number | null | undefined, groups: Group[]): string => {
+  if (!groupId) return 'bg-gray-50';
+  
+  // Return cached color if exists
+  if (GROUP_COLORS[groupId]) return GROUP_COLORS[groupId];
+  
+  // Assign color based on group position
+  const groupIndex = groups.findIndex(g => g.id === groupId);
+  const color = groupIndex >= 0 ? COLOR_PALETTE[groupIndex % COLOR_PALETTE.length] : 'bg-gray-50';
+  GROUP_COLORS[groupId] = color;
+  return color;
+};
 
 interface Lane extends PlanningLane {
   color: string;
@@ -79,6 +97,129 @@ const VisitCard: React.FC<VisitCardProps> = ({ visit, onClick }) => {
         <div className="text-gray-500 text-[10px]">担当: {visit.staff.name}</div>
       )}
     </div>
+  );
+};
+
+interface CreateLaneModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (name: string, groupId: number | null) => Promise<void>;
+  groups: Group[];
+}
+
+const CreateLaneModal: React.FC<CreateLaneModalProps> = ({ isOpen, onClose, onSubmit, groups = [] }) => {
+  const [name, setName] = useState('');
+  const [groupId, setGroupId] = useState<number | ''>('');
+  const [submitting, setSubmitting] = useState(false);
+  const labeledGroups = useMemo(() => {
+    if (!groups?.length) return [];
+    const map = new Map<number, Group>();
+    groups.forEach(group => map.set(group.id, group));
+
+    const buildLabel = (group: Group) => {
+      const chain: string[] = [];
+      let current: Group | undefined = group;
+      const seen = new Set<number>();
+
+      while (current) {
+        chain.unshift(current.name);
+        if (!current.parent_id) break;
+        if (seen.has(current.parent_id)) break; // guard against cycles
+        seen.add(current.parent_id);
+        current = map.get(current.parent_id);
+      }
+
+      return chain.join(' > ');
+    };
+
+    return groups.map(group => ({ ...group, displayName: buildLabel(group) }));
+  }, [groups]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setName('');
+      setGroupId('');
+      console.log('CreateLaneModal opened. Groups:', groups);
+    }
+  }, [isOpen, groups]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !groupId) return;
+    
+    console.log('Submitting lane:', { name, groupId }); // Debug log
+
+    setSubmitting(true);
+    try {
+      await onSubmit(name, groupId ? Number(groupId) : null);
+      onClose();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return createPortal(
+    <div 
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000]" 
+      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+    >
+      <div className="bg-white rounded-lg p-6 w-96 shadow-xl" onClick={e => e.stopPropagation()}>
+        <h3 className="text-lg font-bold mb-4">新規レーン作成</h3>
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">レーン名</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2"
+              placeholder="例: 訪問ルートA"
+              required
+              autoFocus
+            />
+          </div>
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-1">担当チーム <span className="text-red-500">*</span></label>
+            <select
+              value={groupId}
+              onChange={(e) => {
+                console.log('Group selected:', e.target.value);
+                setGroupId(e.target.value ? Number(e.target.value) : '');
+              }}
+              className="w-full border border-gray-300 rounded px-3 py-2"
+              required
+            >
+              <option value="">選択してください</option>
+              {labeledGroups.map(g => (
+                 <option key={g.id} value={g.id}>{g.displayName}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
+              disabled={submitting}
+            >
+              キャンセル
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50"
+              disabled={submitting}
+            >
+              作成
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>,
+    document.body
   );
 };
 
@@ -227,19 +368,28 @@ const LaneRow: React.FC<LaneRowProps> = ({
 export default function PatientCalendarView({
   date,
   visits,
+  groups,
   onVisitClick,
   onTimeSlotClick,
 }: PatientCalendarViewProps) {
   const [lanes, setLanes] = useState<Lane[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const loadLanes = async () => {
     try {
       const data = await fetchPlanningLanes();
-      const mappedLanes = data.map((l, index) => ({
+      // Sort lanes by group_id for visual grouping
+      const sortedData = [...data].sort((a, b) => {
+        if (!a.group_id && !b.group_id) return 0;
+        if (!a.group_id) return 1;
+        if (!b.group_id) return -1;
+        return a.group_id - b.group_id;
+      });
+      const mappedLanes = sortedData.map((l) => ({
         ...l,
         label: l.name,
-        color: LANE_COLORS[index % LANE_COLORS.length]
+        color: getGroupColor(l.group_id, groups)
       }));
       setLanes(mappedLanes);
     } catch (err) {
@@ -250,23 +400,28 @@ export default function PatientCalendarView({
   };
 
   useEffect(() => {
-    loadLanes();
-  }, []);
+    if (groups && groups.length > 0) {
+      loadLanes();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groups]);
 
   const [scrollOffset, setScrollOffset] = useState(8); // 初期表示は8:00から
 
-  const addLane = async () => {
+  const handleCreateLane = async (name: string, groupId: number | null) => {
     try {
-      const newLane = await createPlanningLane(`新規レーン ${lanes.length + 1}`, lanes.length);
+      const newLane = await createPlanningLane(name, lanes.length, groupId);
       const mappedLane = {
         ...newLane,
         label: newLane.name,
-        color: LANE_COLORS[lanes.length % LANE_COLORS.length]
+        color: getGroupColor(newLane.group_id, groups)
       };
       setLanes([...lanes, mappedLane]);
+      setIsCreateModalOpen(false);
     } catch (err: unknown) {
       console.error('Failed to create lane:', err);
       alert('レーンの作成に失敗しました');
+      throw err;
     }
   };
 
@@ -320,16 +475,19 @@ export default function PatientCalendarView({
     <div className="h-full flex flex-col bg-white">
       {/* Header */}
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        <button
-          onClick={() => {
-            console.log('Adding lane...');
-            addLane();
-          }}
-          className="p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors shadow-sm flex items-center justify-center"
-          title="レーン追加"
-        >
-          <PlusIcon className="w-6 h-6" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              console.log('Plus button clicked');
+              setIsCreateModalOpen(true);
+            }}
+            className="p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors shadow-sm flex items-center justify-center"
+            title="レーン追加"
+          >
+            <PlusIcon className="w-6 h-6" />
+          </button>
+          <span className="text-xs text-gray-400">v3</span>
+        </div>
 
         <div className="flex items-center gap-2">
           <button
@@ -401,6 +559,13 @@ export default function PatientCalendarView({
           ))
         )}
       </div>
+
+      <CreateLaneModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleCreateLane}
+        groups={groups}
+      />
     </div>
   );
 }
