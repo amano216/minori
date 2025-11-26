@@ -203,15 +203,15 @@ export function UsersPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-text-primary">ユーザー管理</h1>
+    <div className="p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-text-primary">ユーザー管理</h1>
         <button
           onClick={() => handleOpenModal()}
-          className="px-4 py-2 bg-main text-white rounded hover:bg-main-dark transition-colors flex items-center gap-2"
+          className="px-3 sm:px-4 py-2 bg-main text-white rounded hover:bg-main-dark transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
         >
-          <Icon name="Plus" size={20} />
-          新規ユーザー
+          <Icon name="Plus" size={18} />
+          <span>新規ユーザー</span>
         </button>
       </div>
 
@@ -221,58 +221,61 @@ export function UsersPage() {
         </div>
       )}
 
+      {/* Mobile-responsive table wrapper */}
       <div className="bg-white rounded-lg border border-border overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-bg-base border-b border-border">
-            <tr>
-              <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">名前</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">メールアドレス</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">ロール</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">ステータス</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">資格</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">グループ</th>
-              <th className="px-4 py-3 text-right text-sm font-medium text-text-primary">操作</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {users.map((user) => (
-              <tr key={user.id} className="hover:bg-bg-base transition-colors">
-                <td className="px-4 py-4 text-sm text-text-primary font-medium">{user.name || '-'}</td>
-                <td className="px-4 py-4 text-sm text-text-primary">{user.email}</td>
-                <td className="px-4 py-4 text-sm">
-                  <span className="px-2 py-1 bg-primary-50 text-main rounded text-xs">
-                    {getRoleLabel(user.role)}
-                  </span>
-                </td>
-                <td className="px-4 py-4 text-sm">
-                  <span className={`px-2 py-1 rounded text-xs ${STATUS_COLORS[user.staff_status || 'active']}`}>
-                    {STATUS_OPTIONS.find(s => s.value === (user.staff_status || 'active'))?.label}
-                  </span>
-                </td>
-                <td className="px-4 py-4 text-sm text-text-grey">
-                  {getQualificationLabels(user.qualifications)}
-                </td>
-                <td className="px-4 py-4 text-sm text-text-grey">
-                  {getGroupName(user.group_id)}
-                </td>
-                <td className="px-4 py-4 text-sm text-right">
-                  <button
-                    onClick={() => handleOpenModal(user)}
-                    className="text-main hover:text-main-dark mr-3"
-                  >
-                    編集
-                  </button>
-                  <button
-                    onClick={() => handleDelete(user.id)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    削除
-                  </button>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[700px]">
+            <thead className="bg-bg-base border-b border-border">
+              <tr>
+                <th className="px-3 sm:px-4 py-3 text-left text-xs sm:text-sm font-medium text-text-primary whitespace-nowrap min-w-[80px]">名前</th>
+                <th className="px-3 sm:px-4 py-3 text-left text-xs sm:text-sm font-medium text-text-primary whitespace-nowrap min-w-[150px]">メールアドレス</th>
+                <th className="px-3 sm:px-4 py-3 text-left text-xs sm:text-sm font-medium text-text-primary whitespace-nowrap min-w-[70px]">ロール</th>
+                <th className="px-3 sm:px-4 py-3 text-left text-xs sm:text-sm font-medium text-text-primary whitespace-nowrap min-w-[80px]">ステータス</th>
+                <th className="px-3 sm:px-4 py-3 text-left text-xs sm:text-sm font-medium text-text-primary whitespace-nowrap min-w-[100px] hidden sm:table-cell">資格</th>
+                <th className="px-3 sm:px-4 py-3 text-left text-xs sm:text-sm font-medium text-text-primary whitespace-nowrap min-w-[100px] hidden sm:table-cell">グループ</th>
+                <th className="px-3 sm:px-4 py-3 text-right text-xs sm:text-sm font-medium text-text-primary whitespace-nowrap min-w-[80px]">操作</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {users.map((user) => (
+                <tr key={user.id} className="hover:bg-bg-base transition-colors">
+                  <td className="px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm text-text-primary font-medium whitespace-nowrap">{user.name || '-'}</td>
+                  <td className="px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm text-text-primary">{user.email}</td>
+                  <td className="px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm">
+                    <span className="px-2 py-1 bg-primary-50 text-main rounded text-xs whitespace-nowrap">
+                      {getRoleLabel(user.role)}
+                    </span>
+                  </td>
+                  <td className="px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm">
+                    <span className={`px-2 py-1 rounded text-xs whitespace-nowrap ${STATUS_COLORS[user.staff_status || 'active']}`}>
+                      {STATUS_OPTIONS.find(s => s.value === (user.staff_status || 'active'))?.label}
+                    </span>
+                  </td>
+                  <td className="px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm text-text-grey hidden sm:table-cell">
+                    {getQualificationLabels(user.qualifications)}
+                  </td>
+                  <td className="px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm text-text-grey hidden sm:table-cell">
+                    {getGroupName(user.group_id)}
+                  </td>
+                  <td className="px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm text-right whitespace-nowrap">
+                    <button
+                      onClick={() => handleOpenModal(user)}
+                      className="text-main hover:text-main-dark mr-2 sm:mr-3"
+                    >
+                      編集
+                    </button>
+                    <button
+                      onClick={() => handleDelete(user.id)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      削除
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         {users.length === 0 && (
           <div className="p-8 text-center text-text-grey">
@@ -283,9 +286,9 @@ export function UsersPage() {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
-          <div className="bg-white rounded-lg p-6 w-full max-w-lg my-8">
-            <h2 className="text-xl font-bold text-text-primary mb-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 overflow-y-auto p-0 sm:p-4">
+          <div className="bg-white rounded-t-xl sm:rounded-lg p-4 sm:p-6 w-full sm:max-w-lg max-h-[90vh] overflow-y-auto">
+            <h2 className="text-lg sm:text-xl font-bold text-text-primary mb-4">
               {editingUser ? 'ユーザー編集' : '新規ユーザー'}
             </h2>
 

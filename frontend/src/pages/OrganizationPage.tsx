@@ -62,13 +62,13 @@ export function OrganizationPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-text-primary">組織設定</h1>
+    <div className="p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-text-primary">組織設定</h1>
         {!isEditing && (
           <button
             onClick={() => setIsEditing(true)}
-            className="px-4 py-2 bg-main text-white rounded hover:bg-main-dark transition-colors"
+            className="px-3 sm:px-4 py-2 bg-main text-white rounded hover:bg-main-dark transition-colors text-sm sm:text-base"
           >
             編集
           </button>
@@ -76,12 +76,12 @@ export function OrganizationPage() {
       </div>
 
       {error && (
-        <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+        <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 text-red-700 text-sm">
           {error}
         </div>
       )}
 
-      <div className="bg-white rounded-lg border border-border p-6">
+      <div className="bg-white rounded-lg border border-border p-4 sm:p-6">
         {isEditing ? (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
