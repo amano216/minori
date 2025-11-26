@@ -24,14 +24,18 @@ staff_user = User.find_or_create_by!(email: "staff@example.com") do |user|
   user.email_confirmed_at = Time.current
 end
 
-# Ensure existing users have correct roles
-admin_user.update(role: User::ORGANIZATION_ADMIN) if admin_user.role == "admin"
-staff_user.update(role: User::STAFF) if staff_user.role.blank?
+# Ensure existing users have correct attributes (including organization)
+admin_user.update!(
+  role: User::ORGANIZATION_ADMIN,
+  organization: default_org,
+  email_confirmed_at: admin_user.email_confirmed_at || Time.current
+)
 
-# Ensure existing users are confirmed
-[ admin_user, staff_user ].each do |user|
-  user.update(email_confirmed_at: Time.current) if user.email_confirmed_at.nil?
-end
+staff_user.update!(
+  role: User::STAFF,
+  organization: default_org,
+  email_confirmed_at: staff_user.email_confirmed_at || Time.current
+)
 
 # Create organization memberships
 OrganizationMembership.find_or_create_by!(user: admin_user, organization: default_org)
