@@ -7,11 +7,20 @@ class Api::AuthController < ApplicationController
   def signup
     ActiveRecord::Base.transaction do
       # Create organization
-      # If subdomain is blank, set it to nil to avoid uniqueness constraint issues
+      # Generate subdomain from email domain or organization name if not provided
       subdomain = params[:subdomain].presence
+      
+      unless subdomain
+        # Generate from email domain or organization name
+        if params[:email].present?
+          subdomain = params[:email].split('@').last.split('.').first.downcase.gsub(/[^a-z0-9]/, '')
+        else
+          subdomain = params[:organization_name].to_s.downcase.gsub(/[^a-z0-9]/, '')[0..20]
+        end
+      end
 
-      # If subdomain is provided and already exists, make it unique
-      if subdomain && Organization.exists?(subdomain: subdomain)
+      # If subdomain already exists, make it unique
+      if Organization.exists?(subdomain: subdomain)
         base_subdomain = subdomain
         counter = 1
         while Organization.exists?(subdomain: subdomain)
@@ -35,11 +44,7 @@ class Api::AuthController < ApplicationController
         organization: organization
       )
 
-      # Create organization membership
-      OrganizationMembership.create!(
-        user: user,
-        organization: organization
-      )
+      # Note: OrganizationMembership is automatically created by User model's after_create callback
 
       # Send confirmation email
       UserMailer.confirmation_email(user).deliver_later
