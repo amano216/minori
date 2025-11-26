@@ -308,7 +308,7 @@ export function UnifiedSchedulePage() {
     }
   };
 
-  if (loading && visits.length === 0 && staffs.length === 0) {
+  if (!masterDataLoaded || (loading && visits.length === 0)) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Spinner size="lg" />
