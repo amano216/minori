@@ -5,6 +5,8 @@ module Api
       before_action :set_group, only: [ :show, :update, :destroy ]
 
       def index
+        Rails.logger.info "👥 GroupsController#index - current_user: #{current_user.inspect}"
+        Rails.logger.info "👥 GroupsController#index - organization: #{current_user&.organization.inspect}"
         @groups = current_user.organization.groups
                               .includes(:users, :children)
                               .order(:name)
