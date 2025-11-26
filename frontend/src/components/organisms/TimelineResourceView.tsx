@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import type { Staff, Group, Visit } from '../../api/client';
 

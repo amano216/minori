@@ -436,7 +436,6 @@ export function UnifiedSchedulePage() {
               <PatientCalendarView
                 date={currentDate}
                 visits={visits}
-                groups={groups}
                 onVisitClick={handleVisitSelect}
                 onTimeSlotClick={(hour, laneId) => {
                   const selectedDate = new Date(currentDate);
