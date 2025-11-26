@@ -31,50 +31,59 @@ module Api
         @visit = Visit.new(visit_params_with_organization)
 
         # ダブルブッキング防止: 悲観的ロックで競合をチェック
-        if @visit.user_id.present?
-          check_user_conflicts!(@visit)
-        end
-
-        if @visit.patient_id.present?
-          check_patient_conflicts!(@visit)
-        end
+        check_user_conflicts!(@visit) if @visit.user_id.present?
+        check_patient_conflicts!(@visit) if @visit.patient_id.present?
 
         @visit.save!
         render json: visit_json(@visit), status: :created
       end
+    rescue DoubleBookingError => e
+      render json: {
+        errors: [e.message],
+        error_type: "double_booking",
+        conflict_type: e.conflict_type,
+        resource_id: e.resource_id
+      }, status: :conflict
     rescue ActiveRecord::RecordInvalid => e
       render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
-    rescue StandardError => e
-      render json: { errors: [e.message] }, status: :unprocessable_entity
     end
 
     def update
       Visit.transaction do
-        # 楽観的ロックでStaleObjectErrorが発生する可能性がある
-        @visit.reload
+        # 楽観的ロック: lock_versionをチェック
+        check_lock_version!
 
         # スタッフまたは患者が変更される場合は競合チェック
-        if visit_params[:user_id].present? && visit_params[:user_id] != @visit.user_id
+        if visit_params[:user_id].present? && visit_params[:user_id].to_i != @visit.user_id
           temp_visit = @visit.dup
           temp_visit.assign_attributes(visit_params)
           check_user_conflicts!(temp_visit)
         end
 
-        if visit_params[:patient_id].present? && visit_params[:patient_id] != @visit.patient_id
+        if visit_params[:patient_id].present? && visit_params[:patient_id].to_i != @visit.patient_id
           temp_visit = @visit.dup
           temp_visit.assign_attributes(visit_params)
           check_patient_conflicts!(temp_visit)
         end
 
-        @visit.update!(visit_params)
+        @visit.update!(visit_params_without_lock_version)
         render json: visit_json(@visit)
       end
-    rescue ActiveRecord::StaleObjectError
-      render json: { errors: ["この訪問予定は他のユーザーによって更新されました。ページを再読み込みしてください。"] }, status: :conflict
+    rescue ConcurrentModificationError, ActiveRecord::StaleObjectError => e
+      render json: {
+        errors: [e.is_a?(ConcurrentModificationError) ? e.message : "この訪問予定は他のユーザーによって更新されました。ページを再読み込みしてください。"],
+        error_type: "stale_object",
+        current_version: @visit.reload.lock_version
+      }, status: :conflict
+    rescue DoubleBookingError => e
+      render json: {
+        errors: [e.message],
+        error_type: "double_booking",
+        conflict_type: e.conflict_type,
+        resource_id: e.resource_id
+      }, status: :conflict
     rescue ActiveRecord::RecordInvalid => e
       render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
-    rescue StandardError => e
-      render json: { errors: [e.message] }, status: :unprocessable_entity
     end
 
     def destroy
@@ -120,9 +129,23 @@ module Api
 
     def visit_params
       # staff_id を user_id にマッピング（後方互換性）
-      permitted = params.require(:visit).permit(:scheduled_at, :duration, :staff_id, :user_id, :patient_id, :status, :notes, :planning_lane_id)
+      permitted = params.require(:visit).permit(:scheduled_at, :duration, :staff_id, :user_id, :patient_id, :status, :notes, :planning_lane_id, :lock_version)
       permitted[:user_id] = permitted.delete(:staff_id) if permitted[:staff_id].present? && permitted[:user_id].blank?
       permitted
+    end
+
+    def visit_params_without_lock_version
+      visit_params.except(:lock_version)
+    end
+
+    def check_lock_version!
+      client_version = params.dig(:visit, :lock_version)&.to_i
+      return unless client_version # lock_versionが送られていない場合はスキップ
+
+      @visit.reload
+      if @visit.lock_version != client_version
+        raise ConcurrentModificationError
+      end
     end
 
     def visit_json(visit)
@@ -153,7 +176,7 @@ module Api
                          .lock
                          .exists?
 
-      raise "スタッフは既に別の訪問が予定されています" if conflicting
+      raise StaffDoubleBookingError.new(staff_id: visit.user_id) if conflicting
     end
 
     def check_patient_conflicts!(visit)
@@ -167,7 +190,7 @@ module Api
                          .lock
                          .exists?
 
-      raise "患者は既に別の訪問が予定されています" if conflicting
+      raise PatientDoubleBookingError.new(patient_id: visit.patient_id) if conflicting
     end
   end
 end

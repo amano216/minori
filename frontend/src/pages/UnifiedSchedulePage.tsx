@@ -18,6 +18,7 @@ import {
   completeVisit,
   updateVisit,
   deleteVisit,
+  ApiError,
   type Staff,
   type Group,
   type ScheduleVisit,
@@ -220,14 +221,29 @@ export function UnifiedSchedulePage() {
     // This function is intentionally empty - reassignment is handled via onUpdate
   };
 
-  const handleVisitUpdate = async (visitId: number, data: { staff_id: number | null; scheduled_at?: string; status?: string }) => {
+  const handleVisitUpdate = async (visitId: number, data: { staff_id: number | null; scheduled_at?: string; status?: string; lock_version?: number }) => {
     try {
       await updateVisit(visitId, data);
       await loadScheduleData();
       setSelectedVisit(null);
     } catch (err: unknown) {
       console.error('Failed to update visit:', err);
-      alert('更新に失敗しました');
+      
+      // 競合エラーのハンドリング
+      if (err instanceof ApiError && err.isConflict()) {
+        if (err.isDoubleBooking()) {
+          alert(`予約の競合が発生しました: ${err.message}`);
+        } else if (err.isStaleObject()) {
+          const reload = confirm(`${err.message}\n\nデータを再読み込みしますか？`);
+          if (reload) {
+            await loadScheduleData();
+          }
+        } else {
+          alert(err.message);
+        }
+      } else {
+        alert('更新に失敗しました');
+      }
       throw err;
     }
   };
@@ -284,9 +300,10 @@ export function UnifiedSchedulePage() {
 
     if (visit && staff) {
       try {
-        const updateData: { staff_id: number; status: string; scheduled_at?: string } = {
+        const updateData: { staff_id: number; status: string; scheduled_at?: string; lock_version?: number } = {
           staff_id: staff.id,
-          status: 'scheduled'
+          status: 'scheduled',
+          lock_version: visit.lock_version,
         };
 
         // If dropped on a specific date (Weekly View), update the date
@@ -303,7 +320,22 @@ export function UnifiedSchedulePage() {
         await loadScheduleData();
       } catch (err: unknown) {
         console.error('Failed to assign visit:', err);
-        alert('割り当てに失敗しました');
+        
+        // 競合エラーのハンドリング
+        if (err instanceof ApiError && err.isConflict()) {
+          if (err.isDoubleBooking()) {
+            alert(`予約の競合が発生しました: ${err.message}`);
+          } else if (err.isStaleObject()) {
+            const reload = confirm(`${err.message}\n\nデータを再読み込みしますか？`);
+            if (reload) {
+              await loadScheduleData();
+            }
+          } else {
+            alert(err.message);
+          }
+        } else {
+          alert('割り当てに失敗しました');
+        }
       }
     }
   };
