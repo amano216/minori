@@ -45,6 +45,8 @@ class User < ApplicationRecord
 
   before_save :downcase_email
   before_create :generate_confirmation_token
+  after_create :create_organization_membership
+  after_save :sync_group_membership
 
   # ロールチェックメソッド
   def super_admin?
@@ -175,5 +177,37 @@ class User < ApplicationRecord
     valid_days = %w[monday tuesday wednesday thursday friday saturday sunday]
     invalid_days = available_hours.keys - valid_days
     errors.add(:available_hours, "contains invalid days: #{invalid_days.join(', ')}") if invalid_days.any?
+  end
+
+  # Create organization_membership after user creation
+  def create_organization_membership
+    return unless organization_id.present?
+    return if organization_memberships.exists?(organization_id: organization_id)
+
+    organization_memberships.create(organization_id: organization_id)
+    Rails.logger.info "✅ Created organization_membership for user #{id} in organization #{organization_id}"
+  end
+
+  # Sync group_memberships when group_id changes
+  def sync_group_membership
+    return unless saved_change_to_group_id?
+
+    Rails.logger.info "🔄 Syncing group membership for user #{id}: #{group_id_before_last_save} -> #{group_id}"
+
+    # Remove old group membership
+    if group_id_before_last_save.present?
+      removed = group_memberships.where(group_id: group_id_before_last_save).destroy_all
+      Rails.logger.info "  ❌ Removed #{removed.size} old membership(s) from group #{group_id_before_last_save}"
+    end
+
+    # Add new group membership
+    if group_id.present?
+      if !group_memberships.exists?(group_id: group_id)
+        new_membership = group_memberships.create(group_id: group_id)
+        Rails.logger.info "  ✅ Created new membership in group #{group_id}: #{new_membership.persisted?}"
+      else
+        Rails.logger.info "  ℹ️  Membership already exists in group #{group_id}"
+      end
+    end
   end
 end

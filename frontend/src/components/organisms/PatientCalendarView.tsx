@@ -24,6 +24,7 @@ interface PatientCalendarViewProps {
   date: Date;
   visits: Visit[];
   groups: Group[];
+  selectedGroupIds: number[];
   onVisitClick: (visit: Visit) => void;
   onTimeSlotClick?: (hour: number, laneId: string) => void;
 }
@@ -132,7 +133,10 @@ const CreateLaneModal: React.FC<CreateLaneModalProps> = ({ isOpen, onClose, onSu
       return chain.join(' > ');
     };
 
-    return groups.map(group => ({ ...group, displayName: buildLabel(group) }));
+    // Filter to show only teams (child groups with parent_id)
+    return groups
+      .filter(group => group.parent_id !== null)
+      .map(group => ({ ...group, displayName: buildLabel(group) }));
   }, [groups]);
 
   useEffect(() => {
@@ -163,61 +167,190 @@ const CreateLaneModal: React.FC<CreateLaneModalProps> = ({ isOpen, onClose, onSu
   if (!isOpen) return null;
 
   return createPortal(
-    <div 
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000]" 
-      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
-    >
-      <div className="bg-white rounded-lg p-6 w-96 shadow-xl" onClick={e => e.stopPropagation()}>
-        <h3 className="text-lg font-bold mb-4">新規レーン作成</h3>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">レーン名</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2"
-              placeholder="例: 訪問ルートA"
-              required
-              autoFocus
-            />
-          </div>
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-1">担当チーム <span className="text-red-500">*</span></label>
-            <select
-              value={groupId}
-              onChange={(e) => {
-                console.log('Group selected:', e.target.value);
-                setGroupId(e.target.value ? Number(e.target.value) : '');
-              }}
-              className="w-full border border-gray-300 rounded px-3 py-2"
-              required
-            >
-              <option value="">選択してください</option>
-              {labeledGroups.map(g => (
-                 <option key={g.id} value={g.id}>{g.displayName}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
-              disabled={submitting}
-            >
-              キャンセル
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50"
-              disabled={submitting}
-            >
-              作成
-            </button>
-          </div>
-        </form>
+    <div className="fixed inset-y-0 right-0 w-96 bg-white shadow-2xl z-[10000] flex flex-col animate-slide-in-right">
+      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+        <h3 className="text-lg font-bold">新規レーン作成</h3>
+        <button
+          onClick={onClose}
+          className="text-gray-400 hover:text-gray-600"
+          type="button"
+        >
+          ✕
+        </button>
       </div>
+      <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4">
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">レーン名</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full border border-gray-300 rounded px-3 py-2"
+            placeholder="例: 訪問ルートA"
+            required
+            autoFocus
+          />
+        </div>
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-1">担当チーム <span className="text-red-500">*</span></label>
+          <select
+            value={groupId}
+            onChange={(e) => {
+              console.log('Group selected:', e.target.value);
+              setGroupId(e.target.value ? Number(e.target.value) : '');
+            }}
+            className="w-full border border-gray-300 rounded px-3 py-2"
+            required
+          >
+            <option value="">選択してください</option>
+            {labeledGroups.map(g => (
+               <option key={g.id} value={g.id}>{g.displayName}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
+            disabled={submitting}
+          >
+            キャンセル
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50"
+            disabled={submitting}
+          >
+            作成
+          </button>
+        </div>
+      </form>
+    </div>,
+    document.body
+  );
+};
+
+interface EditLanePanelProps {
+  lane: Lane | null;
+  onClose: () => void;
+  onSave: (laneId: number, newName: string, newGroupId: number | null) => Promise<void>;
+  groups: Group[];
+}
+
+const EditLanePanel: React.FC<EditLanePanelProps> = ({ lane, onClose, onSave, groups = [] }) => {
+  const [name, setName] = useState('');
+  const [groupId, setGroupId] = useState<number | ''>('');
+  const [saving, setSaving] = useState(false);
+
+  const labeledGroups = useMemo(() => {
+    if (!groups?.length) return [];
+    const map = new Map<number, Group>();
+    groups.forEach(group => map.set(group.id, group));
+
+    const buildLabel = (group: Group) => {
+      const chain: string[] = [];
+      let current: Group | undefined = group;
+      const seen = new Set<number>();
+
+      while (current) {
+        chain.unshift(current.name);
+        if (!current.parent_id) break;
+        if (seen.has(current.parent_id)) break;
+        seen.add(current.parent_id);
+        current = map.get(current.parent_id);
+      }
+
+      return chain.join(' > ');
+    };
+
+    // Filter to show only teams (child groups with parent_id)
+    return groups
+      .filter(group => group.parent_id !== null)
+      .map(group => ({ ...group, displayName: buildLabel(group) }));
+  }, [groups]);
+
+  useEffect(() => {
+    if (lane) {
+      setName(lane.name);
+      setGroupId(lane.group_id || '');
+    }
+  }, [lane]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!lane || !name.trim() || !groupId) return;
+
+    setSaving(true);
+    try {
+      await onSave(lane.id, name, groupId ? Number(groupId) : null);
+      onClose();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!lane) return null;
+
+  return createPortal(
+    <div className="fixed inset-y-0 right-0 w-96 bg-white shadow-2xl z-[10000] flex flex-col animate-slide-in-right">
+      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+        <h3 className="text-lg font-bold">レーン編集</h3>
+        <button
+          onClick={onClose}
+          className="text-gray-400 hover:text-gray-600"
+          type="button"
+        >
+          ✕
+        </button>
+      </div>
+      <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4">
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">レーン名</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full border border-gray-300 rounded px-3 py-2"
+            placeholder="例: 訪問ルートA"
+            required
+            autoFocus
+          />
+        </div>
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-1">担当チーム <span className="text-red-500">*</span></label>
+          <select
+            value={groupId}
+            onChange={(e) => setGroupId(e.target.value ? Number(e.target.value) : '')}
+            className="w-full border border-gray-300 rounded px-3 py-2"
+            required
+          >
+            <option value="">選択してください</option>
+            {labeledGroups.map(g => (
+              <option key={g.id} value={g.id}>{g.displayName}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
+            disabled={saving}
+          >
+            キャンセル
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50"
+            disabled={saving}
+          >
+            保存
+          </button>
+        </div>
+      </form>
     </div>,
     document.body
   );
@@ -231,6 +364,7 @@ interface LaneRowProps {
   onTimeSlotClick?: (hour: number, laneId: string) => void;
   onRemove: () => void;
   onRename: (newLabel: string) => void;
+  onEdit: () => void;
   visibleHours: number[];
 }
 
@@ -242,6 +376,7 @@ const LaneRow: React.FC<LaneRowProps> = ({
   onTimeSlotClick,
   onRemove,
   onRename,
+  onEdit,
   visibleHours
 }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -305,21 +440,23 @@ const LaneRow: React.FC<LaneRowProps> = ({
         
         <div className="flex items-center gap-1">
           {!isEditing && (
-            <button 
-              onClick={() => setIsEditing(true)}
-              className="p-1 text-gray-400 hover:text-indigo-600 rounded"
-              title="名称変更"
-            >
-              <PencilIcon className="w-3 h-3" />
-            </button>
+            <>
+              <button 
+                onClick={onEdit}
+                className="p-1 text-gray-400 hover:text-blue-600 rounded"
+                title="編集"
+              >
+                <PencilIcon className="w-3 h-3" />
+              </button>
+              <button 
+                onClick={onRemove}
+                className="p-1 text-gray-400 hover:text-red-600 rounded"
+                title="レーンを削除"
+              >
+                <TrashIcon className="w-3 h-3" />
+              </button>
+            </>
           )}
-          <button 
-            onClick={onRemove}
-            className="p-1 text-gray-400 hover:text-red-600 rounded"
-            title="レーンを削除"
-          >
-            <TrashIcon className="w-3 h-3" />
-          </button>
         </div>
       </div>
 
@@ -369,12 +506,14 @@ export default function PatientCalendarView({
   date,
   visits,
   groups,
+  selectedGroupIds,
   onVisitClick,
   onTimeSlotClick,
 }: PatientCalendarViewProps) {
   const [lanes, setLanes] = useState<Lane[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingLane, setEditingLane] = useState<Lane | null>(null);
 
   const loadLanes = async () => {
     try {
@@ -430,9 +569,24 @@ export default function PatientCalendarView({
     try {
       await deletePlanningLane(laneId);
       setLanes(lanes.filter(l => l.id !== laneId));
-    } catch (err: unknown) {
-      console.error('Failed to delete lane:', err);
+    } catch (err) {
+      console.error('Failed to remove lane:', err);
       alert('レーンの削除に失敗しました');
+    }
+  };
+
+  const handleEditLane = async (laneId: number, newName: string, newGroupId: number | null) => {
+    try {
+      await updatePlanningLane(laneId, newName, newGroupId);
+      setLanes(lanes.map(l => 
+        l.id === laneId 
+          ? { ...l, name: newName, label: newName, group_id: newGroupId, color: getGroupColor(newGroupId, groups) } 
+          : l
+      ));
+    } catch (err) {
+      console.error('Failed to update lane:', err);
+      alert('レーンの更新に失敗しました');
+      throw err;
     }
   };
 
@@ -445,6 +599,12 @@ export default function PatientCalendarView({
       alert('レーンの名称変更に失敗しました');
     }
   };
+
+  // Filter lanes by selected groups (from parent)
+  const filteredLanes = useMemo(() => {
+    if (!selectedGroupIds || selectedGroupIds.length === 0) return lanes;
+    return lanes.filter(lane => lane.group_id && selectedGroupIds.includes(lane.group_id));
+  }, [lanes, selectedGroupIds]);
 
   const hours = Array.from({ length: TOTAL_HOURS }, (_, i) => START_HOUR + i);
   const visibleHours = hours.slice(scrollOffset, scrollOffset + VISIBLE_HOURS);
@@ -486,7 +646,6 @@ export default function PatientCalendarView({
           >
             <PlusIcon className="w-6 h-6" />
           </button>
-          <span className="text-xs text-gray-400">v3</span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -521,7 +680,7 @@ export default function PatientCalendarView({
           <div className="w-48 flex-shrink-0 p-3 border-r border-gray-200 bg-gray-100 font-semibold text-sm text-gray-700 flex items-center gap-2">
             <span>計画レーン</span>
             <span className="text-xs font-normal text-gray-500 bg-gray-200 px-1.5 py-0.5 rounded">
-              {lanes.length}
+              {filteredLanes.length}
             </span>
           </div>
           <div className="flex-1 flex">
@@ -537,14 +696,14 @@ export default function PatientCalendarView({
         </div>
 
         {/* Lane Rows */}
-        {lanes.length === 0 ? (
+        {filteredLanes.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-gray-400">
             <ExclamationTriangleIcon className="w-12 h-12 mb-2 opacity-50" />
-            <p className="text-sm">レーンがありません</p>
-            <p className="text-xs mt-1">左上の「＋」ボタンから追加してください</p>
+            <p className="text-sm">選択されたグループのレーンがありません</p>
+            <p className="text-xs mt-1">+ボタンで新規作成</p>
           </div>
         ) : (
-          lanes.map(lane => (
+          filteredLanes.map(lane => (
             <LaneRow
               key={lane.id}
               lane={lane}
@@ -554,6 +713,7 @@ export default function PatientCalendarView({
               onTimeSlotClick={onTimeSlotClick}
               onRemove={() => removeLane(lane.id)}
               onRename={(newLabel) => renameLane(lane.id, newLabel)}
+              onEdit={() => setEditingLane(lane)}
               visibleHours={visibleHours}
             />
           ))
@@ -564,6 +724,13 @@ export default function PatientCalendarView({
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSubmit={handleCreateLane}
+        groups={groups}
+      />
+
+      <EditLanePanel
+        lane={editingLane}
+        onClose={() => setEditingLane(null)}
+        onSave={handleEditLane}
         groups={groups}
       />
     </div>

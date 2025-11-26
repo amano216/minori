@@ -437,6 +437,7 @@ export function UnifiedSchedulePage() {
                 date={currentDate}
                 visits={visits}
                 groups={groups}
+                selectedGroupIds={selectedGroupIds}
                 onVisitClick={handleVisitSelect}
                 onTimeSlotClick={(hour, laneId) => {
                   const selectedDate = new Date(currentDate);
