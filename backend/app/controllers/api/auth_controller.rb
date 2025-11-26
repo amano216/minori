@@ -30,7 +30,7 @@ class Api::AuthController < ApplicationController
         email: params[:email]&.downcase,
         password: params[:password],
         password_confirmation: params[:password_confirmation],
-        role: "admin",
+        role: User::ORGANIZATION_ADMIN,
         organization: organization
       )
 
