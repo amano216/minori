@@ -15,6 +15,18 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: ./backend
@@ -28,8 +40,11 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgres://minori:minori_dev@db:5432/minori_development
+      REDIS_URL: redis://redis:6379/1
       RAILS_ENV: development
       FRONTEND_URL: http://localhost:5174
       AUTO_CONFIRM_EMAIL: "true"
@@ -50,5 +65,6 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
   backend_bundle:
   frontend_node_modules:

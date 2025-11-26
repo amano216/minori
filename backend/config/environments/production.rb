@@ -40,8 +40,23 @@ Rails.application.configure do
   # Don't log any deprecations.
   config.active_support.report_deprecations = false
 
-  # Use memory cache store for MVP (switch to solid_cache_store when DB is ready)
-  config.cache_store = :memory_store
+  # Use Redis cache store for production
+  # Falls back to memory store if REDIS_URL is not set
+  if ENV["REDIS_URL"].present?
+    config.cache_store = :redis_cache_store, {
+      url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"),
+      expires_in: 90.minutes,
+      namespace: "minori_cache",
+      reconnect_attempts: 3,
+      error_handler: ->(method:, returning:, exception:) {
+        Rails.logger.error("Redis error in #{method}: #{exception.message}")
+      }
+    }
+  else
+    # Fallback to memory store if Redis is not available
+    config.cache_store = :memory_store
+    Rails.logger.warn("REDIS_URL not set, using memory store. This is not recommended for production.")
+  end
 
   # Use async queue adapter for MVP (switch to solid_queue when DB is ready)
   config.active_job.queue_adapter = :async

@@ -19,14 +19,30 @@
 # Global VM Lock (GVL) it has diminishing returns and will degrade the
 # response time (latency) of the application.
 #
-# The default is set to 3 threads as it's deemed a decent compromise between
-# throughput and latency for the average Rails application.
+# The default is set to 5 threads for production to handle more concurrent requests.
+# Development uses 3 threads to keep resource usage low.
 #
 # Any libraries that use a connection pool or another resource pool should
 # be configured to provide at least as many connections as the number of
 # threads. This includes Active Record's `pool` parameter in `database.yml`.
-threads_count = ENV.fetch("RAILS_MAX_THREADS", 3)
+threads_count = ENV.fetch("RAILS_MAX_THREADS") { Rails.env.production? ? 5 : 3 }
 threads threads_count, threads_count
+
+# Specifies the number of `workers` to boot in clustered mode.
+# Workers are forked web server processes. If using threads and workers together
+# the concurrency of the application would be max `threads` * `workers`.
+# Workers do not work on JRuby or Windows (both of which do not support
+# processes).
+#
+# In production, use workers for better performance and isolation.
+# Development uses single mode to simplify debugging.
+workers ENV.fetch("WEB_CONCURRENCY") { Rails.env.production? ? 2 : 0 }
+
+# Use the `preload_app!` method when specifying a `workers` number.
+# This directive tells Puma to first boot the application and load code
+# before forking the application. This takes advantage of Copy On Write
+# process behavior so workers use less memory.
+preload_app! if ENV.fetch("WEB_CONCURRENCY", "0").to_i > 0
 
 # Specifies the `port` that Puma will listen on to receive requests; default is 3000.
 port ENV.fetch("PORT", 3000)

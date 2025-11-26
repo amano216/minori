@@ -26,6 +26,49 @@ export function removeToken(): void {
   localStorage.removeItem(TOKEN_KEY);
 }
 
+// カスタムエラークラス
+export class ApiError extends Error {
+  status: number;
+  errorType?: string;
+  conflictType?: string;
+  resourceId?: number;
+  currentVersion?: number;
+  errors: string[];
+
+  constructor(
+    message: string,
+    status: number,
+    errors: string[] = [],
+    extra?: {
+      error_type?: string;
+      conflict_type?: string;
+      resource_id?: number;
+      current_version?: number;
+    }
+  ) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.errors = errors;
+    this.errorType = extra?.error_type;
+    this.conflictType = extra?.conflict_type;
+    this.resourceId = extra?.resource_id;
+    this.currentVersion = extra?.current_version;
+  }
+
+  isConflict(): boolean {
+    return this.status === 409;
+  }
+
+  isDoubleBooking(): boolean {
+    return this.errorType === 'double_booking';
+  }
+
+  isStaleObject(): boolean {
+    return this.errorType === 'stale_object';
+  }
+}
+
 async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -46,8 +89,28 @@ async function apiRequest<T>(
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Request failed' }));
-    throw new Error(error.error || 'Request failed');
+    const errorData = await response.json().catch(() => ({ error: 'Request failed' }));
+    
+    // 409 Conflictの場合は詳細情報を含むApiErrorをthrow
+    if (response.status === 409) {
+      throw new ApiError(
+        errorData.errors?.[0] || 'Conflict error',
+        response.status,
+        errorData.errors || [],
+        {
+          error_type: errorData.error_type,
+          conflict_type: errorData.conflict_type,
+          resource_id: errorData.resource_id,
+          current_version: errorData.current_version,
+        }
+      );
+    }
+    
+    throw new ApiError(
+      errorData.error || errorData.errors?.[0] || 'Request failed',
+      response.status,
+      errorData.errors || []
+    );
   }
 
   if (response.status === 204) {
@@ -251,6 +314,7 @@ export interface Visit {
   created_at: string;
   updated_at: string;
   planning_lane_id?: number | null;
+  lock_version?: number;
 }
 
 export interface VisitInput {
@@ -261,6 +325,7 @@ export interface VisitInput {
   status?: string;
   notes?: string;
   planning_lane_id?: number | null;
+  lock_version?: number;
 }
 
 export async function fetchVisits(params?: {
