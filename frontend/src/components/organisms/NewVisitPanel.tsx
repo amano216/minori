@@ -10,6 +10,7 @@ import {
 } from '../../api/client';
 import { Button } from '../atoms/Button';
 import { Spinner } from '../atoms/Spinner';
+import { SearchableSelect } from '../molecules/SearchableSelect';
 
 interface NewVisitPanelProps {
   isOpen: boolean;
@@ -206,42 +207,43 @@ export function NewVisitPanel({
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2 mb-1">
                   <User className="w-4 h-4 text-gray-500" />
+                  <span className="text-sm text-gray-600">患者</span>
                 </div>
-                <select
-                  id="patient"
+                <SearchableSelect
+                  options={patients.map((patient) => ({
+                    value: patient.id,
+                    label: patient.name,
+                    sublabel: patient.address,
+                  }))}
                   value={patientId}
-                  onChange={(e) => setPatientId(e.target.value ? Number(e.target.value) : '')}
+                  onChange={(val) => setPatientId(val ? Number(val) : '')}
+                  placeholder="患者を選択..."
+                  searchPlaceholder="患者を検索..."
                   required
                   disabled={submitting}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="">患者を選択...</option>
-                  {patients.map((patient) => (
-                    <option key={patient.id} value={patient.id}>
-                      {patient.name}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
 
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2 mb-1">
                   <User className="w-4 h-4 text-indigo-500" />
+                  <span className="text-sm text-gray-600">担当スタッフ</span>
                 </div>
-                <select
-                  id="staff"
+                <SearchableSelect
+                  options={[
+                    { value: '', label: '未割り当て' },
+                    ...staffs.map((staff) => ({
+                      value: staff.id,
+                      label: staff.name,
+                    })),
+                  ]}
                   value={staffId}
-                  onChange={(e) => setStaffId(e.target.value ? Number(e.target.value) : '')}
+                  onChange={(val) => setStaffId(val ? Number(val) : '')}
+                  placeholder="スタッフを選択..."
+                  searchPlaceholder="スタッフを検索..."
                   disabled={submitting}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="">未割り当て</option>
-                  {staffs.map((staff) => (
-                    <option key={staff.id} value={staff.id}>
-                      {staff.name}
-                    </option>
-                  ))}
-                </select>
+                  allowClear
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">

@@ -19,6 +19,7 @@ import {
   type Visit,
   type Group
 } from '../../api/client';
+import { SearchableSelect } from '../molecules/SearchableSelect';
 
 interface PatientCalendarViewProps {
   date: Date;
@@ -215,20 +216,16 @@ const CreateLaneModal: React.FC<CreateLaneModalProps> = ({ isOpen, onClose, onSu
           </div>
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-1">担当チーム <span className="text-red-500">*</span></label>
-            <select
+            <SearchableSelect
               value={groupId}
-              onChange={(e) => {
-                console.log('Group selected:', e.target.value);
-                setGroupId(e.target.value ? Number(e.target.value) : '');
+              onChange={(value) => {
+                console.log('Group selected:', value);
+                setGroupId(value === '' ? '' : Number(value));
               }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              required
-            >
-              <option value="">選択してください</option>
-              {labeledGroups.map(g => (
-                 <option key={g.id} value={g.id}>{g.displayName}</option>
-              ))}
-            </select>
+              options={labeledGroups.map(g => ({ value: g.id, label: g.displayName }))}
+              placeholder="チームを選択"
+              searchPlaceholder="チーム名で検索..."
+            />
           </div>
         </form>
         <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
@@ -368,17 +365,13 @@ const EditLanePanel: React.FC<EditLanePanelProps> = ({ lane, onClose, onSave, gr
           </div>
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-1">担当チーム <span className="text-red-500">*</span></label>
-            <select
+            <SearchableSelect
               value={groupId}
-              onChange={(e) => setGroupId(e.target.value ? Number(e.target.value) : '')}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              required
-            >
-              <option value="">選択してください</option>
-              {labeledGroups.map(g => (
-                <option key={g.id} value={g.id}>{g.displayName}</option>
-              ))}
-            </select>
+              onChange={(value) => setGroupId(value === '' ? '' : Number(value))}
+              options={labeledGroups.map(g => ({ value: g.id, label: g.displayName }))}
+              placeholder="チームを選択"
+              searchPlaceholder="チーム名で検索..."
+            />
           </div>
         </form>
         <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
