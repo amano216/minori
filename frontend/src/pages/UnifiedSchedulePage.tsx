@@ -354,7 +354,13 @@ export function UnifiedSchedulePage() {
 
     if (visit) {
       try {
-        const updateData: any = {
+        const updateData: {
+          lock_version?: number;
+          staff_id?: number | null;
+          status?: string;
+          scheduled_at?: string;
+          planning_lane_id?: number;
+        } = {
           lock_version: visit.lock_version,
         };
 
