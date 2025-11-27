@@ -142,22 +142,50 @@ export function NewVisitPanel({
 
   return (
     <>
-      {/* Panel - No Backdrop, allows interaction with background */}
+      {/* Mobile Backdrop */}
       <div
-        className={`fixed top-16 right-4 bottom-4 w-96 bg-white/95 backdrop-blur-sm shadow-2xl border border-gray-200 rounded-xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${
-          isVisible ? 'translate-x-0' : 'translate-x-[120%]'
+        className={`fixed inset-0 bg-black/30 z-40 sm:hidden transition-opacity duration-300 ${
+          isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
+        onClick={handleClose}
+      />
+      
+      {/* Panel */}
+      <div
+        className={`
+          fixed z-50
+          /* モバイル: 下からスライドアップ */
+          inset-x-0 bottom-0 max-h-[90vh]
+          /* PC: 右サイドパネル */
+          sm:inset-y-0 sm:inset-x-auto sm:right-0 sm:bottom-auto sm:max-h-none
+          w-full sm:w-96
+          bg-white sm:bg-white/95 sm:backdrop-blur-sm shadow-2xl
+          sm:border-l sm:border-gray-200
+          rounded-t-2xl sm:rounded-none
+          flex flex-col
+          transform transition-transform duration-300 ease-out
+          ${isVisible 
+            ? 'translate-y-0 sm:translate-x-0' 
+            : 'translate-y-full sm:translate-y-0 sm:translate-x-full'
+          }
+        `}
       >
+        {/* Mobile Drag Handle */}
+        <div className="sm:hidden flex justify-center pt-2 pb-1">
+          <div className="w-10 h-1 bg-gray-300 rounded-full" />
+        </div>
+        
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-100">
-          <div className="flex items-center gap-2 text-gray-900 font-bold text-lg">
-            <Plus className="w-6 h-6 text-indigo-600" />
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+          <div className="flex items-center gap-2 text-gray-900 font-bold text-base sm:text-lg">
+            <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
+            <span>新規訪問</span>
           </div>
           <button
             onClick={handleClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors -mr-2"
           >
-            <X className="w-6 h-6 text-gray-500" />
+            <X className="w-5 h-5 sm:w-6 sm:h-6 text-gray-500" />
           </button>
         </div>
 
@@ -286,12 +314,24 @@ export function NewVisitPanel({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-100 bg-gray-50/50 rounded-b-xl flex justify-end gap-4">
-          <Button variant="secondary" onClick={handleClose} disabled={submitting} className="h-14 w-14 p-0 flex items-center justify-center rounded-full shadow-sm hover:shadow-md transition-all" title="キャンセル">
-            <X className="w-8 h-8" />
+        <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
+          <Button 
+            variant="secondary" 
+            onClick={handleClose} 
+            disabled={submitting} 
+            className="h-12 px-4 flex items-center justify-center rounded-lg"
+          >
+            キャンセル
           </Button>
-          <Button type="submit" form="new-visit-form" variant="primary" disabled={submitting} className="h-14 w-14 p-0 flex items-center justify-center rounded-full shadow-md hover:shadow-lg transition-all" title="保存">
-            <Save className="w-8 h-8" />
+          <Button 
+            type="submit" 
+            form="new-visit-form" 
+            variant="primary" 
+            disabled={submitting} 
+            className="h-12 px-6 flex items-center gap-2 justify-center rounded-lg"
+          >
+            <Save className="w-5 h-5" />
+            <span>保存</span>
           </Button>
         </div>
       </div>

@@ -170,28 +170,44 @@ const CreateLaneModal: React.FC<CreateLaneModalProps> = ({ isOpen, onClose, onSu
     <>
       {/* Mobile Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/30 z-[9999] sm:hidden"
+        className="fixed inset-0 bg-black/30 z-[9999] sm:hidden transition-opacity"
         onClick={onClose}
       />
-      <div className="fixed inset-y-0 right-0 w-full sm:w-96 bg-white shadow-2xl z-[10000] flex flex-col animate-slide-in-right">
-        <div className="p-3 sm:p-4 border-b border-gray-200 flex items-center justify-between">
+      <div className={`
+        fixed z-[10000]
+        /* モバイル: 下からスライドアップ */
+        inset-x-0 bottom-0 max-h-[85vh]
+        /* PC: 右サイドパネル */
+        sm:inset-y-0 sm:inset-x-auto sm:right-0 sm:bottom-auto sm:max-h-none
+        w-full sm:w-96
+        bg-white shadow-2xl
+        sm:border-l sm:border-gray-200
+        rounded-t-2xl sm:rounded-none
+        flex flex-col
+      `}>
+        {/* Mobile Drag Handle */}
+        <div className="sm:hidden flex justify-center pt-2 pb-1">
+          <div className="w-10 h-1 bg-gray-300 rounded-full" />
+        </div>
+        
+        <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
           <h3 className="text-base sm:text-lg font-bold">新規レーン作成</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 p-1"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors -mr-2"
             type="button"
           >
-            ✕
+            <span className="text-gray-500 text-xl">✕</span>
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-3 sm:p-4">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4">
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">レーン名</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 text-base sm:text-sm"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500"
               placeholder="例: 訪問ルートA"
               required
               autoFocus
@@ -205,7 +221,7 @@ const CreateLaneModal: React.FC<CreateLaneModalProps> = ({ isOpen, onClose, onSu
                 console.log('Group selected:', e.target.value);
                 setGroupId(e.target.value ? Number(e.target.value) : '');
               }}
-              className="w-full border border-gray-300 rounded px-3 py-2 text-base sm:text-sm"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
             >
               <option value="">選択してください</option>
@@ -214,24 +230,26 @@ const CreateLaneModal: React.FC<CreateLaneModalProps> = ({ isOpen, onClose, onSu
               ))}
             </select>
           </div>
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-3 sm:px-4 py-2 text-gray-600 hover:bg-gray-100 rounded text-sm"
-              disabled={submitting}
-            >
-              キャンセル
-            </button>
-            <button
-              type="submit"
-              className="px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 text-sm"
-              disabled={submitting}
-            >
-              作成
-            </button>
-          </div>
         </form>
+        <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            disabled={submitting}
+          >
+            キャンセル
+          </button>
+          <button
+            type="submit"
+            form="create-lane-form"
+            onClick={handleSubmit}
+            className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            disabled={submitting}
+          >
+            作成
+          </button>
+        </div>
       </div>
     </>,
     document.body
@@ -305,28 +323,44 @@ const EditLanePanel: React.FC<EditLanePanelProps> = ({ lane, onClose, onSave, gr
     <>
       {/* Mobile Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/30 z-[9999] sm:hidden"
+        className="fixed inset-0 bg-black/30 z-[9999] sm:hidden transition-opacity"
         onClick={onClose}
       />
-      <div className="fixed inset-y-0 right-0 w-full sm:w-96 bg-white shadow-2xl z-[10000] flex flex-col animate-slide-in-right">
-        <div className="p-3 sm:p-4 border-b border-gray-200 flex items-center justify-between">
+      <div className={`
+        fixed z-[10000]
+        /* モバイル: 下からスライドアップ */
+        inset-x-0 bottom-0 max-h-[85vh]
+        /* PC: 右サイドパネル */
+        sm:inset-y-0 sm:inset-x-auto sm:right-0 sm:bottom-auto sm:max-h-none
+        w-full sm:w-96
+        bg-white shadow-2xl
+        sm:border-l sm:border-gray-200
+        rounded-t-2xl sm:rounded-none
+        flex flex-col
+      `}>
+        {/* Mobile Drag Handle */}
+        <div className="sm:hidden flex justify-center pt-2 pb-1">
+          <div className="w-10 h-1 bg-gray-300 rounded-full" />
+        </div>
+        
+        <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
           <h3 className="text-base sm:text-lg font-bold">レーン編集</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 p-1"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors -mr-2"
             type="button"
           >
-            ✕
+            <span className="text-gray-500 text-xl">✕</span>
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-3 sm:p-4">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4">
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">レーン名</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 text-base sm:text-sm"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500"
               placeholder="例: 訪問ルートA"
               required
               autoFocus
@@ -337,7 +371,7 @@ const EditLanePanel: React.FC<EditLanePanelProps> = ({ lane, onClose, onSave, gr
             <select
               value={groupId}
               onChange={(e) => setGroupId(e.target.value ? Number(e.target.value) : '')}
-              className="w-full border border-gray-300 rounded px-3 py-2 text-base sm:text-sm"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
             >
               <option value="">選択してください</option>
@@ -346,24 +380,25 @@ const EditLanePanel: React.FC<EditLanePanelProps> = ({ lane, onClose, onSave, gr
               ))}
             </select>
           </div>
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-3 sm:px-4 py-2 text-gray-600 hover:bg-gray-100 rounded text-sm"
-              disabled={saving}
-            >
-              キャンセル
-            </button>
-            <button
-              type="submit"
-              className="px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 text-sm"
-              disabled={saving}
-            >
-              保存
-            </button>
-          </div>
         </form>
+        <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            disabled={saving}
+          >
+            キャンセル
+          </button>
+          <button
+            type="submit"
+            onClick={handleSubmit}
+            className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            disabled={saving}
+          >
+            保存
+          </button>
+        </div>
       </div>
     </>,
     document.body
