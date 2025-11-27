@@ -477,7 +477,8 @@ export function UnifiedSchedulePage() {
           <div className="w-[280px] sm:w-80 h-full">
               <UnassignedVisitInbox 
                 visits={unassignedVisits} 
-                onVisitClick={handleVisitSelect} 
+                onVisitClick={handleVisitSelect}
+                onEditClick={(visit) => handleVisitEdit(visit.id)}
               />
             </div>
           </div>

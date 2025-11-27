@@ -1,43 +1,41 @@
 import { useState } from 'react';
-import { MagnifyingGlassIcon, FunnelIcon, InboxIcon } from '@heroicons/react/24/outline';
-import { useDraggable } from '@dnd-kit/core';
+import { MagnifyingGlassIcon, FunnelIcon, InboxIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 import type { Visit } from '../../api/client';
 
-interface DraggableVisitCardProps {
+interface VisitCardProps {
   visit: Visit;
   onClick: (visit: Visit) => void;
+  onEditClick?: (visit: Visit) => void;
 }
 
-function DraggableVisitCard({ visit, onClick }: DraggableVisitCardProps) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: `visit-${visit.id}`,
-    data: { visit },
-  });
-
-  const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-    zIndex: 999,
-  } : undefined;
-
+function VisitCard({ visit, onClick, onEditClick }: VisitCardProps) {
   // Type assertion for patient with group
   const patient = visit.patient as { id: number; name: string; group?: { id: number; name: string } };
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
-      {...listeners}
-      {...attributes}
       onClick={() => onClick(visit)}
-      className={`bg-white px-3 py-2 rounded-lg border shadow-sm hover:shadow-md cursor-grab active:cursor-grabbing transition-shadow border-l-4 border-l-red-400 touch-none ${
-        isDragging ? 'opacity-50 shadow-xl rotate-2' : 'border-gray-200'
-      }`}
+      className="bg-white px-3 py-2 rounded-lg border shadow-sm hover:shadow-md cursor-pointer transition-shadow border-l-4 border-l-red-400 border-gray-200 group"
     >
       <div className="flex items-center justify-between gap-2">
         <span className="font-medium text-gray-900 truncate">{visit.patient.name}</span>
-        <span className="text-xs text-gray-500 whitespace-nowrap">
-          {new Date(visit.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </span>
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-gray-500 whitespace-nowrap">
+            {new Date(visit.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+          {onEditClick && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditClick(visit);
+              }}
+              className="p-1 text-gray-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"
+              title="編集"
+            >
+              <PencilSquareIcon className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
       {patient.group && (
         <div className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded inline-block mt-1">
@@ -51,11 +49,13 @@ function DraggableVisitCard({ visit, onClick }: DraggableVisitCardProps) {
 interface UnassignedVisitInboxProps {
   visits: Visit[];
   onVisitClick: (visit: Visit) => void;
+  onEditClick?: (visit: Visit) => void;
 }
 
 export function UnassignedVisitInbox({
   visits,
   onVisitClick,
+  onEditClick,
 }: UnassignedVisitInboxProps) {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -91,10 +91,11 @@ export function UnassignedVisitInbox({
       
       <div className="flex-1 overflow-y-auto p-2 space-y-2 bg-gray-50">
         {filteredVisits.map((visit) => (
-          <DraggableVisitCard
+          <VisitCard
             key={visit.id}
             visit={visit}
             onClick={onVisitClick}
+            onEditClick={onEditClick}
           />
         ))}
         
