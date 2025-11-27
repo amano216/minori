@@ -408,7 +408,7 @@ export async function completeVisit(id: number): Promise<Visit> {
 
 // Schedule API
 export interface ScheduleVisit extends Visit {
-  patient: { id: number; name: string; address?: string };
+  patient: { id: number; name: string; address?: string; group?: { id: number; name: string } };
 }
 
 export interface DailySchedule {

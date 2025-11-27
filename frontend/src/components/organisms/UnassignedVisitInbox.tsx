@@ -19,6 +19,9 @@ function DraggableVisitCard({ visit, onClick }: DraggableVisitCardProps) {
     zIndex: 999,
   } : undefined;
 
+  // Type assertion for patient with group
+  const patient = visit.patient as { id: number; name: string; group?: { id: number; name: string } };
+
   return (
     <div
       ref={setNodeRef}
@@ -26,22 +29,19 @@ function DraggableVisitCard({ visit, onClick }: DraggableVisitCardProps) {
       {...listeners}
       {...attributes}
       onClick={() => onClick(visit)}
-      className={`bg-white p-3 rounded-lg border shadow-sm hover:shadow-md cursor-grab active:cursor-grabbing transition-shadow border-l-4 border-l-red-400 touch-none ${
+      className={`bg-white px-3 py-2 rounded-lg border shadow-sm hover:shadow-md cursor-grab active:cursor-grabbing transition-shadow border-l-4 border-l-red-400 touch-none ${
         isDragging ? 'opacity-50 shadow-xl rotate-2' : 'border-gray-200'
       }`}
     >
-      <div className="flex justify-between items-start mb-1">
-        <span className="font-medium text-gray-900">{visit.patient.name}</span>
-        <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
-          {visit.duration}分
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-medium text-gray-900 truncate">{visit.patient.name}</span>
+        <span className="text-xs text-gray-500 whitespace-nowrap">
+          {new Date(visit.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </span>
       </div>
-      <div className="text-xs text-gray-500 mb-1">
-        {new Date(visit.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-      </div>
-      {visit.patient.address && (
-        <div className="text-xs text-gray-400 truncate">
-          {visit.patient.address}
+      {patient.group && (
+        <div className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded inline-block mt-1">
+          {patient.group.name}
         </div>
       )}
     </div>

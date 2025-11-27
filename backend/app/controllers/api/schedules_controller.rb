@@ -7,7 +7,7 @@ module Api
     # GET /api/schedules/daily?date=2025-11-25
     def daily
       date = params[:date].present? ? Date.parse(params[:date]) : Date.current
-      visits = Visit.includes(:user, :patient)
+      visits = Visit.includes(:user, patient: :group)
                     .on_date(date)
                     .order(:scheduled_at)
 
@@ -24,7 +24,7 @@ module Api
       start_date = params[:start_date].present? ? Date.parse(params[:start_date]) : Date.current.beginning_of_week
       end_date = start_date + 6.days
 
-      visits = Visit.includes(:user, :patient)
+      visits = Visit.includes(:user, patient: :group)
                     .where(scheduled_at: start_date.beginning_of_day..end_date.end_of_day)
                     .order(:scheduled_at)
 
@@ -129,6 +129,10 @@ module Api
     private
 
     def visit_with_staff_json(visit)
+      patient_json = visit.patient&.as_json(only: [ :id, :name, :address ])
+      if visit.patient&.group
+        patient_json[:group] = { id: visit.patient.group.id, name: visit.patient.group.name }
+      end
       {
         id: visit.id,
         scheduled_at: visit.scheduled_at,
@@ -137,7 +141,7 @@ module Api
         notes: visit.notes,
         staff_id: visit.user_id,
         staff: visit.user&.as_json(only: [ :id, :name ]),
-        patient: visit.patient&.as_json(only: [ :id, :name, :address ]),
+        patient: patient_json,
         planning_lane_id: visit.planning_lane_id
       }
     end

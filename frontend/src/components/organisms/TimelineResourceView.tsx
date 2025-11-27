@@ -111,14 +111,14 @@ function TimelineStaffRow({ staff, groupName, visits, hours, date, onVisitClick,
               e.stopPropagation();
               onVisitClick(visit);
             }}
-            className="visit-card absolute top-2 bottom-2 bg-indigo-500 rounded-md shadow-sm border border-indigo-600 cursor-pointer hover:bg-indigo-600 transition-colors z-10 overflow-hidden px-2 py-1"
+            className="visit-card absolute top-1 bottom-1 bg-indigo-500 rounded-md shadow-md border-2 border-indigo-600 cursor-pointer hover:bg-indigo-600 hover:scale-[1.02] transition-all z-10 overflow-hidden px-2 py-0.5 flex flex-col justify-center"
             style={getPositionStyle(visit)}
           >
-            <div className="text-xs font-bold text-white truncate">
+            <div className="text-xs font-bold text-white truncate leading-tight">
               {visit.patient.name}
             </div>
-            <div className="text-[10px] text-indigo-100 truncate">
-              {new Date(visit.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            <div className="text-[10px] text-indigo-100 truncate leading-tight">
+              {new Date(visit.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({visit.duration}分)
             </div>
           </div>
         ))}
