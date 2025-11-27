@@ -2,6 +2,8 @@
 
 module Api
   class PatientsController < ApplicationController
+    before_action :set_patient, only: %i[show update destroy]
+
     def index
       @patients = scoped_patients
       @patients = @patients.where(status: params[:status]) if params[:status].present?
@@ -39,6 +41,10 @@ module Api
     end
 
     private
+
+    def set_patient
+      @patient = scoped_patients.find(params[:id])
+    end
 
     def scoped_patients
       if current_user.organization
