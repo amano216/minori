@@ -20,9 +20,9 @@ end
 # Japanese era to Western calendar conversion
 def convert_japanese_date(date_str)
   return nil if date_str.nil? || date_str.strip.empty?
-  
+
   date_str = date_str.strip
-  
+
   # Handle Japanese era formats: T, S, H, R
   era_mapping = {
     'T' => 1911,  # Taisho: T1 = 1912
@@ -30,17 +30,17 @@ def convert_japanese_date(date_str)
     'H' => 1988,  # Heisei: H1 = 1989
     'R' => 2018   # Reiwa: R1 = 2019
   }
-  
+
   if date_str =~ /^([TSHR])(\d{1,2})\.(\d{1,2})\.(\d{1,2})$/
     era = $1
     year = $2.to_i
     month = $3.to_i
     day = $4.to_i
-    
+
     western_year = era_mapping[era] + year
     return Date.new(western_year, month, day)
   end
-  
+
   # Try standard date formats
   begin
     Date.parse(date_str)
@@ -67,10 +67,10 @@ CSV.foreach(CSV_PATH, headers: true) do |row|
       row['住所2']
     ].compact.reject(&:empty?)
     full_address = address_parts.join(' ')
-    
+
     # Handle different column names for kana (氏名カナ or ﾌﾘｶﾞﾅ)
     kana = row['氏名カナ'] || row['ﾌﾘｶﾞﾅ']
-    
+
     # Build notes with additional info (kana, DOB, gender, care level, location)
     notes_parts = []
     notes_parts << "フリガナ: #{kana}" if kana.present?
@@ -81,12 +81,12 @@ CSV.foreach(CSV_PATH, headers: true) do |row|
     notes_parts << "注意事項: #{row['注意事項']}" if row['注意事項'].present?
     notes_parts << "拠点: #{row['基本情報 本体･ｻﾃﾗｲﾄ']}" if row['基本情報 本体･ｻﾃﾗｲﾄ'].present?
     notes_parts << "利用者コード: #{row['利用者ｺｰﾄﾞ']}" if row['利用者ｺｰﾄﾞ'].present?
-    
+
     # care_requirements should be an array
     care_reqs = []
     care_reqs << row['要介護度'] if row['要介護度'].present?
     care_reqs << row['注意事項'] if row['注意事項'].present?
-    
+
     patient = Patient.new(
       name: row['氏名'],
       address: full_address,
@@ -96,7 +96,7 @@ CSV.foreach(CSV_PATH, headers: true) do |row|
       status: 'active',
       organization_id: ORGANIZATION_ID
     )
-    
+
     if patient.save
       imported_count += 1
     else

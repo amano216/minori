@@ -148,24 +148,36 @@ export function LoginPage() {
                 type="button"
                 variant="secondary"
                 size="sm"
-                onClick={() => fillTestAccount('admin@example.com', 'password123')}
+                onClick={() => fillTestAccount('admin@kaihatsu-nursing.jp', 'password123')}
                 className="text-left justify-start"
               >
                 <div className="flex flex-col items-start">
-                  <span className="font-medium">管理者アカウント</span>
-                  <span className="text-xs text-gray-500">admin@example.com</span>
+                  <span className="font-medium">開発訪問看護ステーション（管理者）</span>
+                  <span className="text-xs text-gray-500">admin@kaihatsu-nursing.jp / password123</span>
                 </div>
               </Button>
               <Button
                 type="button"
                 variant="secondary"
                 size="sm"
-                onClick={() => fillTestAccount('staff@example.com', 'password123')}
+                onClick={() => fillTestAccount('tanaka.hanako@kaihatsu-nursing.jp', 'password123')}
                 className="text-left justify-start"
               >
                 <div className="flex flex-col items-start">
-                  <span className="font-medium">スタッフアカウント</span>
-                  <span className="text-xs text-gray-500">staff@example.com</span>
+                  <span className="font-medium">開発訪問看護ステーション（田中 花子）</span>
+                  <span className="text-xs text-gray-500">tanaka.hanako@kaihatsu-nursing.jp / password123</span>
+                </div>
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => fillTestAccount('admin@example.com', 'password123')}
+                className="text-left justify-start"
+              >
+                <div className="flex flex-col items-start">
+                  <span className="font-medium">デフォルト組織（管理者）</span>
+                  <span className="text-xs text-gray-500">admin@example.com / password123</span>
                 </div>
               </Button>
             </div>

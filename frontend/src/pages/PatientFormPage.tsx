@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { fetchPatient, createPatient, updatePatient, type PatientInput } from '../api/client';
+import { fetchPatient, createPatient, updatePatient, type PatientInput, type PhoneNumber } from '../api/client';
 import { Button } from '../components/atoms/Button';
 import { Input } from '../components/atoms/Input';
 import { Label } from '../components/atoms/Label';
@@ -19,14 +19,35 @@ const CARE_REQUIREMENTS = [
   { value: 'meal_assistance', label: '食事介助' },
 ];
 
+const GENDER_OPTIONS = [
+  { value: '', label: '選択してください' },
+  { value: '男', label: '男性' },
+  { value: '女', label: '女性' },
+];
+
+const PHONE_LABEL_OPTIONS = [
+  { value: '電話', label: '電話' },
+  { value: '自宅', label: '自宅' },
+  { value: '携帯', label: '携帯' },
+  { value: '勤務先', label: '勤務先' },
+  { value: '緊急連絡先', label: '緊急連絡先' },
+  { value: 'FAX', label: 'FAX' },
+  { value: 'その他', label: 'その他' },
+];
+
 export function PatientFormPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isEdit = Boolean(id);
 
   const [name, setName] = useState('');
+  const [nameKana, setNameKana] = useState('');
+  const [postalCode, setPostalCode] = useState('');
   const [address, setAddress] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([{ number: '', label: '電話' }]);
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [gender, setGender] = useState('');
+  const [patientCode, setPatientCode] = useState('');
   const [status, setStatus] = useState('active');
   const [careRequirements, setCareRequirements] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
@@ -40,8 +61,15 @@ export function PatientFormPage() {
       try {
         const patient = await fetchPatient(Number(id));
         setName(patient.name);
+        setNameKana(patient.name_kana || '');
+        setPostalCode(patient.postal_code || '');
         setAddress(patient.address || '');
-        setPhone(patient.phone || '');
+        setPhoneNumbers(patient.phone_numbers?.length > 0 
+          ? patient.phone_numbers 
+          : [{ number: '', label: '電話' }]);
+        setDateOfBirth(patient.date_of_birth || '');
+        setGender(patient.gender || '');
+        setPatientCode(patient.patient_code || '');
         setStatus(patient.status);
         setCareRequirements(patient.care_requirements);
         setNotes(patient.notes || '');
@@ -60,18 +88,42 @@ export function PatientFormPage() {
     );
   };
 
+  const handlePhoneNumberChange = (index: number, field: 'number' | 'label', value: string) => {
+    setPhoneNumbers((prev) => {
+      const newNumbers = [...prev];
+      newNumbers[index] = { ...newNumbers[index], [field]: value };
+      return newNumbers;
+    });
+  };
+
+  const addPhoneNumber = () => {
+    setPhoneNumbers((prev) => [...prev, { number: '', label: '電話' }]);
+  };
+
+  const removePhoneNumber = (index: number) => {
+    setPhoneNumbers((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     setSubmitting(true);
 
+    // 空の電話番号を除外
+    const validPhoneNumbers = phoneNumbers.filter(pn => pn.number.trim() !== '');
+
     const patientData: PatientInput = {
       name,
-      address,
-      phone,
+      name_kana: nameKana || undefined,
+      postal_code: postalCode || undefined,
+      address: address || undefined,
+      phone_numbers: validPhoneNumbers.length > 0 ? validPhoneNumbers : undefined,
+      date_of_birth: dateOfBirth || undefined,
+      gender: gender || undefined,
+      patient_code: patientCode || undefined,
       status,
       care_requirements: careRequirements,
-      notes,
+      notes: notes || undefined,
     };
 
     try {
@@ -88,6 +140,19 @@ export function PatientFormPage() {
     }
   };
 
+  // 年齢を計算
+  const calculateAge = (dob: string): number | null => {
+    if (!dob) return null;
+    const today = new Date();
+    const birthDate = new Date(dob);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -95,6 +160,8 @@ export function PatientFormPage() {
       </div>
     );
   }
+
+  const age = calculateAge(dateOfBirth);
 
   return (
     <>
@@ -114,79 +181,200 @@ export function PatientFormPage() {
 
       <Card>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-1.5">
-            <Label htmlFor="name" required>名前</Label>
-            <Input
-              type="text"
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              disabled={submitting}
-              placeholder="例: 田中 花子"
-            />
-          </div>
+          {/* 基本情報 */}
+          <div className="border-b border-border pb-4">
+            <h3 className="text-sm font-semibold text-text-black mb-4">基本情報</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="patientCode">利用者コード</Label>
+                <Input
+                  type="text"
+                  id="patientCode"
+                  value={patientCode}
+                  onChange={(e) => setPatientCode(e.target.value)}
+                  disabled={submitting}
+                  placeholder="例: 0000001935"
+                />
+              </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="address">住所</Label>
-            <Input
-              type="text"
-              id="address"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              disabled={submitting}
-              placeholder="例: 東京都渋谷区..."
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="phone">電話番号</Label>
-            <Input
-              type="tel"
-              id="phone"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              disabled={submitting}
-              placeholder="例: 03-1234-5678"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="status">ステータス</Label>
-            <select
-              id="status"
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              disabled={submitting}
-              className="w-full px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
-            >
-              <option value="active">利用中</option>
-              <option value="inactive">休止中</option>
-              <option value="discharged">退所</option>
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>ケア内容</Label>
-            <div className="flex flex-wrap gap-3">
-              {CARE_REQUIREMENTS.map((req) => (
-                <label
-                  key={req.value}
-                  className="flex items-center gap-2 cursor-pointer text-sm text-text-black"
+              <div className="space-y-1.5">
+                <Label htmlFor="status">ステータス</Label>
+                <select
+                  id="status"
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  disabled={submitting}
+                  className="w-full px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
                 >
-                  <input
-                    type="checkbox"
-                    checked={careRequirements.includes(req.value)}
-                    onChange={() => handleCareRequirementChange(req.value)}
-                    disabled={submitting}
-                    className="w-4 h-4 text-main border-border rounded focus:ring-main"
-                  />
-                  {req.label}
-                </label>
-              ))}
+                  <option value="active">利用中</option>
+                  <option value="inactive">休止中</option>
+                  <option value="discharged">退所</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="name" required>氏名</Label>
+                <Input
+                  type="text"
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  disabled={submitting}
+                  placeholder="例: 田中 花子"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="nameKana">フリガナ</Label>
+                <Input
+                  type="text"
+                  id="nameKana"
+                  value={nameKana}
+                  onChange={(e) => setNameKana(e.target.value)}
+                  disabled={submitting}
+                  placeholder="例: タナカ ハナコ"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="dateOfBirth">生年月日</Label>
+                <Input
+                  type="date"
+                  id="dateOfBirth"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                  disabled={submitting}
+                />
+                {age !== null && (
+                  <p className="text-sm text-text-gray">年齢: {age}歳</p>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="gender">性別</Label>
+                <select
+                  id="gender"
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value)}
+                  disabled={submitting}
+                  className="w-full px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
+                >
+                  {GENDER_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
+          {/* 連絡先情報 */}
+          <div className="border-b border-border pb-4">
+            <h3 className="text-sm font-semibold text-text-black mb-4">連絡先情報</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="postalCode">郵便番号</Label>
+                <Input
+                  type="text"
+                  id="postalCode"
+                  value={postalCode}
+                  onChange={(e) => setPostalCode(e.target.value)}
+                  disabled={submitting}
+                  placeholder="例: 123-4567"
+                />
+              </div>
+
+              <div className="space-y-1.5 md:col-span-2">
+                <Label htmlFor="address">住所</Label>
+                <Input
+                  type="text"
+                  id="address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  disabled={submitting}
+                  placeholder="例: 東京都渋谷区..."
+                />
+              </div>
+            </div>
+
+            {/* 電話番号 */}
+            <div className="mt-4 space-y-2">
+              <Label>電話番号</Label>
+              {phoneNumbers.map((pn, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <select
+                    value={pn.label || '電話'}
+                    onChange={(e) => handlePhoneNumberChange(index, 'label', e.target.value)}
+                    disabled={submitting}
+                    className="w-32 px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
+                  >
+                    {PHONE_LABEL_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                  <Input
+                    type="tel"
+                    value={pn.number}
+                    onChange={(e) => handlePhoneNumberChange(index, 'number', e.target.value)}
+                    disabled={submitting}
+                    placeholder="例: 03-1234-5678"
+                    className="flex-1"
+                  />
+                  {phoneNumbers.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removePhoneNumber(index)}
+                      disabled={submitting}
+                      className="p-2 text-text-gray hover:text-danger transition-colors"
+                      title="削除"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addPhoneNumber}
+                disabled={submitting}
+                className="flex items-center gap-1 text-sm text-main hover:text-main-dark transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                </svg>
+                電話番号を追加
+              </button>
+            </div>
+          </div>
+
+          {/* ケア情報 */}
+          <div className="border-b border-border pb-4">
+            <h3 className="text-sm font-semibold text-text-black mb-4">ケア情報</h3>
+            <div className="space-y-2">
+              <Label>ケア内容</Label>
+              <div className="flex flex-wrap gap-3">
+                {CARE_REQUIREMENTS.map((req) => (
+                  <label
+                    key={req.value}
+                    className="flex items-center gap-2 cursor-pointer text-sm text-text-black"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={careRequirements.includes(req.value)}
+                      onChange={() => handleCareRequirementChange(req.value)}
+                      disabled={submitting}
+                      className="w-4 h-4 text-main border-border rounded focus:ring-main"
+                    />
+                    {req.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* 備考 */}
           <div className="space-y-1.5">
             <Label htmlFor="notes">備考</Label>
             <textarea

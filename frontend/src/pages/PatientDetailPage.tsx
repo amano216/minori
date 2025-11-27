@@ -109,13 +109,50 @@ export function PatientDetailPage() {
 
       <Card>
         <dl className="divide-y divide-border">
+          {/* 基本情報 */}
+          <div className="py-4 flex flex-col sm:flex-row sm:gap-4">
+            <dt className="text-sm font-medium text-text-grey sm:w-40">利用者コード</dt>
+            <dd className="mt-1 sm:mt-0 text-text-black">{patient.patient_code || '-'}</dd>
+          </div>
+          <div className="py-4 flex flex-col sm:flex-row sm:gap-4">
+            <dt className="text-sm font-medium text-text-grey sm:w-40">フリガナ</dt>
+            <dd className="mt-1 sm:mt-0 text-text-black">{patient.name_kana || '-'}</dd>
+          </div>
+          <div className="py-4 flex flex-col sm:flex-row sm:gap-4">
+            <dt className="text-sm font-medium text-text-grey sm:w-40">生年月日</dt>
+            <dd className="mt-1 sm:mt-0 text-text-black">
+              {patient.date_of_birth || '-'}
+              {patient.age !== undefined && patient.age !== null && (
+                <span className="ml-2 text-text-grey">({patient.age}歳)</span>
+              )}
+            </dd>
+          </div>
+          <div className="py-4 flex flex-col sm:flex-row sm:gap-4">
+            <dt className="text-sm font-medium text-text-grey sm:w-40">性別</dt>
+            <dd className="mt-1 sm:mt-0 text-text-black">{patient.gender || '-'}</dd>
+          </div>
+          <div className="py-4 flex flex-col sm:flex-row sm:gap-4">
+            <dt className="text-sm font-medium text-text-grey sm:w-40">郵便番号</dt>
+            <dd className="mt-1 sm:mt-0 text-text-black">{patient.postal_code || '-'}</dd>
+          </div>
           <div className="py-4 flex flex-col sm:flex-row sm:gap-4">
             <dt className="text-sm font-medium text-text-grey sm:w-40">住所</dt>
             <dd className="mt-1 sm:mt-0 text-text-black">{patient.address || '-'}</dd>
           </div>
           <div className="py-4 flex flex-col sm:flex-row sm:gap-4">
             <dt className="text-sm font-medium text-text-grey sm:w-40">電話番号</dt>
-            <dd className="mt-1 sm:mt-0 text-text-black">{patient.phone || '-'}</dd>
+            <dd className="mt-1 sm:mt-0 text-text-black">
+              {patient.phone_numbers && patient.phone_numbers.length > 0 ? (
+                <ul className="space-y-1">
+                  {patient.phone_numbers.map((pn, idx) => (
+                    <li key={idx}>
+                      <span className="text-text-grey text-sm mr-2">{pn.label || '電話'}:</span>
+                      {pn.number}
+                    </li>
+                  ))}
+                </ul>
+              ) : '-'}
+            </dd>
           </div>
           <div className="py-4 flex flex-col sm:flex-row sm:gap-4">
             <dt className="text-sm font-medium text-text-grey sm:w-40">ステータス</dt>

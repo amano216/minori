@@ -1,6 +1,6 @@
 tanaka:
   name: "田中太郎"
   address: "東京都渋谷区1-2-3"
-  phone: "03-1234-5678"
+  phone_numbers: <%= [{ number: "03-1234-5678", label: "電話" }].to_json %>
   status: "active"
   organization_id: <%= ActiveRecord::FixtureSet.identify(:default, :organizations) %>
