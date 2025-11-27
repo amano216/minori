@@ -25,10 +25,12 @@ import {
   type ScheduleVisit,
   type Visit,
   type PlanningLane,
+  type VisitPattern,
 } from '../api/client';
 import { Spinner } from '../components/atoms/Spinner';
 import { NewVisitPanel } from '../components/organisms/NewVisitPanel';
 import { NewPatternPanel } from '../components/organisms/NewPatternPanel';
+import { EditPatternPanel } from '../components/organisms/EditPatternPanel';
 import { VisitDetailPanel } from '../components/organisms/VisitDetailPanel';
 import { TimelineResourceView } from '../components/organisms/TimelineResourceView';
 import PatientCalendarView from '../components/organisms/PatientCalendarView';
@@ -83,6 +85,10 @@ export function UnifiedSchedulePage() {
   const [isNewPatternPanelOpen, setIsNewPatternPanelOpen] = useState(false);
   const [newPatternInitialTime, setNewPatternInitialTime] = useState<string>('09:00');
   const [newPatternInitialLaneId, setNewPatternInitialLaneId] = useState<number | undefined>(undefined);
+  
+  // Edit Pattern Panel State
+  const [selectedPattern, setSelectedPattern] = useState<VisitPattern | null>(null);
+  const [patternVersion, setPatternVersion] = useState(0); // Increment to trigger reload
   
   const [isInboxOpen, setIsInboxOpen] = useState(true);
   const [isMonthlyCalendarOpen, setIsMonthlyCalendarOpen] = useState(false);
@@ -576,6 +582,7 @@ export function UnifiedSchedulePage() {
                 groups={groups}
                 selectedGroupIds={selectedGroupIds}
                 onVisitClick={handleVisitSelect}
+                onPatternClick={(pattern) => setSelectedPattern(pattern)}
                 onTimeSlotClick={(hour, laneId) => {
                   if (dataMode === 'pattern') {
                     // Pattern mode: open pattern panel
@@ -595,6 +602,7 @@ export function UnifiedSchedulePage() {
                 }}
                 dataMode={dataMode}
                 selectedDayOfWeek={selectedDayOfWeek}
+                patternVersion={patternVersion}
               />
             ) : (
               <TimelineResourceView
@@ -639,15 +647,26 @@ export function UnifiedSchedulePage() {
             isOpen={isNewPatternPanelOpen}
             onClose={() => setIsNewPatternPanelOpen(false)}
             onCreated={() => {
-              // Trigger pattern reload in PatientCalendarView
-              // For now, we need to force a re-render by changing selectedDayOfWeek temporarily
-              const current = selectedDayOfWeek;
-              setSelectedDayOfWeek(0);
-              setTimeout(() => setSelectedDayOfWeek(current), 10);
+              // Trigger pattern reload
+              setPatternVersion(v => v + 1);
             }}
             initialDayOfWeek={selectedDayOfWeek}
             initialTime={newPatternInitialTime}
             initialPlanningLaneId={newPatternInitialLaneId}
+            groups={groups}
+          />
+
+          {/* Edit Pattern Panel */}
+          <EditPatternPanel
+            isOpen={!!selectedPattern}
+            pattern={selectedPattern}
+            onClose={() => setSelectedPattern(null)}
+            onUpdated={() => {
+              setPatternVersion(v => v + 1);
+            }}
+            onDeleted={() => {
+              setPatternVersion(v => v + 1);
+            }}
             groups={groups}
           />
 

@@ -21,6 +21,12 @@ import {
   type Group,
   type VisitPattern,
 } from '../../api/client';
+
+// Extend Visit type for pattern mode to carry original pattern data
+export interface PatternVisit extends Visit {
+  __isPattern?: boolean;
+  __pattern?: VisitPattern;
+}
 import { SearchableSelect } from '../molecules/SearchableSelect';
 
 interface PatientCalendarViewProps {
@@ -30,8 +36,10 @@ interface PatientCalendarViewProps {
   selectedGroupIds: number[];
   onVisitClick: (visit: Visit) => void;
   onTimeSlotClick?: (hour: number, laneId: string) => void;
+  onPatternClick?: (pattern: VisitPattern) => void;
   dataMode?: 'actual' | 'pattern';
   selectedDayOfWeek?: number;
+  patternVersion?: number; // Increment to trigger pattern reload
 }
 
 const START_HOUR = 0;
@@ -555,8 +563,10 @@ export default function PatientCalendarView({
   selectedGroupIds,
   onVisitClick,
   onTimeSlotClick,
+  onPatternClick,
   dataMode = 'actual',
   selectedDayOfWeek = 1,
+  patternVersion = 0,
 }: PatientCalendarViewProps) {
   const [lanes, setLanes] = useState<Lane[]>([]);
   const [loading, setLoading] = useState(true);
@@ -610,7 +620,7 @@ export default function PatientCalendarView({
       };
       loadPatterns();
     }
-  }, [dataMode, selectedDayOfWeek]);
+  }, [dataMode, selectedDayOfWeek, patternVersion]);
 
   const [scrollOffset, setScrollOffset] = useState(8); // 初期表示は8:00から
 
@@ -677,7 +687,7 @@ export default function PatientCalendarView({
   const visibleHours = hours.slice(scrollOffset, scrollOffset + VISIBLE_HOURS);
 
   // Convert patterns to Visit-like objects for rendering
-  const patternsAsVisits = useMemo((): Visit[] => {
+  const patternsAsVisits = useMemo((): PatternVisit[] => {
     if (dataMode !== 'pattern') return [];
     return patterns.map(p => {
       // Create a fake date for rendering (today's date with pattern's time)
@@ -698,9 +708,21 @@ export default function PatientCalendarView({
         created_at: p.created_at,
         updated_at: p.updated_at,
         planning_lane_id: p.planning_lane_id,
+        __isPattern: true,
+        __pattern: p,
       };
     });
   }, [dataMode, patterns]);
+
+  // Handle visit/pattern click
+  const handleItemClick = (visit: Visit | PatternVisit) => {
+    const patternVisit = visit as PatternVisit;
+    if (patternVisit.__isPattern && patternVisit.__pattern && onPatternClick) {
+      onPatternClick(patternVisit.__pattern);
+    } else {
+      onVisitClick(visit);
+    }
+  };
 
   const todaysVisits = useMemo(() => {
     if (dataMode === 'pattern') {
@@ -805,7 +827,7 @@ export default function PatientCalendarView({
               lane={lane}
               visits={todaysVisits}
               date={date}
-              onVisitClick={onVisitClick}
+              onVisitClick={handleItemClick}
               onTimeSlotClick={onTimeSlotClick}
               onRemove={() => removeLane(lane.id)}
               onRename={(newLabel) => renameLane(lane.id, newLabel)}
