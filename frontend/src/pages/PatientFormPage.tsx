@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { fetchPatient, createPatient, updatePatient, type PatientInput } from '../api/client';
+import { fetchPatient, createPatient, updatePatient, type PatientInput, type PhoneNumber } from '../api/client';
 import { Button } from '../components/atoms/Button';
 import { Input } from '../components/atoms/Input';
 import { Label } from '../components/atoms/Label';
@@ -25,6 +25,16 @@ const GENDER_OPTIONS = [
   { value: '女', label: '女性' },
 ];
 
+const PHONE_LABEL_OPTIONS = [
+  { value: '電話', label: '電話' },
+  { value: '自宅', label: '自宅' },
+  { value: '携帯', label: '携帯' },
+  { value: '勤務先', label: '勤務先' },
+  { value: '緊急連絡先', label: '緊急連絡先' },
+  { value: 'FAX', label: 'FAX' },
+  { value: 'その他', label: 'その他' },
+];
+
 export function PatientFormPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -34,7 +44,7 @@ export function PatientFormPage() {
   const [nameKana, setNameKana] = useState('');
   const [postalCode, setPostalCode] = useState('');
   const [address, setAddress] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([{ number: '', label: '電話' }]);
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [gender, setGender] = useState('');
   const [patientCode, setPatientCode] = useState('');
@@ -54,7 +64,9 @@ export function PatientFormPage() {
         setNameKana(patient.name_kana || '');
         setPostalCode(patient.postal_code || '');
         setAddress(patient.address || '');
-        setPhone(patient.phone || '');
+        setPhoneNumbers(patient.phone_numbers?.length > 0 
+          ? patient.phone_numbers 
+          : [{ number: '', label: '電話' }]);
         setDateOfBirth(patient.date_of_birth || '');
         setGender(patient.gender || '');
         setPatientCode(patient.patient_code || '');
