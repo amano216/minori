@@ -7,7 +7,9 @@ import {
   InboxIcon,
   ChevronDoubleLeftIcon,
   CalendarDaysIcon,
-  ClockIcon
+  ClockIcon,
+  CalendarIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import { DndContext, type DragEndEvent } from '@dnd-kit/core';
 import {
@@ -60,8 +62,8 @@ export function UnifiedSchedulePage() {
   const navigate = useNavigate();
   const dateInputRef = useRef<HTMLInputElement>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'day' | 'patient'>('patient');
-  const [dataMode, setDataMode] = useState<'actual' | 'pattern'>('actual');
+  const [mainTab, setMainTab] = useState<'schedule' | 'pattern'>('schedule');
+  const [scheduleViewMode, setScheduleViewMode] = useState<'lane' | 'staff'>('lane');
   const [selectedDayOfWeek, setSelectedDayOfWeek] = useState(1); // 1=月曜
   
   const [groups, setGroups] = useState<Group[]>([]);
@@ -377,7 +379,7 @@ export function UnifiedSchedulePage() {
   };
 
   // Split visits and filter by selected groups
-  const baseVisits = viewMode === 'day' ? visits : allWeeklyVisits;
+  const baseVisits = scheduleViewMode === 'staff' ? visits : allWeeklyVisits;
   const assignedVisits = baseVisits.filter(v => v.staff_id && v.status !== 'unassigned');
   const unassignedVisits = baseVisits.filter(v => 
     (!v.staff_id || v.status === 'unassigned') && isVisitInSelectedGroups(v)
@@ -386,17 +388,19 @@ export function UnifiedSchedulePage() {
   return (
     <DndContext onDragEnd={handleDragEnd}>
       <div className="h-screen flex flex-col overflow-hidden bg-gray-100">
-        {/* Header - Mobile Responsive */}
+        {/* Header */}
         <div className="bg-white border-b border-gray-200 px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between shadow-sm z-20 min-h-[56px] sm:h-16">
-          {/* Left Section */}
+          {/* Left Section - Inbox toggle (schedule mode only) */}
           <div className="flex items-center space-x-1 sm:space-x-4">
-            <button 
-              onClick={() => setIsInboxOpen(!isInboxOpen)}
-              className={`p-2 rounded-lg transition-colors ${isInboxOpen ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-50'}`}
-              title={isInboxOpen ? "未割当リストを閉じる" : "未割当リストを開く"}
-            >
-              {isInboxOpen ? <ChevronDoubleLeftIcon className="w-5 h-5 sm:w-6 sm:h-6" /> : <InboxIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
-            </button>
+            {mainTab === 'schedule' && (
+              <button 
+                onClick={() => setIsInboxOpen(!isInboxOpen)}
+                className={`p-2 rounded-lg transition-colors ${isInboxOpen ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-50'}`}
+                title={isInboxOpen ? "未割当リストを閉じる" : "未割当リストを開く"}
+              >
+                {isInboxOpen ? <ChevronDoubleLeftIcon className="w-5 h-5 sm:w-6 sm:h-6" /> : <InboxIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
+              </button>
+            )}
             <h1 className="text-lg sm:text-xl font-bold text-gray-800 tracking-tight hidden lg:block">Minori</h1>
             <div className="h-8 w-px bg-gray-200 mx-1 sm:mx-2 hidden sm:block"></div>
             <div className="hidden sm:block">
@@ -408,32 +412,32 @@ export function UnifiedSchedulePage() {
             </div>
           </div>
           
-          {/* Center Section - Mode Toggle & Date/Day Navigation */}
-          <div className="flex items-center gap-2">
-            {/* Data Mode Toggle - Only show in patient (lane) view */}
-            {viewMode === 'patient' && (
-              <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200">
-                <button
-                  onClick={() => setDataMode('actual')}
-                  className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all ${
-                    dataMode === 'actual' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  実績
-                </button>
-                <button
-                  onClick={() => setDataMode('pattern')}
-                  className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all ${
-                    dataMode === 'pattern' ? 'bg-white shadow text-emerald-600' : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  パターン
-                </button>
-              </div>
-            )}
+          {/* Center Section - Main Tab & Navigation */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Main Tab: スケジュール / パターン */}
+            <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200">
+              <button
+                onClick={() => setMainTab('schedule')}
+                className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all flex items-center gap-1 ${
+                  mainTab === 'schedule' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <CalendarIcon className="w-4 h-4" />
+                <span className="hidden sm:inline">スケジュール</span>
+              </button>
+              <button
+                onClick={() => setMainTab('pattern')}
+                className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all flex items-center gap-1 ${
+                  mainTab === 'pattern' ? 'bg-white shadow text-emerald-600' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <ArrowPathIcon className="w-4 h-4" />
+                <span className="hidden sm:inline">パターン</span>
+              </button>
+            </div>
 
-            {/* Date Navigation (actual mode) or Day of Week Selector (pattern mode) */}
-            {dataMode === 'actual' ? (
+            {/* Date Navigation (schedule) or Day of Week Selector (pattern) */}
+            {mainTab === 'schedule' ? (
               <div className="flex items-center bg-gray-100 rounded-lg sm:rounded-xl p-0.5 sm:p-1 border border-gray-200 relative">
                 <button onClick={handlePrevious} className="p-1.5 sm:p-2 hover:bg-white hover:shadow-sm rounded-md sm:rounded-lg transition-all text-gray-600">
                   <ChevronLeftIcon className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -443,7 +447,6 @@ export function UnifiedSchedulePage() {
                   className="px-2 sm:px-4 font-bold text-gray-800 min-w-[100px] sm:min-w-[160px] text-center text-sm sm:text-lg cursor-pointer hover:bg-gray-200 rounded transition-colors select-none flex items-center justify-center"
                   onClick={handleDateClick}
                 >
-                  {/* Short format for mobile, full format for desktop */}
                   <span className="sm:hidden">
                     {currentDate.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', weekday: 'short' })}
                   </span>
@@ -468,7 +471,7 @@ export function UnifiedSchedulePage() {
               /* Day of Week Selector for pattern mode */
               <div className="flex items-center bg-emerald-50 rounded-lg sm:rounded-xl p-0.5 sm:p-1 border border-emerald-200">
                 {['月', '火', '水', '木', '金'].map((dayName, index) => {
-                  const dayOfWeek = index + 1; // 1=月, 2=火, ...
+                  const dayOfWeek = index + 1;
                   return (
                     <button
                       key={dayOfWeek}
@@ -486,8 +489,8 @@ export function UnifiedSchedulePage() {
               </div>
             )}
 
-            {/* Monthly Calendar - Only in actual mode */}
-            {dataMode === 'actual' && (
+            {/* Monthly Calendar - schedule mode only */}
+            {mainTab === 'schedule' && (
               <div className="relative ml-1 sm:ml-2 hidden xs:block">
                 <button 
                   onClick={() => setIsMonthlyCalendarOpen(!isMonthlyCalendarOpen)} 
@@ -511,24 +514,27 @@ export function UnifiedSchedulePage() {
             )}
           </div>
 
-          {/* Right Section - Actions */}
+          {/* Right Section - View toggle (schedule mode) & New button */}
           <div className="flex items-center gap-1 sm:gap-2">
-            <div className="flex bg-gray-100 p-0.5 sm:p-1 rounded-lg border border-gray-200">
-              <button
-                onClick={() => setViewMode('patient')}
-                className={`p-1.5 sm:p-2 rounded-md transition-all ${viewMode === 'patient' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
-                title="患者カレンダー"
-              >
-                <UserGroupIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
-              <button
-                onClick={() => setViewMode('day')}
-                className={`p-1.5 sm:p-2 rounded-md transition-all ${viewMode === 'day' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
-                title="日次タイムライン"
-              >
-                <ClockIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
-            </div>
+            {/* View toggle - schedule mode only */}
+            {mainTab === 'schedule' && (
+              <div className="flex bg-gray-100 p-0.5 sm:p-1 rounded-lg border border-gray-200">
+                <button
+                  onClick={() => setScheduleViewMode('lane')}
+                  className={`p-1.5 sm:p-2 rounded-md transition-all ${scheduleViewMode === 'lane' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+                  title="レーンビュー"
+                >
+                  <UserGroupIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+                <button
+                  onClick={() => setScheduleViewMode('staff')}
+                  className={`p-1.5 sm:p-2 rounded-md transition-all ${scheduleViewMode === 'staff' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+                  title="スタッフビュー"
+                >
+                  <ClockIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+              </div>
+            )}
 
             <button 
               onClick={handleNewVisitClick}
@@ -542,69 +548,88 @@ export function UnifiedSchedulePage() {
 
         {/* Main Content (3-pane) - Mobile Responsive */}
         <div className="flex-1 flex overflow-hidden relative">
-          {/* Left Pane: Inbox - Overlay on mobile, side panel on desktop */}
-          <div 
-            className={`
-              flex-shrink-0 bg-white border-r border-gray-200 z-10 shadow-[4px_0_24px_rgba(0,0,0,0.02)] transition-all duration-300 ease-in-out overflow-hidden
-              ${isInboxOpen 
-                ? 'fixed inset-y-0 left-0 w-[280px] sm:w-80 sm:relative sm:inset-auto mt-14 sm:mt-0 opacity-100' 
-                : 'w-0 opacity-0 border-none'}
-            `}
-          >
-          <div className="w-[280px] sm:w-80 h-full">
-              <UnassignedVisitInbox 
-                visits={unassignedVisits} 
-                onVisitClick={handleVisitSelect}
-                onEditClick={(visit) => handleVisitEdit(visit.id)}
-              />
+          {/* Left Pane: Inbox - schedule mode only */}
+          {mainTab === 'schedule' && (
+            <div 
+              className={`
+                flex-shrink-0 bg-white border-r border-gray-200 z-10 shadow-[4px_0_24px_rgba(0,0,0,0.02)] transition-all duration-300 ease-in-out overflow-hidden
+                ${isInboxOpen 
+                  ? 'fixed inset-y-0 left-0 w-[280px] sm:w-80 sm:relative sm:inset-auto mt-14 sm:mt-0 opacity-100' 
+                  : 'w-0 opacity-0 border-none'}
+              `}
+            >
+              <div className="w-[280px] sm:w-80 h-full">
+                <UnassignedVisitInbox 
+                  visits={unassignedVisits} 
+                  onVisitClick={handleVisitSelect}
+                  onEditClick={(visit) => handleVisitEdit(visit.id)}
+                />
+              </div>
             </div>
-          </div>
+          )}
           
-          {/* Mobile Inbox Backdrop */}
-          {isInboxOpen && (
+          {/* Mobile Inbox Backdrop - schedule mode only */}
+          {mainTab === 'schedule' && isInboxOpen && (
             <div 
               className="fixed inset-0 bg-black/20 z-[5] sm:hidden mt-14"
               onClick={() => setIsInboxOpen(false)}
             />
           )}
 
-          {/* Center Pane: Timeline or Weekly View */}
+          {/* Center Pane: Main View */}
           <div className="flex-1 overflow-hidden relative bg-white">
             {error && (
               <div className="absolute top-0 left-0 right-0 bg-red-50 border-b border-red-200 px-4 py-2 text-red-700 text-sm z-50">
                 {error}
               </div>
             )}
-            {viewMode === 'patient' ? (
+            
+            {/* Pattern mode: PatientCalendarView with pattern data */}
+            {mainTab === 'pattern' && (
+              <PatientCalendarView
+                date={currentDate}
+                visits={[]}
+                groups={groups}
+                selectedGroupIds={selectedGroupIds}
+                onVisitClick={() => {}}
+                onPatternClick={(pattern) => setSelectedPattern(pattern)}
+                onTimeSlotClick={(hour, laneId) => {
+                  setNewPatternInitialTime(`${String(hour).padStart(2, '0')}:00`);
+                  setNewPatternInitialLaneId(Number(laneId));
+                  setIsNewPatternPanelOpen(true);
+                }}
+                dataMode="pattern"
+                selectedDayOfWeek={selectedDayOfWeek}
+                patternVersion={patternVersion}
+              />
+            )}
+
+            {/* Schedule mode: Lane view */}
+            {mainTab === 'schedule' && scheduleViewMode === 'lane' && (
               <PatientCalendarView
                 date={currentDate}
                 visits={visits}
                 groups={groups}
                 selectedGroupIds={selectedGroupIds}
                 onVisitClick={handleVisitSelect}
-                onPatternClick={(pattern) => setSelectedPattern(pattern)}
+                onPatternClick={() => {}}
                 onTimeSlotClick={(hour, laneId) => {
-                  if (dataMode === 'pattern') {
-                    // Pattern mode: open pattern panel
-                    setNewPatternInitialTime(`${String(hour).padStart(2, '0')}:00`);
-                    setNewPatternInitialLaneId(Number(laneId));
-                    setIsNewPatternPanelOpen(true);
-                  } else {
-                    // Actual mode: open visit panel
-                    const selectedDate = new Date(currentDate);
-                    selectedDate.setHours(hour, 0, 0, 0);
-                    setNewVisitInitialDate(selectedDate);
-                    setNewVisitInitialStaffId(undefined);
-                    setNewVisitInitialPlanningLaneId(Number(laneId));
-                    setIsNewVisitPanelOpen(true);
-                    setSelectedVisit(null);
-                  }
+                  const selectedDate = new Date(currentDate);
+                  selectedDate.setHours(hour, 0, 0, 0);
+                  setNewVisitInitialDate(selectedDate);
+                  setNewVisitInitialStaffId(undefined);
+                  setNewVisitInitialPlanningLaneId(Number(laneId));
+                  setIsNewVisitPanelOpen(true);
+                  setSelectedVisit(null);
                 }}
-                dataMode={dataMode}
+                dataMode="actual"
                 selectedDayOfWeek={selectedDayOfWeek}
-                patternVersion={patternVersion}
+                patternVersion={0}
               />
-            ) : (
+            )}
+
+            {/* Schedule mode: Staff view */}
+            {mainTab === 'schedule' && scheduleViewMode === 'staff' && (
               <TimelineResourceView
                 date={currentDate}
                 staffs={staffs}
