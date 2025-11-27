@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { fetchVisits, cancelVisit, completeVisit, deleteVisit, type Visit } from '../api/client';
+import { fetchVisits, cancelVisit, completeVisit, deleteVisit, fetchGroups, type Visit, type Group } from '../api/client';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
 import { Spinner } from '../components/atoms/Spinner';
 import { DataTable } from '../components/organisms/DataTable';
 import { ListLayout } from '../components/templates/ListLayout';
 import { Modal } from '../components/molecules/Modal';
+import { NewVisitPanel } from '../components/organisms/NewVisitPanel';
 
 const STATUS_LABELS: Record<string, string> = {
   scheduled: '予定',
@@ -38,11 +39,13 @@ function formatDateTime(dateString: string): string {
 export function VisitListPage() {
   const navigate = useNavigate();
   const [visits, setVisits] = useState<Visit[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [actionModal, setActionModal] = useState<{ type: 'complete' | 'cancel' | 'delete'; visit: Visit } | null>(null);
+  const [isNewVisitPanelOpen, setIsNewVisitPanelOpen] = useState(false);
 
   const loadVisits = useCallback(async () => {
     try {
@@ -62,6 +65,19 @@ export function VisitListPage() {
   useEffect(() => {
     loadVisits();
   }, [loadVisits]);
+
+  // グループ取得
+  useEffect(() => {
+    const loadGroups = async () => {
+      try {
+        const data = await fetchGroups();
+        setGroups(data);
+      } catch (err) {
+        console.error('グループ取得に失敗:', err);
+      }
+    };
+    loadGroups();
+  }, []);
 
   const handleAction = async () => {
     if (!actionModal) return;
@@ -246,7 +262,7 @@ export function VisitListPage() {
         title="訪問予定管理"
         description={`${visits.length}件の訪問予定があります`}
         actions={
-          <Button variant="primary" onClick={() => navigate('/schedule/visits/new')}>
+          <Button variant="primary" onClick={() => setIsNewVisitPanelOpen(true)}>
             新規登録
           </Button>
         }
@@ -287,6 +303,17 @@ export function VisitListPage() {
           </Button>
         </div>
       </Modal>
+
+      {/* New Visit Panel */}
+      <NewVisitPanel
+        isOpen={isNewVisitPanelOpen}
+        onClose={() => setIsNewVisitPanelOpen(false)}
+        onCreated={() => {
+          setIsNewVisitPanelOpen(false);
+          loadVisits();
+        }}
+        groups={groups}
+      />
     </>
   );
 }
