@@ -18,8 +18,8 @@ class Patient < ApplicationRecord
 
   validates :name, presence: true
   validates :status, inclusion: { in: STATUSES }
-  validates :phone, format: { with: /\A[\d\-+() ]+\z/, allow_blank: true }
   validate :validate_care_requirements
+  validate :validate_phone_numbers
 
   scope :active, -> { where(status: "active") }
   scope :with_care_requirement, ->(req) { where("care_requirements @> ?", [ req ].to_json) }
@@ -48,5 +48,15 @@ class Patient < ApplicationRecord
 
     invalid = care_requirements - CARE_REQUIREMENTS
     errors.add(:care_requirements, "contains invalid values: #{invalid.join(', ')}") if invalid.any?
+  end
+
+  def validate_phone_numbers
+    return if phone_numbers.blank?
+
+    phone_numbers.each_with_index do |phone, index|
+      unless phone.is_a?(Hash) && phone["number"].present?
+        errors.add(:phone_numbers, "電話番号#{index + 1}が無効です")
+      end
+    end
   end
 end

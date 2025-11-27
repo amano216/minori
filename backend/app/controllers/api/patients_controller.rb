@@ -60,9 +60,11 @@ module Api
 
     def patient_params
       params.require(:patient).permit(
-        :name, :name_kana, :address, :postal_code, :phone,
+        :name, :name_kana, :address, :postal_code,
         :date_of_birth, :gender, :patient_code,
-        :notes, :status, :group_id, care_requirements: []
+        :notes, :status, :group_id,
+        care_requirements: [],
+        phone_numbers: [ :number, :label ]
       )
     end
   end

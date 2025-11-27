@@ -249,13 +249,18 @@ export async function fetchGroups(params?: { status?: string }): Promise<Group[]
 }
 
 // Patient API
+export interface PhoneNumber {
+  number: string;
+  label?: string;
+}
+
 export interface Patient {
   id: number;
   name: string;
   name_kana?: string;
   postal_code?: string;
   address?: string;
-  phone?: string;
+  phone_numbers: PhoneNumber[];
   date_of_birth?: string;
   gender?: string;
   age?: number;
@@ -273,7 +278,7 @@ export interface PatientInput {
   name_kana?: string;
   postal_code?: string;
   address?: string;
-  phone?: string;
+  phone_numbers?: PhoneNumber[];
   date_of_birth?: string;
   gender?: string;
   patient_code?: string;

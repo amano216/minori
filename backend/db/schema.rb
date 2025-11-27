@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_27_023723) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_27_024233) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -69,7 +69,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_27_023723) do
     t.text "notes"
     t.bigint "organization_id"
     t.string "patient_code"
-    t.string "phone"
+    t.jsonb "phone_numbers", default: []
     t.string "postal_code"
     t.string "status", default: "active", null: false
     t.datetime "updated_at", null: false

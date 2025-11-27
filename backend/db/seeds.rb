@@ -363,11 +363,11 @@ visit_count = 0
 
     # 9:00-17:00の間でランダムな時間
     hour = rand(9..16)
-    minute = [0, 30].sample
+    minute = [ 0, 30 ].sample
     scheduled_time = Time.zone.local(date.year, date.month, date.day, hour, minute)
 
     # 訪問時間は30分、60分、90分のいずれか
-    duration = [30, 60, 90].sample
+    duration = [ 30, 60, 90 ].sample
 
     visit = Visit.find_or_initialize_by(
       patient: patient,
@@ -405,10 +405,10 @@ future_visit_count = 0
     patient = dev_patients.sample
 
     hour = rand(9..16)
-    minute = [0, 30].sample
+    minute = [ 0, 30 ].sample
     scheduled_time = Time.zone.local(date.year, date.month, date.day, hour, minute)
 
-    duration = [30, 60, 90].sample
+    duration = [ 30, 60, 90 ].sample
 
     visit = Visit.find_or_initialize_by(
       patient: patient,
@@ -421,9 +421,9 @@ future_visit_count = 0
     # 未来の訪問はscheduled、一部はin_progress
     status = if date == Date.today && hour <= Time.current.hour
                "in_progress"
-             else
+    else
                "scheduled"
-             end
+    end
 
     visit.assign_attributes(
       user: staff,
@@ -451,7 +451,7 @@ unassigned_count = 0
     patient = dev_patients.sample
 
     hour = rand(9..16)
-    minute = [0, 30].sample
+    minute = [ 0, 30 ].sample
     scheduled_time = Time.zone.local(date.year, date.month, date.day, hour, minute)
 
     visit = Visit.find_or_initialize_by(

@@ -9,13 +9,13 @@ class Api::AuthController < ApplicationController
       # Create organization
       # Generate subdomain from email domain or organization name if not provided
       subdomain = params[:subdomain].presence
-      
+
       unless subdomain
         # Generate from email domain or organization name
         if params[:email].present?
-          subdomain = params[:email].split('@').last.split('.').first.downcase.gsub(/[^a-z0-9]/, '')
+          subdomain = params[:email].split("@").last.split(".").first.downcase.gsub(/[^a-z0-9]/, "")
         else
-          subdomain = params[:organization_name].to_s.downcase.gsub(/[^a-z0-9]/, '')[0..20]
+          subdomain = params[:organization_name].to_s.downcase.gsub(/[^a-z0-9]/, "")[0..20]
         end
       end
 
