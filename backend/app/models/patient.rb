@@ -38,7 +38,11 @@ class Patient < ApplicationRecord
   end
 
   def as_json(options = {})
-    super(options.merge(methods: :age))
+    result = super(options.merge(methods: :age))
+    if group
+      result["group"] = group.as_json(only: %i[id name group_type])
+    end
+    result
   end
 
   private

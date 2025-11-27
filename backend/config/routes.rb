@@ -33,6 +33,9 @@ Rails.application.routes.draw do
     # Patient routes
     resources :patients
 
+    # Group routes (read-only for general users)
+    resources :groups, only: [ :index ]
+
     # Visit routes
     resources :visits do
       member do

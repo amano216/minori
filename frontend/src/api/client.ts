@@ -245,6 +245,14 @@ export async function fetchGroups(params?: { status?: string }): Promise<Group[]
   const query = new URLSearchParams();
   if (params?.status) query.append('status', params.status);
   const queryString = query.toString();
+  return apiRequest(`/api/groups${queryString ? `?${queryString}` : ''}`);
+}
+
+// Admin Group API (full permissions)
+export async function fetchAdminGroups(params?: { status?: string }): Promise<Group[]> {
+  const query = new URLSearchParams();
+  if (params?.status) query.append('status', params.status);
+  const queryString = query.toString();
   return apiRequest(`/api/admin/groups${queryString ? `?${queryString}` : ''}`);
 }
 
@@ -252,6 +260,12 @@ export async function fetchGroups(params?: { status?: string }): Promise<Group[]
 export interface PhoneNumber {
   number: string;
   label?: string;
+}
+
+export interface PatientGroup {
+  id: number;
+  name: string;
+  group_type?: 'office' | 'team';
 }
 
 export interface Patient {
@@ -266,6 +280,7 @@ export interface Patient {
   age?: number;
   patient_code?: string;
   group_id?: number;
+  group?: PatientGroup;
   care_requirements: string[];
   notes?: string;
   status: 'active' | 'inactive' | 'discharged';

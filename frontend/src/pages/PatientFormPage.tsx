@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { fetchPatient, createPatient, updatePatient, type PatientInput, type PhoneNumber } from '../api/client';
+import { fetchPatient, createPatient, updatePatient, fetchGroups, type PatientInput, type PhoneNumber, type Group } from '../api/client';
 import { Button } from '../components/atoms/Button';
 import { Input } from '../components/atoms/Input';
 import { Label } from '../components/atoms/Label';
@@ -52,12 +52,27 @@ export function PatientFormPage() {
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [gender, setGender] = useState('');
   const [patientCode, setPatientCode] = useState('');
+  const [groupId, setGroupId] = useState<number | undefined>(undefined);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [status, setStatus] = useState('active');
   const [careRequirements, setCareRequirements] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  // グループ一覧を取得
+  useEffect(() => {
+    const loadGroups = async () => {
+      try {
+        const data = await fetchGroups();
+        setGroups(data);
+      } catch (err) {
+        console.error('グループの取得に失敗しました:', err);
+      }
+    };
+    loadGroups();
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -74,6 +89,7 @@ export function PatientFormPage() {
         setDateOfBirth(patient.date_of_birth || '');
         setGender(patient.gender || '');
         setPatientCode(patient.patient_code || '');
+        setGroupId(patient.group_id || undefined);
         setStatus(patient.status);
         setCareRequirements(patient.care_requirements);
         setNotes(patient.notes || '');
@@ -125,6 +141,7 @@ export function PatientFormPage() {
       date_of_birth: dateOfBirth || undefined,
       gender: gender || undefined,
       patient_code: patientCode || undefined,
+      group_id: groupId,
       status,
       care_requirements: careRequirements,
       notes: notes || undefined,
@@ -213,6 +230,22 @@ export function PatientFormPage() {
                   <option value="active">利用中</option>
                   <option value="inactive">休止中</option>
                   <option value="discharged">退所</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="groupId">担当グループ</Label>
+                <select
+                  id="groupId"
+                  value={groupId || ''}
+                  onChange={(e) => setGroupId(e.target.value ? Number(e.target.value) : undefined)}
+                  disabled={submitting}
+                  className="w-full px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
+                >
+                  <option value="">選択してください</option>
+                  {groups.map((g) => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
                 </select>
               </div>
 
