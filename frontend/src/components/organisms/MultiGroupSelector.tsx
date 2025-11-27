@@ -1,14 +1,15 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { ChevronDownIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon, CheckIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 import type { Group } from '../../api/client';
 
 interface MultiGroupSelectorProps {
   groups: Group[];
   selectedGroupIds: number[];
   onChange: (ids: number[]) => void;
+  compact?: boolean; // スマホ用アイコンモード
 }
 
-export function MultiGroupSelector({ groups, selectedGroupIds, onChange }: MultiGroupSelectorProps) {
+export function MultiGroupSelector({ groups, selectedGroupIds, onChange, compact = false }: MultiGroupSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -82,16 +83,38 @@ export function MultiGroupSelector({ groups, selectedGroupIds, onChange }: Multi
 
   return (
     <div className="relative" ref={containerRef}>
+      {/* Desktop: full button, Mobile: icon only when compact */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm max-w-xs"
+        className={
+          compact
+            ? `flex items-center justify-center p-2 rounded-lg transition-colors ${
+                isAllSelected ? 'bg-gray-100 text-gray-600' : 'bg-indigo-50 text-indigo-600'
+              } sm:bg-white sm:border sm:border-gray-300 sm:text-gray-700 sm:px-3 sm:py-2 sm:rounded-lg sm:text-sm sm:font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:shadow-sm sm:max-w-xs`
+            : 'flex items-center space-x-2 bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm max-w-xs'
+        }
+        title={selectedTeamNames}
       >
-        <span className="truncate">{selectedTeamNames}</span>
-        <ChevronDownIcon className={`w-4 h-4 flex-shrink-0 transition-transform ${isOpen ? 'transform rotate-180' : ''}`} />
+        {/* Mobile: icon with badge */}
+        {compact && (
+          <span className="sm:hidden relative">
+            <UserGroupIcon className="w-5 h-5" />
+            {!isAllSelected && selectedTeamCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-indigo-600 text-white text-[10px] rounded-full flex items-center justify-center font-medium">
+                {selectedTeamCount}
+              </span>
+            )}
+          </span>
+        )}
+        {/* Desktop: full text */}
+        <span className={compact ? 'hidden sm:flex sm:items-center sm:space-x-2' : 'flex items-center space-x-2'}>
+          <span className="truncate">{selectedTeamNames}</span>
+          <ChevronDownIcon className={`w-4 h-4 flex-shrink-0 transition-transform ${isOpen ? 'transform rotate-180' : ''}`} />
+        </span>
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 w-72 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden max-h-[60vh] flex flex-col">
+        <div className={`absolute top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden max-h-[60vh] flex flex-col ${compact ? 'left-0 right-auto w-72 sm:left-0' : 'left-0 w-72'}`}>
           <div className="p-2 border-b border-gray-100 flex justify-between text-xs flex-shrink-0 bg-gray-50">
             <button
               onClick={selectAll}
