@@ -669,10 +669,15 @@ export interface GenerateVisitsResult {
 
 export async function generateVisitsFromPatterns(
   startDate: string,
-  endDate: string
+  endDate: string,
+  dayOfWeeks?: number[]
 ): Promise<GenerateVisitsResult> {
   return apiRequest('/api/visit_patterns/generate_visits', {
     method: 'POST',
-    body: JSON.stringify({ start_date: startDate, end_date: endDate }),
+    body: JSON.stringify({ 
+      start_date: startDate, 
+      end_date: endDate,
+      day_of_weeks: dayOfWeeks 
+    }),
   });
 }

@@ -197,6 +197,8 @@ export function VisitDetailPanel({
       setActiveTab('details'); // Reset tab when visit changes
       setIsReassigning(false);
       setSelectedStaffId(visit.staff_id || '');
+      setUpdating(false); // Reset updating state
+      setDeleting(false); // Reset deleting state
     } else {
       setIsVisible(false);
     }
@@ -228,12 +230,19 @@ export function VisitDetailPanel({
 
   const handleDelete = async () => {
     if (!visit || !onDelete) return;
+    
+    // 確認ダイアログ
+    if (!confirm('この予定を削除しますか？\nこの操作は取り消せません。')) {
+      return;
+    }
+    
     setDeleting(true);
     try {
       await onDelete(visit.id);
       // Panel will be closed by parent
     } catch (error) {
       console.error('Failed to delete:', error);
+      alert('削除に失敗しました。もう一度お試しください。');
       setDeleting(false);
     }
   };
@@ -439,13 +448,14 @@ export function VisitDetailPanel({
               {onDelete && canDelete && (
                 <div className="pt-2 border-t border-gray-200 mt-2">
                   <Button
-                    variant="secondary"
-                    className="w-full border-red-200 text-red-600 hover:bg-red-50 text-xs flex justify-center items-center"
+                    variant="danger"
+                    className="w-full text-sm flex justify-center items-center gap-2"
                     onClick={handleDelete}
                     disabled={deleting}
                     title="削除"
                   >
-                    <Trash2 className="w-5 h-5" />
+                    <Trash2 className="w-4 h-4" />
+                    削除
                   </Button>
                 </div>
               )}

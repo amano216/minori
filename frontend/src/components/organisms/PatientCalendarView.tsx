@@ -28,6 +28,12 @@ export interface PatternVisit extends Visit {
   __pattern?: VisitPattern;
 }
 import { SearchableSelect } from '../molecules/SearchableSelect';
+import { VisitCard, DraggableVisitCard } from '../molecules/VisitCard';
+import { 
+  DragOverlay, 
+  useDroppable,
+  useDndContext,
+} from '@dnd-kit/core';
 
 interface PatientCalendarViewProps {
   date: Date;
@@ -80,39 +86,40 @@ interface Lane extends PlanningLane {
   label: string; // Alias for name
 }
 
-interface VisitCardProps {
-  visit: Visit;
-  onClick: () => void;
-}
 
-const VisitCard: React.FC<VisitCardProps> = ({ visit, onClick }) => {
-  const visitDate = new Date(visit.scheduled_at);
-  const durationMinutes = visit.duration || 60;
-  const endDate = new Date(visitDate.getTime() + durationMinutes * 60000);
-
-  const bgColor = visit.staff_id
-    ? 'bg-blue-100 border-blue-400'
-    : 'bg-yellow-100 border-yellow-400';
+const DroppableTimeSlot = ({ 
+  hour, 
+  laneId, 
+  children, 
+  onClick, 
+  hasConflict 
+}: { 
+  hour: number, 
+  laneId: number, 
+  children: React.ReactNode, 
+  onClick: () => void, 
+  hasConflict: boolean 
+}) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `slot-${laneId}-${hour}`,
+    data: { hour, laneId },
+  });
 
   return (
     <div
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick();
-      }}
-      className={`${bgColor} border-l-4 p-2 text-xs cursor-pointer hover:shadow-md transition-shadow rounded mb-1`}
+      ref={setNodeRef}
+      className={`flex-1 min-w-[80px] border-r border-gray-100 p-1 cursor-pointer transition-colors relative group 
+        ${hasConflict ? 'bg-red-50' : ''} 
+        ${isOver ? 'bg-indigo-100 ring-2 ring-inset ring-indigo-400' : 'hover:bg-indigo-50/50'}`}
+      style={{ minHeight: '70px' }}
+      onClick={onClick}
+      title={`${String(hour).padStart(2, '0')}:00 - 予定を追加`}
     >
-      <div className="font-medium">{visit.patient.name}</div>
-      <div className="text-gray-600">
-        {visitDate.getHours()}:{String(visitDate.getMinutes()).padStart(2, '0')}-
-        {endDate.getHours()}:{String(endDate.getMinutes()).padStart(2, '0')}
-      </div>
-      {visit.staff && (
-        <div className="text-gray-500 text-[10px]">担当: {visit.staff.name}</div>
-      )}
+      {children}
     </div>
   );
 };
+
 
 interface CreateLaneModalProps {
   isOpen: boolean;
@@ -464,9 +471,9 @@ const LaneRow: React.FC<LaneRowProps> = ({
   return (
     <div className={`flex border-b border-gray-200 min-w-[600px] sm:min-w-0 ${lane.color}`}>
       {/* Lane Label - Mobile Responsive */}
-      <div className="w-24 sm:w-48 flex-shrink-0 p-2 sm:p-3 border-r border-gray-200 flex items-center justify-between gap-1 sm:gap-2">
+      <div className="w-28 sm:w-40 flex-shrink-0 px-2 py-2 sm:px-3 sm:py-3 border-r border-gray-200 flex items-center gap-1 sm:gap-2 bg-white/60">
         {isEditing ? (
-          <div className="flex items-center gap-1 flex-1">
+          <div className="flex items-center gap-1 flex-1 min-w-0">
             <input
               type="text"
               value={editLabel}
@@ -478,40 +485,37 @@ const LaneRow: React.FC<LaneRowProps> = ({
                 if (e.key === 'Escape') setIsEditing(false);
               }}
             />
-            <button onClick={handleLabelSave} className="text-green-600 hover:text-green-800">
+            <button onClick={handleLabelSave} className="text-green-600 hover:text-green-800 flex-shrink-0">
               <CheckIcon className="w-4 h-4" />
             </button>
           </div>
         ) : (
-          <span 
-            className="font-medium text-xs sm:text-sm flex-1 text-indigo-700 cursor-pointer hover:underline truncate"
-            onClick={() => setIsEditing(true)}
-            title="クリックして名称変更"
-          >
-            {lane.name}
-          </span>
-        )}
-        
-        <div className="flex items-center gap-0.5 sm:gap-1">
-          {!isEditing && (
-            <>
+          <>
+            <span 
+              className="font-semibold text-xs sm:text-sm text-gray-800 cursor-pointer hover:text-indigo-600 truncate flex-1 min-w-0"
+              onClick={() => setIsEditing(true)}
+              title={lane.name}
+            >
+              {lane.name}
+            </span>
+            <div className="flex items-center gap-0.5 flex-shrink-0">
               <button 
                 onClick={onEdit}
-                className="p-1 text-gray-400 hover:text-blue-600 rounded"
+                className="p-0.5 text-gray-400 hover:text-blue-600 rounded"
                 title="編集"
               >
                 <PencilIcon className="w-3 h-3" />
               </button>
               <button 
                 onClick={onRemove}
-                className="p-1 text-gray-400 hover:text-red-600 rounded"
+                className="p-0.5 text-gray-400 hover:text-red-600 rounded"
                 title="レーンを削除"
               >
                 <TrashIcon className="w-3 h-3" />
               </button>
-            </>
-          )}
-        </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Timeline Grid - Mobile Responsive */}
@@ -521,34 +525,34 @@ const LaneRow: React.FC<LaneRowProps> = ({
           const hasConflict = hourVisits.length > 1;
           
           return (
-            <div
+            <DroppableTimeSlot
               key={hour}
-              className={`flex-1 min-w-[60px] sm:min-w-[100px] border-r border-gray-100 p-1 sm:p-2 cursor-pointer hover:bg-indigo-50/50 transition-colors relative group ${hasConflict ? 'bg-red-50' : ''}`}
-              style={{ minHeight: '60px' }}
+              hour={hour}
+              laneId={lane.id}
+              hasConflict={hasConflict}
               onClick={() => {
                 console.log('Time slot clicked:', hour, lane.id);
                 onTimeSlotClick?.(hour, String(lane.id));
               }}
-              title={`${String(hour).padStart(2, '0')}:00 - 予定を追加`}
             >
               {/* Hover Plus Icon */}
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
-                <PlusIcon className="w-6 h-6 text-indigo-300" />
+                <PlusIcon className="w-5 h-5 text-indigo-300" />
               </div>
 
               {hasConflict && (
-                <div className="absolute top-0 right-0 p-1 text-red-500" title="重複あり: 1レーン1時間帯1患者の原則に違反しています">
-                  <ExclamationTriangleIcon className="w-4 h-4" />
+                <div className="absolute top-0 right-0 p-0.5 text-red-500" title="重複あり">
+                  <ExclamationTriangleIcon className="w-3 h-3" />
                 </div>
               )}
               {hourVisits.map(visit => (
-                <VisitCard
+                <DraggableVisitCard
                   key={visit.id}
                   visit={visit}
                   onClick={() => onVisitClick(visit)}
                 />
               ))}
-            </div>
+            </DroppableTimeSlot>
           );
         })}
       </div>
@@ -573,6 +577,10 @@ export default function PatientCalendarView({
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingLane, setEditingLane] = useState<Lane | null>(null);
   const [patterns, setPatterns] = useState<VisitPattern[]>([]);
+
+  // Get active drag item from parent DndContext
+  const { active } = useDndContext();
+  const activeDragVisit = active?.data.current?.visit as Visit | null;
 
   const loadLanes = async () => {
     try {
@@ -612,7 +620,9 @@ export default function PatientCalendarView({
     if (dataMode === 'pattern') {
       const loadPatterns = async () => {
         try {
+          console.log('[PatternCalendarView] Loading patterns for day:', selectedDayOfWeek);
           const data = await fetchVisitPatterns({ day_of_week: selectedDayOfWeek });
+          console.log('[PatternCalendarView] Loaded patterns:', data);
           setPatterns(data);
         } catch (err) {
           console.error('Failed to load patterns:', err);
@@ -689,11 +699,14 @@ export default function PatientCalendarView({
   // Convert patterns to Visit-like objects for rendering
   const patternsAsVisits = useMemo((): PatternVisit[] => {
     if (dataMode !== 'pattern') return [];
+    console.log('[PatternCalendarView] Converting patterns to visits:', patterns.length, 'patterns');
     return patterns.map(p => {
-      // Create a fake date for rendering (today's date with pattern's time)
+      // Create a fake date for rendering using the current view date
       const [hours, minutes] = p.start_time.split(':').map(Number);
-      const fakeDate = new Date();
+      const fakeDate = new Date(date);
       fakeDate.setHours(hours, minutes, 0, 0);
+      
+      console.log('[PatternCalendarView] Pattern', p.id, 'lane:', p.planning_lane_id, 'time:', p.start_time);
       
       return {
         id: p.id,
@@ -712,7 +725,7 @@ export default function PatientCalendarView({
         __pattern: p,
       };
     });
-  }, [dataMode, patterns]);
+  }, [dataMode, patterns, date]);
 
   // Handle visit/pattern click
   const handleItemClick = (visit: Visit | PatternVisit) => {
@@ -726,6 +739,7 @@ export default function PatientCalendarView({
 
   const todaysVisits = useMemo(() => {
     if (dataMode === 'pattern') {
+      console.log('[PatternCalendarView] todaysVisits (pattern mode):', patternsAsVisits.length);
       return patternsAsVisits;
     }
     return visits.filter(v => {
@@ -750,107 +764,113 @@ export default function PatientCalendarView({
   }
 
   return (
-    <div className="h-full flex flex-col bg-white">
-      {/* Header - Mobile Responsive */}
-      <div className="p-2 sm:p-4 border-b border-gray-200 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => {
-              console.log('Plus button clicked');
-              setIsCreateModalOpen(true);
-            }}
-            className="p-1.5 sm:p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors shadow-sm flex items-center justify-center"
-            title="レーン追加"
-          >
-            <PlusIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-          </button>
-        </div>
+      <div className="h-full flex flex-col bg-white">
+        {/* Header - Mobile Responsive */}
+        <div className="p-2 sm:p-4 border-b border-gray-200 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                console.log('Plus button clicked');
+                setIsCreateModalOpen(true);
+              }}
+              className="p-1.5 sm:p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors shadow-sm flex items-center justify-center"
+              title="レーン追加"
+            >
+              <PlusIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
+          </div>
 
-        <div className="flex items-center gap-1 sm:gap-2">
-          <button
-            onClick={scrollEarlier}
-            disabled={!canScrollEarlier}
-            className="p-1.5 sm:p-2 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed rounded-full transition-colors"
-            title="前の時間帯"
-          >
-            <ChevronLeftIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-          </button>
-          
-          <span className="text-xs sm:text-sm font-medium text-gray-600 min-w-[80px] sm:min-w-[100px] text-center">
-            {visibleHours[0]}:00 - {visibleHours[visibleHours.length - 1]}:59
-          </span>
-
-          <button
-            onClick={scrollLater}
-            disabled={!canScrollLater}
-            className="p-1.5 sm:p-2 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed rounded-full transition-colors"
-            title="次の時間帯"
-          >
-            <ChevronRightIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-          </button>
-        </div>
-      </div>
-
-      {/* Timeline - Mobile Responsive */}
-      <div className="flex-1 overflow-y-auto overflow-x-auto">
-        {/* Time Header */}
-        <div className="flex sticky top-0 bg-white z-10 border-b-2 border-gray-300 min-w-[600px] sm:min-w-0">
-          <div className="w-24 sm:w-48 flex-shrink-0 p-2 sm:p-3 border-r border-gray-200 bg-gray-100 font-semibold text-xs sm:text-sm text-gray-700 flex items-center gap-1 sm:gap-2">
-            <span className="truncate">計画レーン</span>
-            <span className="text-[10px] sm:text-xs font-normal text-gray-500 bg-gray-200 px-1 sm:px-1.5 py-0.5 rounded">
-              {filteredLanes.length}
+          <div className="flex items-center gap-1 sm:gap-2">
+            <button
+              onClick={scrollEarlier}
+              disabled={!canScrollEarlier}
+              className="p-1.5 sm:p-2 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed rounded-full transition-colors"
+              title="前の時間帯"
+            >
+              <ChevronLeftIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
+            
+            <span className="text-xs sm:text-sm font-medium text-gray-600 min-w-[80px] sm:min-w-[100px] text-center">
+              {visibleHours[0]}:00 - {visibleHours[visibleHours.length - 1]}:59
             </span>
-          </div>
-          <div className="flex-1 flex">
-            {visibleHours.map(hour => (
-              <div
-                key={hour}
-                className="flex-1 min-w-[60px] sm:min-w-[100px] p-1 sm:p-2 text-center border-r border-gray-200 bg-gray-100 text-[10px] sm:text-xs font-medium text-gray-600"
-              >
-                {String(hour).padStart(2, '0')}:00
-              </div>
-            ))}
+
+            <button
+              onClick={scrollLater}
+              disabled={!canScrollLater}
+              className="p-1.5 sm:p-2 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed rounded-full transition-colors"
+              title="次の時間帯"
+            >
+              <ChevronRightIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
           </div>
         </div>
 
-        {/* Lane Rows */}
-        {filteredLanes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 sm:h-64 text-gray-400 min-w-[600px] sm:min-w-0">
-            <ExclamationTriangleIcon className="w-8 h-8 sm:w-12 sm:h-12 mb-2 opacity-50" />
-            <p className="text-xs sm:text-sm">選択されたグループのレーンがありません</p>
-            <p className="text-[10px] sm:text-xs mt-1">+ボタンで新規作成</p>
+        {/* Timeline - Mobile Responsive */}
+        <div className="flex-1 overflow-y-auto overflow-x-auto">
+          {/* Time Header */}
+          <div className="flex sticky top-0 bg-white z-10 border-b-2 border-gray-300 min-w-[600px] sm:min-w-0">
+            <div className="w-28 sm:w-40 flex-shrink-0 px-2 py-2 border-r border-gray-200 bg-gray-100 font-semibold text-xs text-gray-700 flex items-center gap-1">
+              <span className="truncate">計画レーン</span>
+              <span className="text-[10px] font-normal text-gray-500 bg-gray-200 px-1 py-0.5 rounded">
+                {filteredLanes.length}
+              </span>
+            </div>
+            <div className="flex-1 flex">
+              {visibleHours.map(hour => (
+                <div
+                  key={hour}
+                  className="flex-1 min-w-[80px] px-1 py-2 text-center border-r border-gray-200 bg-gray-100 text-[11px] font-medium text-gray-600"
+                >
+                  {String(hour).padStart(2, '0')}:00
+                </div>
+              ))}
+            </div>
           </div>
-        ) : (
-          filteredLanes.map(lane => (
-            <LaneRow
-              key={lane.id}
-              lane={lane}
-              visits={todaysVisits}
-              date={date}
-              onVisitClick={handleItemClick}
-              onTimeSlotClick={onTimeSlotClick}
-              onRemove={() => removeLane(lane.id)}
-              onRename={(newLabel) => renameLane(lane.id, newLabel)}
-              onEdit={() => setEditingLane(lane)}
-              visibleHours={visibleHours}
-            />
-          ))
-        )}
+
+          {/* Lane Rows */}
+          {filteredLanes.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-48 sm:h-64 text-gray-400 min-w-[600px] sm:min-w-0">
+              <ExclamationTriangleIcon className="w-8 h-8 sm:w-12 sm:h-12 mb-2 opacity-50" />
+              <p className="text-xs sm:text-sm">選択されたグループのレーンがありません</p>
+              <p className="text-[10px] sm:text-xs mt-1">+ボタンで新規作成</p>
+            </div>
+          ) : (
+            filteredLanes.map(lane => (
+              <LaneRow
+                key={lane.id}
+                lane={lane}
+                visits={todaysVisits}
+                date={date}
+                onVisitClick={handleItemClick}
+                onTimeSlotClick={onTimeSlotClick}
+                onRemove={() => removeLane(lane.id)}
+                onRename={(newLabel) => renameLane(lane.id, newLabel)}
+                onEdit={() => setEditingLane(lane)}
+                visibleHours={visibleHours}
+              />
+            ))
+          )}
+        </div>
+
+        <CreateLaneModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSubmit={handleCreateLane}
+          groups={groups}
+        />
+
+        <EditLanePanel
+          lane={editingLane}
+          onClose={() => setEditingLane(null)}
+          onSave={handleEditLane}
+          groups={groups}
+        />
+
+        <DragOverlay>
+          {activeDragVisit ? (
+            <VisitCard visit={activeDragVisit as Visit} onClick={() => {}} isOverlay />
+          ) : null}
+        </DragOverlay>
       </div>
-
-      <CreateLaneModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={handleCreateLane}
-        groups={groups}
-      />
-
-      <EditLanePanel
-        lane={editingLane}
-        onClose={() => setEditingLane(null)}
-        onSave={handleEditLane}
-        groups={groups}
-      />
-    </div>
   );
 }
