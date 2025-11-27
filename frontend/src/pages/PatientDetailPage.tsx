@@ -146,7 +146,9 @@ export function PatientDetailPage() {
                 <ul className="space-y-1">
                   {patient.phone_numbers.map((pn, idx) => (
                     <li key={idx}>
-                      <span className="text-text-grey text-sm mr-2">{pn.label || '電話'}:</span>
+                      {pn.label ? (
+                        <span className="text-text-grey text-sm mr-2">{pn.label}:</span>
+                      ) : null}
                       {pn.number}
                     </li>
                   ))}

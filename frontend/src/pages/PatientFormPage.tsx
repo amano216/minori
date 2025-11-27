@@ -25,14 +25,18 @@ const GENDER_OPTIONS = [
   { value: '女', label: '女性' },
 ];
 
-const PHONE_LABEL_OPTIONS = [
-  { value: '電話', label: '電話' },
-  { value: '自宅', label: '自宅' },
-  { value: '携帯', label: '携帯' },
-  { value: '勤務先', label: '勤務先' },
-  { value: '緊急連絡先', label: '緊急連絡先' },
-  { value: 'FAX', label: 'FAX' },
-  { value: 'その他', label: 'その他' },
+// 電話番号ラベルのサジェスト候補（自由入力も可能）
+const PHONE_LABEL_SUGGESTIONS = [
+  '本人携帯',
+  '本人自宅',
+  '配偶者',
+  '長男',
+  '長女',
+  '次男',
+  '次女',
+  'ケアマネ',
+  '緊急連絡先',
+  'FAX',
 ];
 
 export function PatientFormPage() {
@@ -44,7 +48,7 @@ export function PatientFormPage() {
   const [nameKana, setNameKana] = useState('');
   const [postalCode, setPostalCode] = useState('');
   const [address, setAddress] = useState('');
-  const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([{ number: '', label: '電話' }]);
+  const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([{ number: '', label: '' }]);
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [gender, setGender] = useState('');
   const [patientCode, setPatientCode] = useState('');
@@ -66,7 +70,7 @@ export function PatientFormPage() {
         setAddress(patient.address || '');
         setPhoneNumbers(patient.phone_numbers?.length > 0 
           ? patient.phone_numbers 
-          : [{ number: '', label: '電話' }]);
+          : [{ number: '', label: '' }]);
         setDateOfBirth(patient.date_of_birth || '');
         setGender(patient.gender || '');
         setPatientCode(patient.patient_code || '');
@@ -97,7 +101,7 @@ export function PatientFormPage() {
   };
 
   const addPhoneNumber = () => {
-    setPhoneNumbers((prev) => [...prev, { number: '', label: '電話' }]);
+    setPhoneNumbers((prev) => [...prev, { number: '', label: '' }]);
   };
 
   const removePhoneNumber = (index: number) => {
@@ -300,18 +304,25 @@ export function PatientFormPage() {
             {/* 電話番号 */}
             <div className="mt-4 space-y-2">
               <Label>電話番号</Label>
+              <p className="text-xs text-text-gray mb-2">備考欄には関係性（本人、配偶者、長男など）を自由に入力できます</p>
               {phoneNumbers.map((pn, index) => (
                 <div key={index} className="flex items-center gap-2">
-                  <select
-                    value={pn.label || '電話'}
-                    onChange={(e) => handlePhoneNumberChange(index, 'label', e.target.value)}
-                    disabled={submitting}
-                    className="w-32 px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
-                  >
-                    {PHONE_LABEL_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
+                  <div className="relative w-32">
+                    <Input
+                      type="text"
+                      value={pn.label || ''}
+                      onChange={(e) => handlePhoneNumberChange(index, 'label', e.target.value)}
+                      disabled={submitting}
+                      placeholder="例: 本人携帯"
+                      list={`phone-label-suggestions-${index}`}
+                      className="w-full"
+                    />
+                    <datalist id={`phone-label-suggestions-${index}`}>
+                      {PHONE_LABEL_SUGGESTIONS.map((suggestion) => (
+                        <option key={suggestion} value={suggestion} />
+                      ))}
+                    </datalist>
+                  </div>
                   <Input
                     type="tel"
                     value={pn.number}
