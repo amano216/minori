@@ -15,9 +15,11 @@ import {
   createPlanningLane, 
   updatePlanningLane, 
   deletePlanningLane,
+  fetchVisitPatterns,
   type PlanningLane,
   type Visit,
-  type Group
+  type Group,
+  type VisitPattern,
 } from '../../api/client';
 import { SearchableSelect } from '../molecules/SearchableSelect';
 
@@ -28,6 +30,8 @@ interface PatientCalendarViewProps {
   selectedGroupIds: number[];
   onVisitClick: (visit: Visit) => void;
   onTimeSlotClick?: (hour: number, laneId: string) => void;
+  dataMode?: 'actual' | 'pattern';
+  selectedDayOfWeek?: number;
 }
 
 const START_HOUR = 0;
@@ -551,11 +555,14 @@ export default function PatientCalendarView({
   selectedGroupIds,
   onVisitClick,
   onTimeSlotClick,
+  dataMode = 'actual',
+  selectedDayOfWeek = 1,
 }: PatientCalendarViewProps) {
   const [lanes, setLanes] = useState<Lane[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingLane, setEditingLane] = useState<Lane | null>(null);
+  const [patterns, setPatterns] = useState<VisitPattern[]>([]);
 
   const loadLanes = async () => {
     try {
@@ -589,6 +596,21 @@ export default function PatientCalendarView({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groups]);
+
+  // Load patterns when in pattern mode
+  useEffect(() => {
+    if (dataMode === 'pattern') {
+      const loadPatterns = async () => {
+        try {
+          const data = await fetchVisitPatterns({ day_of_week: selectedDayOfWeek });
+          setPatterns(data);
+        } catch (err) {
+          console.error('Failed to load patterns:', err);
+        }
+      };
+      loadPatterns();
+    }
+  }, [dataMode, selectedDayOfWeek]);
 
   const [scrollOffset, setScrollOffset] = useState(8); // 初期表示は8:00から
 
@@ -654,12 +676,41 @@ export default function PatientCalendarView({
   const hours = Array.from({ length: TOTAL_HOURS }, (_, i) => START_HOUR + i);
   const visibleHours = hours.slice(scrollOffset, scrollOffset + VISIBLE_HOURS);
 
+  // Convert patterns to Visit-like objects for rendering
+  const patternsAsVisits = useMemo((): Visit[] => {
+    if (dataMode !== 'pattern') return [];
+    return patterns.map(p => {
+      // Create a fake date for rendering (today's date with pattern's time)
+      const [hours, minutes] = p.start_time.split(':').map(Number);
+      const fakeDate = new Date();
+      fakeDate.setHours(hours, minutes, 0, 0);
+      
+      return {
+        id: p.id,
+        patient_id: p.patient_id,
+        patient: p.patient || { id: p.patient_id, name: '不明' },
+        staff_id: p.default_staff_id,
+        staff: p.staff || null,
+        scheduled_at: fakeDate.toISOString(),
+        duration: p.duration,
+        status: 'scheduled' as const,
+        notes: '',
+        created_at: p.created_at,
+        updated_at: p.updated_at,
+        planning_lane_id: p.planning_lane_id,
+      };
+    });
+  }, [dataMode, patterns]);
+
   const todaysVisits = useMemo(() => {
+    if (dataMode === 'pattern') {
+      return patternsAsVisits;
+    }
     return visits.filter(v => {
       const visitDate = new Date(v.scheduled_at);
       return visitDate.toDateString() === date.toDateString();
     });
-  }, [visits, date]);
+  }, [dataMode, patternsAsVisits, visits, date]);
 
   const scrollEarlier = () => {
     setScrollOffset(prev => Math.max(0, prev - 4));

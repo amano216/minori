@@ -58,6 +58,8 @@ export function UnifiedSchedulePage() {
   const dateInputRef = useRef<HTMLInputElement>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'patient'>('patient');
+  const [dataMode, setDataMode] = useState<'actual' | 'pattern'>('actual');
+  const [selectedDayOfWeek, setSelectedDayOfWeek] = useState(1); // 1=月曜
   
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroupIds, setSelectedGroupIds] = useState<number[]>([]);
@@ -394,60 +396,107 @@ export function UnifiedSchedulePage() {
             </div>
           </div>
           
-          {/* Center Section - Date Navigation */}
-          <div className="flex items-center">
-            <div className="flex items-center bg-gray-100 rounded-lg sm:rounded-xl p-0.5 sm:p-1 border border-gray-200 relative">
-              <button onClick={handlePrevious} className="p-1.5 sm:p-2 hover:bg-white hover:shadow-sm rounded-md sm:rounded-lg transition-all text-gray-600">
-                <ChevronLeftIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-              </button>
-              
-              <div 
-                className="px-2 sm:px-4 font-bold text-gray-800 min-w-[100px] sm:min-w-[160px] text-center text-sm sm:text-lg cursor-pointer hover:bg-gray-200 rounded transition-colors select-none flex items-center justify-center"
-                onClick={handleDateClick}
-              >
-                {/* Short format for mobile, full format for desktop */}
-                <span className="sm:hidden">
-                  {currentDate.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', weekday: 'short' })}
-                </span>
-                <span className="hidden sm:inline">
-                  {currentDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
-                </span>
+          {/* Center Section - Mode Toggle & Date/Day Navigation */}
+          <div className="flex items-center gap-2">
+            {/* Data Mode Toggle - Only show in patient (lane) view */}
+            {viewMode === 'patient' && (
+              <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200">
+                <button
+                  onClick={() => setDataMode('actual')}
+                  className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all ${
+                    dataMode === 'actual' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  実績
+                </button>
+                <button
+                  onClick={() => setDataMode('pattern')}
+                  className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all ${
+                    dataMode === 'pattern' ? 'bg-white shadow text-emerald-600' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  パターン
+                </button>
               </div>
-              
-              <input
-                type="date"
-                ref={dateInputRef}
-                className="absolute top-10 left-1/2 transform -translate-x-1/2 opacity-0 w-0 h-0 pointer-events-none"
-                value={currentDate.toISOString().split('T')[0]}
-                onChange={handleDateChange}
-              />
+            )}
 
-              <button onClick={handleNext} className="p-1.5 sm:p-2 hover:bg-white hover:shadow-sm rounded-md sm:rounded-lg transition-all text-gray-600">
-                <ChevronRightIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-              </button>
-            </div>
-            
-            {/* Monthly Calendar - Hidden on very small screens */}
-            <div className="relative ml-1 sm:ml-2 hidden xs:block">
-              <button 
-                onClick={() => setIsMonthlyCalendarOpen(!isMonthlyCalendarOpen)} 
-                className={`p-1.5 sm:p-2 rounded-lg transition-colors ${isMonthlyCalendarOpen ? 'bg-indigo-50 text-indigo-800' : 'text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50'}`}
-                title="月次カレンダー"
-              >
-                <CalendarDaysIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-              </button>
-              {isMonthlyCalendarOpen && (
-                <MonthlyCalendarView
-                  currentDate={currentDate}
-                  visits={allWeeklyVisits}
-                  onDateClick={(date) => {
-                    setCurrentDate(date);
-                    setIsMonthlyCalendarOpen(false);
-                  }}
-                  onClose={() => setIsMonthlyCalendarOpen(false)}
+            {/* Date Navigation (actual mode) or Day of Week Selector (pattern mode) */}
+            {dataMode === 'actual' ? (
+              <div className="flex items-center bg-gray-100 rounded-lg sm:rounded-xl p-0.5 sm:p-1 border border-gray-200 relative">
+                <button onClick={handlePrevious} className="p-1.5 sm:p-2 hover:bg-white hover:shadow-sm rounded-md sm:rounded-lg transition-all text-gray-600">
+                  <ChevronLeftIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
+              
+                <div 
+                  className="px-2 sm:px-4 font-bold text-gray-800 min-w-[100px] sm:min-w-[160px] text-center text-sm sm:text-lg cursor-pointer hover:bg-gray-200 rounded transition-colors select-none flex items-center justify-center"
+                  onClick={handleDateClick}
+                >
+                  {/* Short format for mobile, full format for desktop */}
+                  <span className="sm:hidden">
+                    {currentDate.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', weekday: 'short' })}
+                  </span>
+                  <span className="hidden sm:inline">
+                    {currentDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
+                  </span>
+                </div>
+              
+                <input
+                  type="date"
+                  ref={dateInputRef}
+                  className="absolute top-10 left-1/2 transform -translate-x-1/2 opacity-0 w-0 h-0 pointer-events-none"
+                  value={currentDate.toISOString().split('T')[0]}
+                  onChange={handleDateChange}
                 />
-              )}
-            </div>
+
+                <button onClick={handleNext} className="p-1.5 sm:p-2 hover:bg-white hover:shadow-sm rounded-md sm:rounded-lg transition-all text-gray-600">
+                  <ChevronRightIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
+              </div>
+            ) : (
+              /* Day of Week Selector for pattern mode */
+              <div className="flex items-center bg-emerald-50 rounded-lg sm:rounded-xl p-0.5 sm:p-1 border border-emerald-200">
+                {['月', '火', '水', '木', '金'].map((dayName, index) => {
+                  const dayOfWeek = index + 1; // 1=月, 2=火, ...
+                  return (
+                    <button
+                      key={dayOfWeek}
+                      onClick={() => setSelectedDayOfWeek(dayOfWeek)}
+                      className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md sm:rounded-lg text-sm sm:text-base font-medium transition-all ${
+                        selectedDayOfWeek === dayOfWeek
+                          ? 'bg-white shadow text-emerald-700'
+                          : 'text-emerald-600 hover:bg-emerald-100'
+                      }`}
+                    >
+                      {dayName}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Monthly Calendar - Only in actual mode */}
+            {dataMode === 'actual' && (
+              <div className="relative ml-1 sm:ml-2 hidden xs:block">
+                <button 
+                  onClick={() => setIsMonthlyCalendarOpen(!isMonthlyCalendarOpen)} 
+                  className={`p-1.5 sm:p-2 rounded-lg transition-colors ${isMonthlyCalendarOpen ? 'bg-indigo-50 text-indigo-800' : 'text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50'}`}
+                  title="月次カレンダー"
+                >
+                  <CalendarDaysIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
+                {isMonthlyCalendarOpen && (
+                  <MonthlyCalendarView
+                    currentDate={currentDate}
+                    visits={allWeeklyVisits}
+                    onDateClick={(date) => {
+                      setCurrentDate(date);
+                      setIsMonthlyCalendarOpen(false);
+                    }}
+                    onClose={() => setIsMonthlyCalendarOpen(false)}
+                  />
+                )}
+              </div>
+            )}
           </div>
 
           {/* Right Section - Actions */}
@@ -530,6 +579,8 @@ export function UnifiedSchedulePage() {
                   setIsNewVisitPanelOpen(true);
                   setSelectedVisit(null);
                 }}
+                dataMode={dataMode}
+                selectedDayOfWeek={selectedDayOfWeek}
               />
             ) : (
               <TimelineResourceView
