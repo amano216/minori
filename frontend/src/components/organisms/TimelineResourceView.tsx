@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import type { Staff, Group, Visit } from '../../api/client';
 
 interface TimelineResourceViewProps {
@@ -14,114 +15,113 @@ interface TimelineResourceViewProps {
 
 const START_HOUR = 8;
 const END_HOUR = 20;
-const TOTAL_HOURS = END_HOUR - START_HOUR;
+
+// 訪問カードコンポーネント - PatientCalendarViewと統一したスタイル
+interface VisitCardProps {
+  visit: Visit;
+  onClick: () => void;
+}
+
+const VisitCard: React.FC<VisitCardProps> = ({ visit, onClick }) => {
+  const visitDate = new Date(visit.scheduled_at);
+  const durationMinutes = visit.duration || 60;
+  const endDate = new Date(visitDate.getTime() + durationMinutes * 60000);
+
+  const bgColor = visit.staff_id
+    ? 'bg-blue-100 border-blue-400'
+    : 'bg-yellow-100 border-yellow-400';
+
+  return (
+    <div
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      className={`${bgColor} border-l-4 p-2 text-xs cursor-pointer hover:shadow-md transition-shadow rounded mb-1`}
+    >
+      <div className="font-medium truncate">{visit.patient.name}</div>
+      <div className="text-gray-600">
+        {visitDate.getHours()}:{String(visitDate.getMinutes()).padStart(2, '0')}-
+        {endDate.getHours()}:{String(endDate.getMinutes()).padStart(2, '0')}
+      </div>
+    </div>
+  );
+};
 
 interface TimelineStaffRowProps {
   staff: Staff;
   groupName?: string;
   visits: Visit[];
-  hours: number[];
+  visibleHours: number[];
   date: Date;
   onVisitClick: (visit: Visit) => void;
   onTimeSlotClick?: (staffId: number, time: Date) => void;
 }
 
-function TimelineStaffRow({ staff, groupName, visits, hours, date, onVisitClick, onTimeSlotClick }: TimelineStaffRowProps) {
+function TimelineStaffRow({ staff, groupName, visits, visibleHours, date, onVisitClick, onTimeSlotClick }: TimelineStaffRowProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `staff-${staff.id}`,
     data: { staff },
   });
 
-  const handleTimeSlotClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!onTimeSlotClick) return;
-    
-    // Prevent triggering when clicking on a visit
-    if ((e.target as HTMLElement).closest('.visit-card')) return;
-
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const width = rect.width;
-    const percentage = x / width;
-    
-    const totalMinutes = TOTAL_HOURS * 60;
-    const clickMinutes = percentage * totalMinutes;
-    
-    const hour = START_HOUR + Math.floor(clickMinutes / 60);
-    const minute = Math.floor(clickMinutes % 60);
-    
-    // Round to nearest 15 minutes
-    const roundedMinute = Math.round(minute / 15) * 15;
-    
-    const clickedTime = new Date(date);
-    clickedTime.setHours(hour, roundedMinute, 0, 0);
-    
-    onTimeSlotClick(staff.id, clickedTime);
+  const getVisitsForHour = (hour: number) => {
+    return visits.filter(v => {
+      const visitDate = new Date(v.scheduled_at);
+      const startHour = visitDate.getHours();
+      return startHour === hour;
+    });
   };
 
-  const getPositionStyle = (visit: Visit) => {
-    const visitDate = new Date(visit.scheduled_at);
-    const startMinutes = (visitDate.getHours() - START_HOUR) * 60 + visitDate.getMinutes();
-    const durationMinutes = visit.duration;
-    
-    const leftPercent = (startMinutes / (TOTAL_HOURS * 60)) * 100;
-    const widthPercent = (durationMinutes / (TOTAL_HOURS * 60)) * 100;
-    
-    return {
-      left: `${leftPercent}%`,
-      width: `${widthPercent}%`,
-    };
+  const handleHourClick = (hour: number) => {
+    if (!onTimeSlotClick) return;
+    const clickedTime = new Date(date);
+    clickedTime.setHours(hour, 0, 0, 0);
+    onTimeSlotClick(staff.id, clickedTime);
   };
 
   return (
     <div 
       ref={setNodeRef}
-      className={`flex border-b border-gray-100 transition-colors h-16 ${isOver ? 'bg-indigo-50 ring-2 ring-inset ring-indigo-300' : 'hover:bg-gray-50'}`}
+      className={`flex border-b border-gray-200 min-w-[600px] sm:min-w-0 ${isOver ? 'bg-indigo-50 ring-2 ring-inset ring-indigo-300' : ''}`}
     >
-      <div className="w-48 flex-shrink-0 border-r border-gray-200 p-3 flex items-center bg-white z-10">
-        <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold mr-3">
+      {/* Staff Label - Mobile Responsive */}
+      <div className="w-24 sm:w-48 flex-shrink-0 p-2 sm:p-3 border-r border-gray-200 flex items-center bg-white">
+        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold mr-2 sm:mr-3 flex-shrink-0">
           {staff.name.slice(0, 1)}
         </div>
-        <div>
-          <div className="text-sm font-medium text-gray-900">{staff.name}</div>
+        <div className="min-w-0">
+          <div className="text-xs sm:text-sm font-medium text-gray-900 truncate">{staff.name}</div>
           {groupName && (
-            <div className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded inline-block mt-0.5">
+            <div className="text-[10px] text-gray-500 truncate">
               {groupName}
             </div>
           )}
         </div>
       </div>
-      <div 
-        className="flex-1 relative cursor-crosshair"
-        onClick={handleTimeSlotClick}
-      >
-        {/* Grid Lines */}
-        {hours.map((hour) => (
-          <div
-            key={hour}
-            className="absolute top-0 bottom-0 border-l border-gray-100 pointer-events-none"
-            style={{ left: `${((hour - START_HOUR) / TOTAL_HOURS) * 100}%` }}
-          />
-        ))}
-        
-        {/* Visits */}
-        {visits.map((visit) => (
-          <div
-            key={visit.id}
-            onClick={(e) => {
-              e.stopPropagation();
-              onVisitClick(visit);
-            }}
-            className="visit-card absolute top-1 bottom-1 bg-indigo-500 rounded-md shadow-md border-2 border-indigo-600 cursor-pointer hover:bg-indigo-600 hover:scale-[1.02] transition-all z-10 overflow-hidden px-2 py-0.5 flex flex-col justify-center"
-            style={getPositionStyle(visit)}
-          >
-            <div className="text-xs font-bold text-white truncate leading-tight">
-              {visit.patient.name}
+
+      {/* Timeline Grid - Mobile Responsive (同じセル形式) */}
+      <div className="flex-1 flex">
+        {visibleHours.map(hour => {
+          const hourVisits = getVisitsForHour(hour);
+          
+          return (
+            <div
+              key={hour}
+              className="flex-1 min-w-[60px] sm:min-w-[100px] border-r border-gray-100 p-1 sm:p-2 cursor-pointer hover:bg-indigo-50/50 transition-colors"
+              style={{ minHeight: '60px' }}
+              onClick={() => handleHourClick(hour)}
+              title={`${String(hour).padStart(2, '0')}:00 - 予定を追加`}
+            >
+              {hourVisits.map(visit => (
+                <VisitCard
+                  key={visit.id}
+                  visit={visit}
+                  onClick={() => onVisitClick(visit)}
+                />
+              ))}
             </div>
-            <div className="text-[10px] text-indigo-100 truncate leading-tight">
-              {new Date(visit.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({visit.duration}分)
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -136,7 +136,31 @@ export function TimelineResourceView({
   onVisitClick,
   onTimeSlotClick,
 }: TimelineResourceViewProps) {
-  const hours = Array.from({ length: TOTAL_HOURS + 1 }, (_, i) => START_HOUR + i);
+  // 表示する時間範囲の状態管理
+  const [startHour, setStartHour] = useState(START_HOUR);
+  const [endHour, setEndHour] = useState(END_HOUR);
+  
+  const visibleHours = useMemo(() => 
+    Array.from({ length: endHour - startHour }, (_, i) => startHour + i),
+    [startHour, endHour]
+  );
+
+  const canGoEarlier = startHour > 0;
+  const canGoLater = endHour < 24;
+
+  const handleEarlier = () => {
+    if (canGoEarlier) {
+      setStartHour(prev => Math.max(0, prev - 2));
+      setEndHour(prev => Math.max(2, prev - 2));
+    }
+  };
+
+  const handleLater = () => {
+    if (canGoLater) {
+      setStartHour(prev => Math.min(22, prev + 2));
+      setEndHour(prev => Math.min(24, prev + 2));
+    }
+  };
 
   const hierarchy = useMemo(() => {
     // 1. Identify Offices (Roots) - those without parent_id
@@ -181,7 +205,7 @@ export function TimelineResourceView({
           staff={staff}
           groupName={groupName}
           visits={staffVisits}
-          hours={hours}
+          visibleHours={visibleHours}
           date={date}
           onVisitClick={onVisitClick}
           onTimeSlotClick={onTimeSlotClick}
@@ -192,26 +216,48 @@ export function TimelineResourceView({
 
   return (
     <div className="flex flex-col h-full bg-white overflow-hidden">
+      {/* Time Range Control */}
+      <div className="flex items-center justify-center gap-2 py-2 border-b border-gray-200 bg-gray-50">
+        <button
+          onClick={handleEarlier}
+          disabled={!canGoEarlier}
+          className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+          title="前の時間帯"
+        >
+          <ChevronLeftIcon className="w-5 h-5 text-gray-600" />
+        </button>
+        <span className="text-sm text-gray-600 min-w-[100px] text-center">
+          {startHour}:00 - {endHour - 1}:59
+        </span>
+        <button
+          onClick={handleLater}
+          disabled={!canGoLater}
+          className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+          title="後の時間帯"
+        >
+          <ChevronRightIcon className="w-5 h-5 text-gray-600" />
+        </button>
+      </div>
+
       {/* Header: Time Scale */}
-      <div className="flex border-b border-gray-200 bg-gray-50">
-        <div className="w-48 flex-shrink-0 border-r border-gray-200 p-2 font-semibold text-gray-600 text-sm flex items-center pl-4">
+      <div className="flex border-b border-gray-200 bg-gray-50 min-w-[600px] sm:min-w-0">
+        <div className="w-24 sm:w-48 flex-shrink-0 border-r border-gray-200 p-2 font-semibold text-gray-600 text-xs sm:text-sm flex items-center pl-2 sm:pl-4">
           スタッフ
         </div>
-        <div className="flex-1 relative h-10">
-          {hours.map((hour) => (
+        <div className="flex-1 flex">
+          {visibleHours.map((hour) => (
             <div
               key={hour}
-              className="absolute top-0 bottom-0 border-l border-gray-200 text-xs text-gray-400 pl-1 pt-1"
-              style={{ left: `${((hour - START_HOUR) / TOTAL_HOURS) * 100}%` }}
+              className="flex-1 min-w-[60px] sm:min-w-[100px] border-r border-gray-100 text-xs text-gray-500 px-1 sm:px-2 py-2 text-center"
             >
-              {hour}:00
+              {String(hour).padStart(2, '0')}:00
             </div>
           ))}
         </div>
       </div>
 
       {/* Body: Staff Rows */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-auto">
         {hierarchy.offices.map((office) => {
           const isOfficeSelected = !selectedGroupIds || selectedGroupIds.includes(office.id);
           const teams = hierarchy.officeTeams.get(office.id) || [];

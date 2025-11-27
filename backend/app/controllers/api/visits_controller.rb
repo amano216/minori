@@ -123,7 +123,7 @@ module Api
     end
 
     def set_visit
-      @visit = Visit.find(params[:id])
+      @visit = scoped_visits.find(params[:id])
     rescue ActiveRecord::RecordNotFound
       render json: { error: "Visit not found" }, status: :not_found
     end
@@ -169,7 +169,7 @@ module Api
     def check_user_conflicts!(visit)
       end_time = visit.scheduled_at + visit.duration.minutes
 
-      conflicting = Visit.where(user_id: visit.user_id)
+      conflicting = scoped_visits.where(user_id: visit.user_id)
                          .where.not(id: visit.id)
                          .where.not(status: %w[cancelled completed])
                          .where("scheduled_at < ? AND scheduled_at + (duration * interval '1 minute') > ?",
@@ -183,7 +183,7 @@ module Api
     def check_patient_conflicts!(visit)
       end_time = visit.scheduled_at + visit.duration.minutes
 
-      conflicting = Visit.where(patient_id: visit.patient_id)
+      conflicting = scoped_visits.where(patient_id: visit.patient_id)
                          .where.not(id: visit.id)
                          .where.not(status: %w[cancelled completed])
                          .where("scheduled_at < ? AND scheduled_at + (duration * interval '1 minute') > ?",

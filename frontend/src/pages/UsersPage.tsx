@@ -3,6 +3,7 @@ import { organizationApi } from '../api/organizationApi';
 import { forgotPassword } from '../api/client';
 import type { User, Group } from '../types/organization';
 import { Icon } from '../components/atoms/Icon';
+import { SearchableSelect } from '../components/molecules/SearchableSelect';
 
 const QUALIFICATION_OPTIONS = [
   { value: 'nurse', label: '看護師' },
@@ -447,23 +448,22 @@ export function UsersPage() {
                     <label className="block text-sm font-medium text-text-primary mb-1">
                       所属グループ
                     </label>
-                    <select
+                    <SearchableSelect
+                      options={[
+                        { value: '', label: '未所属' },
+                        ...groups
+                          .map(group => ({
+                            value: group.id,
+                            label: getGroupHierarchyLabel(group, groups)
+                          }))
+                          .sort((a, b) => a.label.localeCompare(b.label, 'ja'))
+                      ]}
                       value={formData.group_id || ''}
-                      onChange={(e) => setFormData({ ...formData, group_id: e.target.value ? Number(e.target.value) : null })}
-                      className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:ring-2 focus:ring-main"
-                    >
-                      <option value="">未所属</option>
-                      {groups
-                        .map(group => ({
-                          ...group,
-                          label: getGroupHierarchyLabel(group, groups)
-                        }))
-                        .sort((a, b) => a.label.localeCompare(b.label, 'ja'))
-                        .map(group => (
-                          <option key={group.id} value={group.id}>{group.label}</option>
-                        ))
-                      }
-                    </select>
+                      onChange={(val) => setFormData({ ...formData, group_id: val ? Number(val) : null })}
+                      placeholder="グループを選択"
+                      searchPlaceholder="グループを検索..."
+                      allowClear
+                    />
                   </div>
                 </div>
               </div>
