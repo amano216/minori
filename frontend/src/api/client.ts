@@ -595,3 +595,84 @@ export const api = {
     return { data };
   },
 };
+
+// Visit Pattern API (計画モード)
+export interface VisitPattern {
+  id: number;
+  planning_lane_id: number | null;
+  patient_id: number;
+  default_staff_id: number | null;
+  day_of_week: number;
+  day_name: string;
+  start_time: string;
+  duration: number;
+  patient: { id: number; name: string } | null;
+  staff: { id: number; name: string } | null;
+  planning_lane: { id: number; name: string } | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VisitPatternInput {
+  planning_lane_id?: number | null;
+  patient_id: number;
+  default_staff_id?: number | null;
+  day_of_week: number;
+  start_time: string;
+  duration?: number;
+}
+
+export async function fetchVisitPatterns(params?: {
+  day_of_week?: number;
+  planning_lane_id?: number;
+}): Promise<VisitPattern[]> {
+  const query = new URLSearchParams();
+  if (params?.day_of_week !== undefined) query.append('day_of_week', String(params.day_of_week));
+  if (params?.planning_lane_id) query.append('planning_lane_id', String(params.planning_lane_id));
+  const queryString = query.toString();
+  return apiRequest(`/api/visit_patterns${queryString ? `?${queryString}` : ''}`);
+}
+
+export async function fetchVisitPattern(id: number): Promise<VisitPattern> {
+  return apiRequest(`/api/visit_patterns/${id}`);
+}
+
+export async function createVisitPattern(body: VisitPatternInput): Promise<VisitPattern> {
+  return apiRequest('/api/visit_patterns', {
+    method: 'POST',
+    body: JSON.stringify({ visit_pattern: body }),
+  });
+}
+
+export async function updateVisitPattern(id: number, body: Partial<VisitPatternInput>): Promise<VisitPattern> {
+  return apiRequest(`/api/visit_patterns/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ visit_pattern: body }),
+  });
+}
+
+export async function deleteVisitPattern(id: number): Promise<void> {
+  return apiRequest(`/api/visit_patterns/${id}`, { method: 'DELETE' });
+}
+
+export interface GenerateVisitsResult {
+  message: string;
+  count: number;
+  visits: Array<{
+    id: number;
+    scheduled_at: string;
+    patient: { id: number; name: string } | null;
+    staff: { id: number; name: string } | null;
+    status: string;
+  }>;
+}
+
+export async function generateVisitsFromPatterns(
+  startDate: string,
+  endDate: string
+): Promise<GenerateVisitsResult> {
+  return apiRequest('/api/visit_patterns/generate_visits', {
+    method: 'POST',
+    body: JSON.stringify({ start_date: startDate, end_date: endDate }),
+  });
+}
