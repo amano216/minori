@@ -7,7 +7,7 @@ module Api
     # GET /api/schedules/daily?date=2025-11-25
     def daily
       date = params[:date].present? ? Date.parse(params[:date]) : Date.current
-      visits = Visit.includes(:user, patient: :group)
+      visits = scoped_visits.includes(:user, patient: :group)
                     .on_date(date)
                     .order(:scheduled_at)
 
@@ -24,7 +24,7 @@ module Api
       start_date = params[:start_date].present? ? Date.parse(params[:start_date]) : Date.current.beginning_of_week
       end_date = start_date + 6.days
 
-      visits = Visit.includes(:user, patient: :group)
+      visits = scoped_visits.includes(:user, patient: :group)
                     .where(scheduled_at: start_date.beginning_of_day..end_date.end_of_day)
                     .order(:scheduled_at)
 
@@ -50,11 +50,12 @@ module Api
 
     # GET /api/schedules/staff/:id?start_date=2025-11-24&end_date=2025-11-30
     def staff
-      user = User.find(params[:id])
+      user = scoped_users.find(params[:id])
       start_date = params[:start_date].present? ? Date.parse(params[:start_date]) : Date.current
       end_date = params[:end_date].present? ? Date.parse(params[:end_date]) : start_date + 6.days
 
       visits = user.visits.includes(:patient)
+                    .where(organization_id: current_user.organization_id)
                     .where(scheduled_at: start_date.beginning_of_day..end_date.end_of_day)
                     .order(:scheduled_at)
 
@@ -73,7 +74,7 @@ module Api
       start_date = params[:start_date].present? ? Date.parse(params[:start_date]) : Date.current.beginning_of_week
       end_date = params[:end_date].present? ? Date.parse(params[:end_date]) : start_date + 6.days
 
-      visits = Visit.where(scheduled_at: start_date.beginning_of_day..end_date.end_of_day)
+      visits = scoped_visits.where(scheduled_at: start_date.beginning_of_day..end_date.end_of_day)
 
       # 最適化: 1回のクエリで全ステータスの集計を取得
       status_counts = visits.group(:status).count
@@ -98,8 +99,8 @@ module Api
     def gantt
       date = params[:date].present? ? Date.parse(params[:date]) : Date.current
 
-      users = User.where(staff_status: "active").order(:name)
-      visits = Visit.includes(:user, :patient)
+      users = scoped_users.where(staff_status: "active").order(:name)
+      visits = scoped_visits.includes(:user, :patient)
                     .on_date(date)
                     .where.not(status: "cancelled")
                     .order(:scheduled_at)
@@ -127,6 +128,22 @@ module Api
     end
 
     private
+
+    def scoped_visits
+      if current_user.organization_id
+        Visit.where(organization_id: current_user.organization_id)
+      else
+        Visit.none
+      end
+    end
+
+    def scoped_users
+      if current_user.organization_id
+        User.where(organization_id: current_user.organization_id)
+      else
+        User.none
+      end
+    end
 
     def visit_with_staff_json(visit)
       patient_json = visit.patient&.as_json(only: [ :id, :name, :address ])
