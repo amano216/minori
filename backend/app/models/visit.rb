@@ -7,6 +7,7 @@ class Visit < ApplicationRecord
   belongs_to :patient
   belongs_to :planning_lane, optional: true
   belongs_to :organization, optional: true
+  belongs_to :visit_pattern, optional: true
 
   validates :scheduled_at, presence: true
   validates :duration, presence: true, numericality: { greater_than: 0 }

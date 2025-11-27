@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { useDroppable } from '@dnd-kit/core';
+import { useDroppable, useDndContext, DragOverlay } from '@dnd-kit/core';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import type { Staff, Group, Visit } from '../../api/client';
+import { DraggableVisitCard, VisitCard } from '../molecules/VisitCard';
 
 interface TimelineResourceViewProps {
   date: Date;
@@ -16,37 +17,6 @@ interface TimelineResourceViewProps {
 const START_HOUR = 8;
 const END_HOUR = 20;
 
-// 訪問カードコンポーネント - PatientCalendarViewと統一したスタイル
-interface VisitCardProps {
-  visit: Visit;
-  onClick: () => void;
-}
-
-const VisitCard: React.FC<VisitCardProps> = ({ visit, onClick }) => {
-  const visitDate = new Date(visit.scheduled_at);
-  const durationMinutes = visit.duration || 60;
-  const endDate = new Date(visitDate.getTime() + durationMinutes * 60000);
-
-  const bgColor = visit.staff_id
-    ? 'bg-blue-100 border-blue-400'
-    : 'bg-yellow-100 border-yellow-400';
-
-  return (
-    <div
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick();
-      }}
-      className={`${bgColor} border-l-4 p-2 text-xs cursor-pointer hover:shadow-md transition-shadow rounded mb-1`}
-    >
-      <div className="font-medium truncate">{visit.patient.name}</div>
-      <div className="text-gray-600">
-        {visitDate.getHours()}:{String(visitDate.getMinutes()).padStart(2, '0')}-
-        {endDate.getHours()}:{String(endDate.getMinutes()).padStart(2, '0')}
-      </div>
-    </div>
-  );
-};
 
 interface TimelineStaffRowProps {
   staff: Staff;
@@ -57,6 +27,39 @@ interface TimelineStaffRowProps {
   onVisitClick: (visit: Visit) => void;
   onTimeSlotClick?: (staffId: number, time: Date) => void;
 }
+
+interface DroppableTimeSlotProps {
+  hour: number;
+  staff: Staff;
+  date: Date;
+  children: React.ReactNode;
+  onClick: () => void;
+}
+
+const DroppableTimeSlot = ({ hour, staff, date, children, onClick }: DroppableTimeSlotProps) => {
+  const slotDate = new Date(date);
+  slotDate.setHours(hour, 0, 0, 0);
+
+  const { setNodeRef, isOver } = useDroppable({
+    id: `slot-${staff.id}-${hour}`,
+    data: { 
+      staff,
+      date: slotDate
+    },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`flex-1 min-w-[60px] sm:min-w-[100px] border-r border-gray-100 p-1 sm:p-2 cursor-pointer transition-colors ${isOver ? 'bg-indigo-100 ring-2 ring-inset ring-indigo-400' : 'hover:bg-indigo-50/50'}`}
+      style={{ minHeight: '60px' }}
+      onClick={onClick}
+      title={`${String(hour).padStart(2, '0')}:00 - 予定を追加`}
+    >
+      {children}
+    </div>
+  );
+};
 
 function TimelineStaffRow({ staff, groupName, visits, visibleHours, date, onVisitClick, onTimeSlotClick }: TimelineStaffRowProps) {
   const { setNodeRef, isOver } = useDroppable({
@@ -82,10 +85,10 @@ function TimelineStaffRow({ staff, groupName, visits, visibleHours, date, onVisi
   return (
     <div 
       ref={setNodeRef}
-      className={`flex border-b border-gray-200 min-w-[600px] sm:min-w-0 ${isOver ? 'bg-indigo-50 ring-2 ring-inset ring-indigo-300' : ''}`}
+      className={`flex border-b border-gray-200 min-w-max ${isOver ? 'bg-indigo-50 ring-2 ring-inset ring-indigo-300' : ''}`}
     >
-      {/* Staff Label - Mobile Responsive */}
-      <div className="w-24 sm:w-48 flex-shrink-0 p-2 sm:p-3 border-r border-gray-200 flex items-center bg-white">
+      {/* Staff Label - Sticky Left */}
+      <div className="sticky left-0 z-10 w-24 sm:w-48 flex-shrink-0 p-2 sm:p-3 border-r border-gray-200 flex items-center bg-white shadow-[1px_0_3px_rgba(0,0,0,0.05)]">
         <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold mr-2 sm:mr-3 flex-shrink-0">
           {staff.name.slice(0, 1)}
         </div>
@@ -99,27 +102,27 @@ function TimelineStaffRow({ staff, groupName, visits, visibleHours, date, onVisi
         </div>
       </div>
 
-      {/* Timeline Grid - Mobile Responsive (同じセル形式) */}
-      <div className="flex-1 flex">
+      {/* Timeline Grid */}
+      <div className="flex">
         {visibleHours.map(hour => {
           const hourVisits = getVisitsForHour(hour);
           
           return (
-            <div
+            <DroppableTimeSlot
               key={hour}
-              className="flex-1 min-w-[60px] sm:min-w-[100px] border-r border-gray-100 p-1 sm:p-2 cursor-pointer hover:bg-indigo-50/50 transition-colors"
-              style={{ minHeight: '60px' }}
+              hour={hour}
+              staff={staff}
+              date={date}
               onClick={() => handleHourClick(hour)}
-              title={`${String(hour).padStart(2, '0')}:00 - 予定を追加`}
             >
               {hourVisits.map(visit => (
-                <VisitCard
+                <DraggableVisitCard
                   key={visit.id}
                   visit={visit}
                   onClick={() => onVisitClick(visit)}
                 />
               ))}
-            </div>
+            </DroppableTimeSlot>
           );
         })}
       </div>
@@ -214,10 +217,13 @@ export function TimelineResourceView({
     });
   };
 
+  const { active } = useDndContext();
+  const activeDragVisit = active?.data.current?.visit as Visit | undefined;
+
   return (
     <div className="flex flex-col h-full bg-white overflow-hidden">
       {/* Time Range Control */}
-      <div className="flex items-center justify-center gap-2 py-2 border-b border-gray-200 bg-gray-50">
+      <div className="flex items-center justify-center gap-2 py-2 border-b border-gray-200 bg-gray-50 flex-shrink-0">
         <button
           onClick={handleEarlier}
           disabled={!canGoEarlier}
@@ -239,73 +245,82 @@ export function TimelineResourceView({
         </button>
       </div>
 
-      {/* Header: Time Scale */}
-      <div className="flex border-b border-gray-200 bg-gray-50 min-w-[600px] sm:min-w-0">
-        <div className="w-24 sm:w-48 flex-shrink-0 border-r border-gray-200 p-2 font-semibold text-gray-600 text-xs sm:text-sm flex items-center pl-2 sm:pl-4">
-          スタッフ
+      {/* Unified Scroll Container */}
+      <div className="flex-1 overflow-auto relative">
+        {/* Header: Time Scale (Sticky Top) */}
+        <div className="sticky top-0 z-20 flex min-w-max border-b border-gray-200 bg-gray-50 shadow-sm">
+          <div className="sticky left-0 z-30 w-24 sm:w-48 flex-shrink-0 border-r border-gray-200 p-2 font-semibold text-gray-600 text-xs sm:text-sm flex items-center pl-2 sm:pl-4 bg-gray-50 shadow-[1px_0_3px_rgba(0,0,0,0.05)]">
+            スタッフ
+          </div>
+          <div className="flex">
+            {visibleHours.map((hour) => (
+              <div
+                key={hour}
+                className="flex-1 min-w-[60px] sm:min-w-[100px] border-r border-gray-100 text-xs text-gray-500 px-1 sm:px-2 py-2 text-center bg-gray-50"
+              >
+                {String(hour).padStart(2, '0')}:00
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="flex-1 flex">
-          {visibleHours.map((hour) => (
-            <div
-              key={hour}
-              className="flex-1 min-w-[60px] sm:min-w-[100px] border-r border-gray-100 text-xs text-gray-500 px-1 sm:px-2 py-2 text-center"
-            >
-              {String(hour).padStart(2, '0')}:00
+
+        {/* Body: Staff Rows */}
+        <div className="min-w-max">
+          {hierarchy.offices.map((office) => {
+            const isOfficeSelected = !selectedGroupIds || selectedGroupIds.includes(office.id);
+            const teams = hierarchy.officeTeams.get(office.id) || [];
+            const visibleTeams = teams.filter(t => !selectedGroupIds || selectedGroupIds.includes(t.id));
+            
+            if (!isOfficeSelected && visibleTeams.length === 0) return null;
+
+            const directStaffs = hierarchy.groupStaffs.get(office.id) || [];
+            
+            // Calculate total staff in this office (direct + teams)
+            const visibleDirectStaffs = isOfficeSelected ? directStaffs : [];
+            const totalStaffCount = visibleDirectStaffs.length + visibleTeams.reduce((acc, team) => acc + (hierarchy.groupStaffs.get(team.id)?.length || 0), 0);
+
+            if (totalStaffCount === 0 && visibleTeams.length === 0) return null;
+
+            return (
+              <div key={office.id}>
+                {/* Direct Staffs */}
+                {isOfficeSelected && renderStaffRows(directStaffs, office.name)}
+
+                {/* Teams */}
+                {visibleTeams.map(team => {
+                  const teamStaffs = hierarchy.groupStaffs.get(team.id) || [];
+                  if (teamStaffs.length === 0) return null;
+                  
+                  return (
+                    <div key={team.id}>
+                        {renderStaffRows(teamStaffs, team.name)}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+
+          {/* Unassigned Staffs */}
+          {hierarchy.unassignedStaffs.length > 0 && (
+            <div>
+              {renderStaffRows(hierarchy.unassignedStaffs, '未所属')}
             </div>
-          ))}
+          )}
+          
+          {staffs.length === 0 && (
+            <div className="p-8 text-center text-gray-400">
+              スタッフが表示されていません
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Body: Staff Rows */}
-      <div className="flex-1 overflow-auto">
-        {hierarchy.offices.map((office) => {
-          const isOfficeSelected = !selectedGroupIds || selectedGroupIds.includes(office.id);
-          const teams = hierarchy.officeTeams.get(office.id) || [];
-          const visibleTeams = teams.filter(t => !selectedGroupIds || selectedGroupIds.includes(t.id));
-          
-          if (!isOfficeSelected && visibleTeams.length === 0) return null;
-
-          const directStaffs = hierarchy.groupStaffs.get(office.id) || [];
-          
-          // Calculate total staff in this office (direct + teams)
-          const visibleDirectStaffs = isOfficeSelected ? directStaffs : [];
-          const totalStaffCount = visibleDirectStaffs.length + visibleTeams.reduce((acc, team) => acc + (hierarchy.groupStaffs.get(team.id)?.length || 0), 0);
-
-          if (totalStaffCount === 0 && visibleTeams.length === 0) return null;
-
-          return (
-            <div key={office.id}>
-              {/* Direct Staffs */}
-              {isOfficeSelected && renderStaffRows(directStaffs, office.name)}
-
-              {/* Teams */}
-              {visibleTeams.map(team => {
-                const teamStaffs = hierarchy.groupStaffs.get(team.id) || [];
-                if (teamStaffs.length === 0) return null;
-                
-                return (
-                  <div key={team.id}>
-                      {renderStaffRows(teamStaffs, team.name)}
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })}
-
-        {/* Unassigned Staffs */}
-        {hierarchy.unassignedStaffs.length > 0 && (
-          <div>
-            {renderStaffRows(hierarchy.unassignedStaffs, '未所属')}
-          </div>
-        )}
-        
-        {staffs.length === 0 && (
-          <div className="p-8 text-center text-gray-400">
-            スタッフが表示されていません
-          </div>
-        )}
-      </div>
+      <DragOverlay>
+        {activeDragVisit ? (
+          <VisitCard visit={activeDragVisit} onClick={() => {}} isOverlay />
+        ) : null}
+      </DragOverlay>
     </div>
   );
 }

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_27_024233) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_27_094049) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -117,6 +117,24 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_27_024233) do
     t.index ["staff_status"], name: "index_users_on_staff_status"
   end
 
+  create_table "visit_patterns", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "day_of_week", null: false
+    t.bigint "default_staff_id"
+    t.integer "duration", default: 60
+    t.bigint "organization_id", null: false
+    t.bigint "patient_id", null: false
+    t.bigint "planning_lane_id"
+    t.time "start_time", null: false
+    t.datetime "updated_at", null: false
+    t.index ["default_staff_id"], name: "index_visit_patterns_on_default_staff_id"
+    t.index ["organization_id", "day_of_week"], name: "index_visit_patterns_on_organization_id_and_day_of_week"
+    t.index ["organization_id"], name: "index_visit_patterns_on_organization_id"
+    t.index ["patient_id"], name: "index_visit_patterns_on_patient_id"
+    t.index ["planning_lane_id", "day_of_week"], name: "index_visit_patterns_on_planning_lane_id_and_day_of_week"
+    t.index ["planning_lane_id"], name: "index_visit_patterns_on_planning_lane_id"
+  end
+
   create_table "visits", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "duration", default: 60, null: false
@@ -129,6 +147,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_27_024233) do
     t.string "status", default: "scheduled", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id"
+    t.bigint "visit_pattern_id"
     t.index ["organization_id"], name: "index_visits_on_organization_id"
     t.index ["patient_id"], name: "index_visits_on_patient_id"
     t.index ["planning_lane_id"], name: "index_visits_on_planning_lane_id"
@@ -136,6 +155,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_27_024233) do
     t.index ["status"], name: "index_visits_on_status"
     t.index ["user_id", "scheduled_at"], name: "index_visits_on_user_id_and_scheduled_at"
     t.index ["user_id"], name: "index_visits_on_user_id"
+    t.index ["visit_pattern_id"], name: "index_visits_on_visit_pattern_id"
   end
 
   add_foreign_key "group_memberships", "groups"
@@ -150,8 +170,13 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_27_024233) do
   add_foreign_key "planning_lanes", "organizations"
   add_foreign_key "users", "groups"
   add_foreign_key "users", "organizations"
+  add_foreign_key "visit_patterns", "organizations"
+  add_foreign_key "visit_patterns", "patients"
+  add_foreign_key "visit_patterns", "planning_lanes"
+  add_foreign_key "visit_patterns", "users", column: "default_staff_id"
   add_foreign_key "visits", "organizations"
   add_foreign_key "visits", "patients"
   add_foreign_key "visits", "planning_lanes"
   add_foreign_key "visits", "users"
+  add_foreign_key "visits", "visit_patterns"
 end

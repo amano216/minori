@@ -4,12 +4,12 @@ import {
   ChevronLeftIcon, 
   ChevronRightIcon, 
   PlusIcon, 
-  InboxIcon,
-  ChevronDoubleLeftIcon,
   CalendarDaysIcon,
-  ClockIcon
+  ClockIcon,
+  CalendarIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
-import { DndContext, type DragEndEvent } from '@dnd-kit/core';
+import { DndContext, type DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import {
   fetchWeeklySchedule,
   fetchStaffs,
@@ -19,21 +19,25 @@ import {
   completeVisit,
   updateVisit,
   deleteVisit,
+  generateVisitsFromPatterns,
   ApiError,
   type Staff,
   type Group,
   type ScheduleVisit,
   type Visit,
   type PlanningLane,
+  type VisitPattern,
 } from '../api/client';
 import { Spinner } from '../components/atoms/Spinner';
 import { NewVisitPanel } from '../components/organisms/NewVisitPanel';
+import { NewPatternPanel } from '../components/organisms/NewPatternPanel';
+import { EditPatternPanel } from '../components/organisms/EditPatternPanel';
 import { VisitDetailPanel } from '../components/organisms/VisitDetailPanel';
 import { TimelineResourceView } from '../components/organisms/TimelineResourceView';
 import PatientCalendarView from '../components/organisms/PatientCalendarView';
-import { UnassignedVisitInbox } from '../components/organisms/UnassignedVisitInbox';
 import { UserGroupIcon } from '@heroicons/react/24/outline';
 import { MonthlyCalendarView } from '../components/organisms/MonthlyCalendarView';
+import { GenerateVisitsPanel } from '../components/organisms/GenerateVisitsPanel';
 import { MultiGroupSelector } from '../components/organisms/MultiGroupSelector';
 
 function convertScheduleVisitToVisit(sv: ScheduleVisit): Visit {
@@ -57,12 +61,17 @@ export function UnifiedSchedulePage() {
   const navigate = useNavigate();
   const dateInputRef = useRef<HTMLInputElement>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'day' | 'patient'>('patient');
+  const [mainTab, setMainTab] = useState<'schedule' | 'pattern'>('schedule');
+  const [scheduleViewMode, setScheduleViewMode] = useState<'lane' | 'staff'>('lane');
+  const [selectedDayOfWeek, setSelectedDayOfWeek] = useState(() => {
+    // 今日の曜日を初期値にする（日曜=0, 月曜=1, ...）
+    return new Date().getDay();
+  });
   
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroupIds, setSelectedGroupIds] = useState<number[]>([]);
   const [staffs, setStaffs] = useState<Staff[]>([]);
-  const [planningLanes, setPlanningLanes] = useState<PlanningLane[]>([]);
+  const [, setPlanningLanes] = useState<PlanningLane[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [allWeeklyVisits, setAllWeeklyVisits] = useState<Visit[]>([]);
   
@@ -70,14 +79,32 @@ export function UnifiedSchedulePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // DnD センサー設定：8px以上動かしてからドラッグ開始（クリックと区別）
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
   // New Visit Panel State
   const [isNewVisitPanelOpen, setIsNewVisitPanelOpen] = useState(false);
   const [newVisitInitialDate, setNewVisitInitialDate] = useState<Date | undefined>(undefined);
   const [newVisitInitialStaffId, setNewVisitInitialStaffId] = useState<number | undefined>(undefined);
   const [newVisitInitialPlanningLaneId, setNewVisitInitialPlanningLaneId] = useState<number | undefined>(undefined);
   
-  const [isInboxOpen, setIsInboxOpen] = useState(true);
+  // New Pattern Panel State
+  const [isNewPatternPanelOpen, setIsNewPatternPanelOpen] = useState(false);
+  const [newPatternInitialTime, setNewPatternInitialTime] = useState<string>('09:00');
+  const [newPatternInitialLaneId, setNewPatternInitialLaneId] = useState<number | undefined>(undefined);
+  
+  // Edit Pattern Panel State
+  const [selectedPattern, setSelectedPattern] = useState<VisitPattern | null>(null);
+  const [patternVersion, setPatternVersion] = useState(0); // Increment to trigger reload
+  
   const [isMonthlyCalendarOpen, setIsMonthlyCalendarOpen] = useState(false);
+  const [isGeneratePanelOpen, setIsGeneratePanelOpen] = useState(false);
   const [masterDataLoaded, setMasterDataLoaded] = useState(false);
 
   // Load master data
@@ -254,16 +281,14 @@ export function UnifiedSchedulePage() {
   };
 
   const handleVisitDelete = async (visitId: number) => {
-    if (!confirm('本当にこの予定を削除しますか？\nこの操作は取り消せません。')) {
-      return;
-    }
+    // 注意: 確認ダイアログはVisitDetailPanel側で表示済み
     try {
       await deleteVisit(visitId);
       await loadScheduleData();
       setSelectedVisit(null);
     } catch (err: unknown) {
       console.error('Failed to delete visit:', err);
-      alert('削除に失敗しました');
+      throw err; // エラーを再スローして呼び出し元でハンドリング
     }
   };
 
@@ -292,6 +317,26 @@ export function UnifiedSchedulePage() {
     await loadScheduleData();
   };
 
+  // パネルから呼び出される生成ハンドラ
+  const handleGenerateVisits = async (startDate: string, endDate: string, dayOfWeeks: number[]) => {
+    try {
+      const result = await generateVisitsFromPatterns(startDate, endDate, dayOfWeeks);
+      alert(`${result.count}件の訪問予定を作成しました`);
+      
+      setMainTab('schedule');
+      setCurrentDate(new Date(startDate));
+      await loadScheduleData();
+    } catch (err) {
+      console.error('Failed to generate visits:', err);
+      if (err instanceof ApiError) {
+        alert(`訪問予定の作成に失敗しました: ${err.message}`);
+      } else {
+        alert('訪問予定の作成に失敗しました');
+      }
+      throw err;
+    }
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -303,20 +348,43 @@ export function UnifiedSchedulePage() {
     const staff = over.data.current?.staff as Staff;
     const date = over.data.current?.date as Date | undefined;
 
-    if (visit && staff) {
+    // Handle drop on Lane (PatientCalendarView)
+    const laneId = over.data.current?.laneId as number | undefined;
+    const hour = over.data.current?.hour as number | undefined;
+
+    if (visit) {
       try {
-        const updateData: { staff_id: number; status: string; scheduled_at?: string; lock_version?: number } = {
-          staff_id: staff.id,
-          status: 'scheduled',
+        const updateData: {
+          lock_version?: number;
+          staff_id?: number | null;
+          status?: string;
+          scheduled_at?: string;
+          planning_lane_id?: number;
+        } = {
           lock_version: visit.lock_version,
         };
 
-        // If dropped on a specific date (Weekly View), update the date
-        if (date) {
-          const newDate = new Date(date);
-          const originalTime = new Date(visit.scheduled_at);
-          newDate.setHours(originalTime.getHours(), originalTime.getMinutes());
+        if (staff) {
+          updateData.staff_id = staff.id;
+          updateData.status = 'scheduled';
+
+          // If dropped on a specific date (Weekly View), update the date
+          if (date) {
+            const newDate = new Date(date);
+            const originalTime = new Date(visit.scheduled_at);
+            newDate.setHours(originalTime.getHours(), originalTime.getMinutes());
+            updateData.scheduled_at = newDate.toISOString();
+          }
+        } else if (laneId !== undefined && hour !== undefined) {
+          // Lane drop
+          updateData.planning_lane_id = laneId;
+          
+          // Calculate new time
+          const newDate = new Date(currentDate);
+          newDate.setHours(hour, 0, 0, 0);
           updateData.scheduled_at = newDate.toISOString();
+        } else {
+          return;
         }
 
         await updateVisit(visit.id, updateData);
@@ -354,35 +422,17 @@ export function UnifiedSchedulePage() {
     );
   }
 
-  // Helper to check if a visit belongs to selected groups (via planning lane)
-  const isVisitInSelectedGroups = (visit: Visit): boolean => {
-    if (!visit.planning_lane_id) return true; // Show visits without lane
-    const lane = planningLanes.find(l => l.id === visit.planning_lane_id);
-    if (!lane || !lane.group_id) return true; // Show if lane has no group
-    return selectedGroupIds.includes(lane.group_id);
-  };
-
-  // Split visits and filter by selected groups
-  const baseVisits = viewMode === 'day' ? visits : allWeeklyVisits;
+  // Filter visits
+  const baseVisits = scheduleViewMode === 'staff' ? visits : allWeeklyVisits;
   const assignedVisits = baseVisits.filter(v => v.staff_id && v.status !== 'unassigned');
-  const unassignedVisits = baseVisits.filter(v => 
-    (!v.staff_id || v.status === 'unassigned') && isVisitInSelectedGroups(v)
-  );
 
   return (
-    <DndContext onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className="h-screen flex flex-col overflow-hidden bg-gray-100">
-        {/* Header - Mobile Responsive */}
+        {/* Header */}
         <div className="bg-white border-b border-gray-200 px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between shadow-sm z-20 min-h-[56px] sm:h-16">
           {/* Left Section */}
           <div className="flex items-center space-x-1 sm:space-x-4">
-            <button 
-              onClick={() => setIsInboxOpen(!isInboxOpen)}
-              className={`p-2 rounded-lg transition-colors ${isInboxOpen ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-50'}`}
-              title={isInboxOpen ? "未割当リストを閉じる" : "未割当リストを開く"}
-            >
-              {isInboxOpen ? <ChevronDoubleLeftIcon className="w-5 h-5 sm:w-6 sm:h-6" /> : <InboxIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
-            </button>
             <h1 className="text-lg sm:text-xl font-bold text-gray-800 tracking-tight hidden lg:block">Minori</h1>
             <div className="h-8 w-px bg-gray-200 mx-1 sm:mx-2 hidden sm:block"></div>
             <div className="hidden sm:block">
@@ -394,80 +444,141 @@ export function UnifiedSchedulePage() {
             </div>
           </div>
           
-          {/* Center Section - Date Navigation */}
-          <div className="flex items-center">
-            <div className="flex items-center bg-gray-100 rounded-lg sm:rounded-xl p-0.5 sm:p-1 border border-gray-200 relative">
-              <button onClick={handlePrevious} className="p-1.5 sm:p-2 hover:bg-white hover:shadow-sm rounded-md sm:rounded-lg transition-all text-gray-600">
-                <ChevronLeftIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-              </button>
-              
-              <div 
-                className="px-2 sm:px-4 font-bold text-gray-800 min-w-[100px] sm:min-w-[160px] text-center text-sm sm:text-lg cursor-pointer hover:bg-gray-200 rounded transition-colors select-none flex items-center justify-center"
-                onClick={handleDateClick}
+          {/* Center Section - Main Tab & Navigation */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Main Tab: パターン / スケジュール (左から右へ流れる順序) */}
+            <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200">
+              <button
+                onClick={() => setMainTab('pattern')}
+                className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all flex items-center gap-1 ${
+                  mainTab === 'pattern' ? 'bg-white shadow text-emerald-600' : 'text-gray-500 hover:text-gray-700'
+                }`}
               >
-                {/* Short format for mobile, full format for desktop */}
-                <span className="sm:hidden">
-                  {currentDate.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', weekday: 'short' })}
-                </span>
-                <span className="hidden sm:inline">
-                  {currentDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
-                </span>
-              </div>
-              
-              <input
-                type="date"
-                ref={dateInputRef}
-                className="absolute top-10 left-1/2 transform -translate-x-1/2 opacity-0 w-0 h-0 pointer-events-none"
-                value={currentDate.toISOString().split('T')[0]}
-                onChange={handleDateChange}
-              />
+                <ArrowPathIcon className="w-4 h-4" />
+                <span className="hidden sm:inline">パターン</span>
+              </button>
+              <button
+                onClick={() => setMainTab('schedule')}
+                className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all flex items-center gap-1 ${
+                  mainTab === 'schedule' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <CalendarIcon className="w-4 h-4" />
+                <span className="hidden sm:inline">スケジュール</span>
+              </button>
+            </div>
 
-              <button onClick={handleNext} className="p-1.5 sm:p-2 hover:bg-white hover:shadow-sm rounded-md sm:rounded-lg transition-all text-gray-600">
-                <ChevronRightIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-              </button>
-            </div>
-            
-            {/* Monthly Calendar - Hidden on very small screens */}
-            <div className="relative ml-1 sm:ml-2 hidden xs:block">
-              <button 
-                onClick={() => setIsMonthlyCalendarOpen(!isMonthlyCalendarOpen)} 
-                className={`p-1.5 sm:p-2 rounded-lg transition-colors ${isMonthlyCalendarOpen ? 'bg-indigo-50 text-indigo-800' : 'text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50'}`}
-                title="月次カレンダー"
-              >
-                <CalendarDaysIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-              </button>
-              {isMonthlyCalendarOpen && (
-                <MonthlyCalendarView
-                  currentDate={currentDate}
-                  visits={allWeeklyVisits}
-                  onDateClick={(date) => {
-                    setCurrentDate(date);
-                    setIsMonthlyCalendarOpen(false);
-                  }}
-                  onClose={() => setIsMonthlyCalendarOpen(false)}
+            {/* Date Navigation (schedule) or Day of Week Selector (pattern) */}
+            {mainTab === 'schedule' ? (
+              <div className="flex items-center bg-gray-100 rounded-lg sm:rounded-xl p-0.5 sm:p-1 border border-gray-200 relative">
+                <button onClick={handlePrevious} className="p-1.5 sm:p-2 hover:bg-white hover:shadow-sm rounded-md sm:rounded-lg transition-all text-gray-600">
+                  <ChevronLeftIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
+              
+                <div 
+                  className="px-2 sm:px-4 font-bold text-gray-800 min-w-[100px] sm:min-w-[160px] text-center text-sm sm:text-lg cursor-pointer hover:bg-gray-200 rounded transition-colors select-none flex items-center justify-center"
+                  onClick={handleDateClick}
+                >
+                  <span className="sm:hidden">
+                    {currentDate.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', weekday: 'short' })}
+                  </span>
+                  <span className="hidden sm:inline">
+                    {currentDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
+                  </span>
+                </div>
+              
+                <input
+                  type="date"
+                  ref={dateInputRef}
+                  className="absolute top-10 left-1/2 transform -translate-x-1/2 opacity-0 w-0 h-0 pointer-events-none"
+                  value={currentDate.toISOString().split('T')[0]}
+                  onChange={handleDateChange}
                 />
-              )}
-            </div>
+
+                <button onClick={handleNext} className="p-1.5 sm:p-2 hover:bg-white hover:shadow-sm rounded-md sm:rounded-lg transition-all text-gray-600">
+                  <ChevronRightIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
+              </div>
+            ) : (
+              /* Day of Week Selector for pattern mode */
+              <div className="flex items-center gap-1 sm:gap-2">
+                <div className="flex items-center bg-emerald-50 rounded-lg p-0.5 border border-emerald-200">
+                  {['月', '火', '水', '木', '金', '土', '日'].map((dayName, index) => {
+                    // 月=1, 火=2, ..., 土=6, 日=0
+                    const dayOfWeek = index < 6 ? index + 1 : 0;
+                    return (
+                      <button
+                        key={dayOfWeek}
+                        onClick={() => setSelectedDayOfWeek(dayOfWeek)}
+                        className={`px-1.5 sm:px-3 py-1 sm:py-1.5 rounded text-xs sm:text-sm font-medium transition-all ${
+                          selectedDayOfWeek === dayOfWeek
+                            ? 'bg-white shadow text-emerald-700'
+                            : 'text-emerald-600 hover:bg-emerald-100'
+                        }`}
+                      >
+                        {dayName}
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* Generate Visits Button */}
+                <button
+                  onClick={() => setIsGeneratePanelOpen(true)}
+                  className="px-2 sm:px-3 py-1 sm:py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-1"
+                  title="パターンをスケジュールに反映"
+                >
+                  <CalendarDaysIcon className="w-4 h-4" />
+                  <span className="hidden sm:inline">反映</span>
+                </button>
+              </div>
+            )}
+
+            {/* Monthly Calendar - schedule mode only */}
+            {mainTab === 'schedule' && (
+              <div className="relative ml-1 sm:ml-2 hidden xs:block">
+                <button 
+                  onClick={() => setIsMonthlyCalendarOpen(!isMonthlyCalendarOpen)} 
+                  className={`p-1.5 sm:p-2 rounded-lg transition-colors ${isMonthlyCalendarOpen ? 'bg-indigo-50 text-indigo-800' : 'text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50'}`}
+                  title="月次カレンダー"
+                >
+                  <CalendarDaysIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
+                {isMonthlyCalendarOpen && (
+                  <MonthlyCalendarView
+                    currentDate={currentDate}
+                    visits={allWeeklyVisits}
+                    onDateClick={(date) => {
+                      setCurrentDate(date);
+                      setIsMonthlyCalendarOpen(false);
+                    }}
+                    onClose={() => setIsMonthlyCalendarOpen(false)}
+                  />
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Right Section - Actions */}
+          {/* Right Section - View toggle (schedule mode) & New button */}
           <div className="flex items-center gap-1 sm:gap-2">
-            <div className="flex bg-gray-100 p-0.5 sm:p-1 rounded-lg border border-gray-200">
-              <button
-                onClick={() => setViewMode('patient')}
-                className={`p-1.5 sm:p-2 rounded-md transition-all ${viewMode === 'patient' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
-                title="患者カレンダー"
-              >
-                <UserGroupIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
-              <button
-                onClick={() => setViewMode('day')}
-                className={`p-1.5 sm:p-2 rounded-md transition-all ${viewMode === 'day' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
-                title="日次タイムライン"
-              >
-                <ClockIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
-            </div>
+            {/* View toggle - schedule mode only */}
+            {mainTab === 'schedule' && (
+              <div className="flex bg-gray-100 p-0.5 sm:p-1 rounded-lg border border-gray-200">
+                <button
+                  onClick={() => setScheduleViewMode('lane')}
+                  className={`p-1.5 sm:p-2 rounded-md transition-all ${scheduleViewMode === 'lane' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+                  title="レーンビュー"
+                >
+                  <UserGroupIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+                <button
+                  onClick={() => setScheduleViewMode('staff')}
+                  className={`p-1.5 sm:p-2 rounded-md transition-all ${scheduleViewMode === 'staff' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+                  title="スタッフビュー"
+                >
+                  <ClockIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+              </div>
+            )}
 
             <button 
               onClick={handleNewVisitClick}
@@ -479,59 +590,62 @@ export function UnifiedSchedulePage() {
           </div>
         </div>
 
-        {/* Main Content (3-pane) - Mobile Responsive */}
+        {/* Main Content */}
         <div className="flex-1 flex overflow-hidden relative">
-          {/* Left Pane: Inbox - Overlay on mobile, side panel on desktop */}
-          <div 
-            className={`
-              flex-shrink-0 bg-white border-r border-gray-200 z-10 shadow-[4px_0_24px_rgba(0,0,0,0.02)] transition-all duration-300 ease-in-out overflow-hidden
-              ${isInboxOpen 
-                ? 'fixed inset-y-0 left-0 w-[280px] sm:w-80 sm:relative sm:inset-auto mt-14 sm:mt-0 opacity-100' 
-                : 'w-0 opacity-0 border-none'}
-            `}
-          >
-          <div className="w-[280px] sm:w-80 h-full">
-              <UnassignedVisitInbox 
-                visits={unassignedVisits} 
-                onVisitClick={handleVisitSelect}
-                onEditClick={(visit) => handleVisitEdit(visit.id)}
-              />
-            </div>
-          </div>
-          
-          {/* Mobile Inbox Backdrop */}
-          {isInboxOpen && (
-            <div 
-              className="fixed inset-0 bg-black/20 z-[5] sm:hidden mt-14"
-              onClick={() => setIsInboxOpen(false)}
-            />
-          )}
-
-          {/* Center Pane: Timeline or Weekly View */}
+          {/* Main View */}
           <div className="flex-1 overflow-hidden relative bg-white">
             {error && (
               <div className="absolute top-0 left-0 right-0 bg-red-50 border-b border-red-200 px-4 py-2 text-red-700 text-sm z-50">
                 {error}
               </div>
             )}
-            {viewMode === 'patient' ? (
+            
+            {/* Pattern mode: PatientCalendarView with pattern data */}
+            {mainTab === 'pattern' && (
+              <PatientCalendarView
+                date={currentDate}
+                visits={[]}
+                groups={groups}
+                selectedGroupIds={selectedGroupIds}
+                onVisitClick={() => {}}
+                onPatternClick={(pattern) => setSelectedPattern(pattern)}
+                onTimeSlotClick={(hour, laneId) => {
+                  setNewPatternInitialTime(`${String(hour).padStart(2, '0')}:00`);
+                  setNewPatternInitialLaneId(Number(laneId));
+                  setIsNewPatternPanelOpen(true);
+                }}
+                dataMode="pattern"
+                selectedDayOfWeek={selectedDayOfWeek}
+                patternVersion={patternVersion}
+              />
+            )}
+
+            {/* Schedule mode: Lane view */}
+            {mainTab === 'schedule' && scheduleViewMode === 'lane' && (
               <PatientCalendarView
                 date={currentDate}
                 visits={visits}
                 groups={groups}
                 selectedGroupIds={selectedGroupIds}
                 onVisitClick={handleVisitSelect}
+                onPatternClick={() => {}}
                 onTimeSlotClick={(hour, laneId) => {
                   const selectedDate = new Date(currentDate);
                   selectedDate.setHours(hour, 0, 0, 0);
                   setNewVisitInitialDate(selectedDate);
-                  setNewVisitInitialStaffId(undefined); // Virtual lanes don't map to staff
+                  setNewVisitInitialStaffId(undefined);
                   setNewVisitInitialPlanningLaneId(Number(laneId));
                   setIsNewVisitPanelOpen(true);
                   setSelectedVisit(null);
                 }}
+                dataMode="actual"
+                selectedDayOfWeek={selectedDayOfWeek}
+                patternVersion={0}
               />
-            ) : (
+            )}
+
+            {/* Schedule mode: Staff view */}
+            {mainTab === 'schedule' && scheduleViewMode === 'staff' && (
               <TimelineResourceView
                 date={currentDate}
                 staffs={staffs}
@@ -567,6 +681,41 @@ export function UnifiedSchedulePage() {
             initialStaffId={newVisitInitialStaffId}
             initialPlanningLaneId={newVisitInitialPlanningLaneId}
             groups={groups}
+          />
+
+          {/* New Pattern Panel */}
+          <NewPatternPanel
+            isOpen={isNewPatternPanelOpen}
+            onClose={() => setIsNewPatternPanelOpen(false)}
+            onCreated={() => {
+              // Trigger pattern reload
+              setPatternVersion(v => v + 1);
+            }}
+            initialDayOfWeek={selectedDayOfWeek}
+            initialTime={newPatternInitialTime}
+            initialPlanningLaneId={newPatternInitialLaneId}
+            groups={groups}
+          />
+
+          {/* Edit Pattern Panel */}
+          <EditPatternPanel
+            isOpen={!!selectedPattern}
+            pattern={selectedPattern}
+            onClose={() => setSelectedPattern(null)}
+            onUpdated={() => {
+              setPatternVersion(v => v + 1);
+            }}
+            onDeleted={() => {
+              setPatternVersion(v => v + 1);
+            }}
+            groups={groups}
+          />
+
+          {/* Generate Visits Panel */}
+          <GenerateVisitsPanel
+            isOpen={isGeneratePanelOpen}
+            onClose={() => setIsGeneratePanelOpen(false)}
+            onGenerate={handleGenerateVisits}
           />
 
           {/* Monthly Calendar Modal - Removed as it is now a popover */}
