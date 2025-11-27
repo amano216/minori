@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Search } from 'lucide-react';
 import { fetchPatients, deletePatient, type Patient } from '../api/client';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
@@ -36,6 +37,7 @@ export function PatientListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Patient | null>(null);
 
   const loadPatients = useCallback(async () => {
@@ -53,6 +55,19 @@ export function PatientListPage() {
   useEffect(() => {
     loadPatients();
   }, [loadPatients]);
+
+  // 検索フィルタリング
+  const filteredPatients = useMemo(() => {
+    if (!searchQuery.trim()) return patients;
+    const query = searchQuery.toLowerCase();
+    return patients.filter(patient =>
+      patient.name.toLowerCase().includes(query) ||
+      patient.name_kana?.toLowerCase().includes(query) ||
+      patient.address?.toLowerCase().includes(query) ||
+      patient.patient_code?.toLowerCase().includes(query) ||
+      patient.phone_numbers?.some(pn => pn.number.includes(query))
+    );
+  }, [patients, searchQuery]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -156,16 +171,28 @@ export function PatientListPage() {
   ];
 
   const filterContent = (
-    <select
-      value={statusFilter}
-      onChange={(e) => setStatusFilter(e.target.value)}
-      className="px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
-    >
-      <option value="">すべてのステータス</option>
-      <option value="active">利用中</option>
-      <option value="inactive">休止中</option>
-      <option value="discharged">退所</option>
-    </select>
+    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
+      <div className="relative flex-1 min-w-0">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="名前、住所、電話番号で検索..."
+          className="w-full pl-9 pr-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
+        />
+      </div>
+      <select
+        value={statusFilter}
+        onChange={(e) => setStatusFilter(e.target.value)}
+        className="px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main sm:w-auto"
+      >
+        <option value="">すべてのステータス</option>
+        <option value="active">利用中</option>
+        <option value="inactive">休止中</option>
+        <option value="discharged">退所</option>
+      </select>
+    </div>
   );
 
   if (loading) {
@@ -180,7 +207,7 @@ export function PatientListPage() {
     <>
       <ListLayout
         title="患者/利用者管理"
-        description={`${patients.length}件の患者が登録されています`}
+        description={`${filteredPatients.length}件の患者${searchQuery ? '（検索結果）' : 'が登録されています'}`}
         actions={
           <Button variant="primary" onClick={() => navigate('/patients/new')}>
             新規登録
@@ -194,13 +221,13 @@ export function PatientListPage() {
           </div>
         )}
 
-        {patients.length === 0 ? (
+        {filteredPatients.length === 0 ? (
           <div className="text-center py-12 text-text-grey">
-            患者が登録されていません
+            {searchQuery ? '検索条件に一致する患者がいません' : '患者が登録されていません'}
           </div>
         ) : (
           <DataTable
-            data={patients}
+            data={filteredPatients}
             columns={columns}
             keyExtractor={(patient) => patient.id}
           />

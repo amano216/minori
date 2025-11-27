@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { FormEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { fetchPatient, createPatient, updatePatient, fetchGroups, type PatientInput, type PhoneNumber, type Group } from '../api/client';
@@ -73,6 +73,21 @@ export function PatientFormPage() {
     };
     loadGroups();
   }, []);
+
+  // チームのみ抽出して「親 > チーム」形式でラベル付け
+  const teamsWithLabels = useMemo(() => {
+    const groupMap = new Map<number, Group>();
+    groups.forEach(g => groupMap.set(g.id, g));
+
+    // チーム（parent_idがnullでないもの）のみ抽出
+    const teams = groups.filter(g => g.parent_id !== null);
+
+    return teams.map(team => {
+      const parent = team.parent_id ? groupMap.get(team.parent_id) : null;
+      const label = parent ? `${parent.name} > ${team.name}` : team.name;
+      return { ...team, label };
+    }).sort((a, b) => a.label.localeCompare(b.label, 'ja'));
+  }, [groups]);
 
   useEffect(() => {
     if (!id) return;
@@ -243,8 +258,8 @@ export function PatientFormPage() {
                   className="w-full px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
                 >
                   <option value="">選択してください</option>
-                  {groups.map((g) => (
-                    <option key={g.id} value={g.id}>{g.name}</option>
+                  {teamsWithLabels.map((team) => (
+                    <option key={team.id} value={team.id}>{team.label}</option>
                   ))}
                 </select>
               </div>
