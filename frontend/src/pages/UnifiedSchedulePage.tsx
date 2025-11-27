@@ -435,13 +435,13 @@ export function UnifiedSchedulePage() {
           <div className="flex items-center space-x-1 sm:space-x-4">
             <h1 className="text-lg sm:text-xl font-bold text-gray-800 tracking-tight hidden lg:block">Minori</h1>
             <div className="h-8 w-px bg-gray-200 mx-1 sm:mx-2 hidden sm:block"></div>
-            <div className="hidden sm:block">
-              <MultiGroupSelector 
-                groups={groups} 
-                selectedGroupIds={selectedGroupIds} 
-                onChange={setSelectedGroupIds} 
-              />
-            </div>
+            {/* Desktop: full selector, Mobile: compact icon mode */}
+            <MultiGroupSelector 
+              groups={groups} 
+              selectedGroupIds={selectedGroupIds} 
+              onChange={setSelectedGroupIds}
+              compact
+            />
           </div>
           
           {/* Center Section - Main Tab & Navigation */}
