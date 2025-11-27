@@ -96,7 +96,7 @@ export function VisitFormPage() {
       } else {
         await createVisit(visitData);
       }
-      navigate('/visits');
+      navigate('/schedule/visits');
     } catch (err) {
       setError(err instanceof Error ? err.message : '保存に失敗しました');
     } finally {

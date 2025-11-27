@@ -63,7 +63,7 @@ export function VisitDetailPage() {
     try {
       if (actionModal === 'delete') {
         await deleteVisit(visit.id);
-        navigate('/visits');
+        navigate('/schedule/visits');
       } else if (actionModal === 'cancel') {
         const updated = await cancelVisit(visit.id);
         setVisit(updated);
@@ -213,7 +213,7 @@ export function VisitDetailPage() {
       </Card>
 
       <div className="mt-6">
-        <Link to="/visits" className="text-main hover:underline text-sm">
+        <Link to="/schedule/visits" className="text-main hover:underline text-sm">
           ← 訪問予定一覧に戻る
         </Link>
       </div>

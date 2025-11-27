@@ -90,7 +90,7 @@ export function VisitListPage() {
       header: '日時',
       minWidth: 'min-w-[130px]',
       render: (visit: Visit) => (
-        <Link to={`/visits/${visit.id}`} className="text-main hover:underline font-medium whitespace-nowrap text-xs sm:text-sm">
+        <Link to={`/schedule/visits/${visit.id}`} className="text-main hover:underline font-medium whitespace-nowrap text-xs sm:text-sm">
           {formatDateTime(visit.scheduled_at)}
         </Link>
       ),
@@ -158,7 +158,7 @@ export function VisitListPage() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => navigate(`/visits/${visit.id}/edit`)}
+            onClick={() => navigate(`/schedule/visits/${visit.id}/edit`)}
           >
             編集
           </Button>
@@ -246,7 +246,7 @@ export function VisitListPage() {
         title="訪問予定管理"
         description={`${visits.length}件の訪問予定があります`}
         actions={
-          <Button variant="primary" onClick={() => navigate('/visits/new')}>
+          <Button variant="primary" onClick={() => navigate('/schedule/visits/new')}>
             新規登録
           </Button>
         }
