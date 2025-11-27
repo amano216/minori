@@ -44,6 +44,13 @@ Rails.application.routes.draw do
       end
     end
 
+    # Visit Pattern routes (計画モード)
+    resources :visit_patterns do
+      collection do
+        post :generate_visits
+      end
+    end
+
     # Planning Lane routes
     resources :planning_lanes
 

@@ -4,6 +4,7 @@ class Organization < ApplicationRecord
   has_many :groups, dependent: :destroy
   has_many :patients, dependent: :nullify
   has_many :visits, dependent: :nullify
+  has_many :visit_patterns, dependent: :destroy
   has_many :staffs, dependent: :destroy
   has_many :planning_lanes, dependent: :destroy
 
