@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { X, Clock, User, FileText, MapPin, Calendar, Edit, Trash2, CheckCircle, XCircle, RefreshCw, Save } from 'lucide-react';
 import { Button } from '../atoms/Button';
 import { Badge } from '../atoms/Badge';
-import { fetchVisits, type Staff, type Visit } from '../../api/client';
+import { fetchVisits, type Staff, type Visit, type Group } from '../../api/client';
 
 interface VisitDetailPanelProps {
   visit: Visit | null;
   staffs?: Staff[];
+  groups?: Group[];
   onClose: () => void;
   onEdit?: (visitId: number) => void;
   onCancel?: (visitId: number) => void;
@@ -150,6 +151,7 @@ function PatientCalendar({ patientId }: { patientId: number }) {
 export function VisitDetailPanel({
   visit,
   staffs = [],
+  groups = [],
   onClose,
   onEdit,
   onCancel,
@@ -164,6 +166,30 @@ export function VisitDetailPanel({
   const [selectedStaffId, setSelectedStaffId] = useState<number | ''>('');
   const [updating, setUpdating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // スタッフをグループ別にソート（「親 > チーム - スタッフ名」形式）
+  const staffsWithGroupLabels = useMemo(() => {
+    const groupMap = new Map<number, Group>();
+    groups.forEach(g => groupMap.set(g.id, g));
+
+    return staffs.map(staff => {
+      let groupName = '未所属';
+      if (staff.group_id) {
+        const group = groupMap.get(staff.group_id);
+        if (group) {
+          const parent = group.parent_id ? groupMap.get(group.parent_id) : null;
+          groupName = parent ? `${parent.name} > ${group.name}` : group.name;
+        }
+      }
+      return { ...staff, groupLabel: `${groupName} - ${staff.name}`, sortKey: groupName };
+    }).sort((a, b) => {
+      // グループ名でソート、同じグループ内ではスタッフ名でソート
+      if (a.sortKey !== b.sortKey) {
+        return a.sortKey.localeCompare(b.sortKey, 'ja');
+      }
+      return a.name.localeCompare(b.name, 'ja');
+    });
+  }, [staffs, groups]);
 
   useEffect(() => {
     if (visit) {
@@ -283,9 +309,9 @@ export function VisitDetailPanel({
                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       >
                         <option value="">未割当</option>
-                        {staffs.map((staff) => (
+                        {staffsWithGroupLabels.map((staff) => (
                           <option key={staff.id} value={staff.id}>
-                            {staff.name}
+                            {staff.groupLabel} - {staff.name}
                           </option>
                         ))}
                       </select>

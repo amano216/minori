@@ -532,6 +532,7 @@ export function UnifiedSchedulePage() {
           <VisitDetailPanel
             visit={selectedVisit}
             staffs={staffs}
+            groups={groups}
             onClose={() => setSelectedVisit(null)}
             onEdit={handleVisitEdit}
             onCancel={handleVisitCancel}
@@ -549,6 +550,7 @@ export function UnifiedSchedulePage() {
             initialDate={newVisitInitialDate}
             initialStaffId={newVisitInitialStaffId}
             initialPlanningLaneId={newVisitInitialPlanningLaneId}
+            groups={groups}
           />
 
           {/* Monthly Calendar Modal - Removed as it is now a popover */}

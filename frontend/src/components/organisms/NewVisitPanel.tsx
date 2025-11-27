@@ -1,4 +1,4 @@
-import { useState, useEffect, type FormEvent } from 'react';
+import { useState, useEffect, useMemo, type FormEvent } from 'react';
 import { X, User, Calendar, Clock, FileText, Save, Plus } from 'lucide-react';
 import {
   createVisit,
@@ -7,6 +7,7 @@ import {
   type VisitInput,
   type Staff,
   type Patient,
+  type Group,
 } from '../../api/client';
 import { Button } from '../atoms/Button';
 import { Spinner } from '../atoms/Spinner';
@@ -19,6 +20,7 @@ interface NewVisitPanelProps {
   initialDate?: Date;
   initialStaffId?: number;
   initialPlanningLaneId?: number;
+  groups?: Group[];
 }
 
 export function NewVisitPanel({
@@ -28,6 +30,7 @@ export function NewVisitPanel({
   initialDate,
   initialStaffId,
   initialPlanningLaneId,
+  groups = [],
 }: NewVisitPanelProps) {
   const [isVisible, setIsVisible] = useState(false);
   
@@ -99,6 +102,35 @@ export function NewVisitPanel({
       setLoading(false);
     }
   };
+
+  // スタッフをグループ別にソートしてラベル付け
+  const staffsWithGroupLabels = useMemo(() => {
+    if (!groups || groups.length === 0) {
+      return staffs.map(s => ({ ...s, groupLabel: s.name }));
+    }
+
+    // グループマップを作成（id -> group）
+    const groupMap = new Map<number, Group>();
+    groups.forEach(g => groupMap.set(g.id, g));
+
+    // スタッフにグループラベルを付与
+    const staffsWithLabels = staffs.map(staff => {
+      // スタッフの所属グループを取得
+      const staffGroup = staff.group_id ? groupMap.get(staff.group_id) : null;
+
+      if (staffGroup) {
+        const parent = staffGroup.parent_id ? groupMap.get(staffGroup.parent_id) : null;
+        const groupName = parent
+          ? `${parent.name} > ${staffGroup.name}`
+          : staffGroup.name;
+        return { ...staff, groupLabel: `${groupName} - ${staff.name}`, sortKey: groupName };
+      }
+      return { ...staff, groupLabel: staff.name, sortKey: 'zzz' };
+    });
+
+    // グループ名でソート
+    return staffsWithLabels.sort((a, b) => a.sortKey.localeCompare(b.sortKey, 'ja'));
+  }, [staffs, groups]);
 
   const handleClose = () => {
     setIsVisible(false);
@@ -232,9 +264,9 @@ export function NewVisitPanel({
                 <SearchableSelect
                   options={[
                     { value: '', label: '未割り当て' },
-                    ...staffs.map((staff) => ({
+                    ...staffsWithGroupLabels.map((staff) => ({
                       value: staff.id,
-                      label: staff.name,
+                      label: staff.groupLabel,
                     })),
                   ]}
                   value={staffId}
