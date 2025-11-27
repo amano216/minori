@@ -463,12 +463,12 @@ export function UnifiedSchedulePage() {
                 </button>
               
                 <div 
-                  className="px-2 sm:px-4 font-bold text-gray-800 min-w-[100px] sm:min-w-[160px] text-center text-sm sm:text-lg cursor-pointer hover:bg-gray-200 rounded transition-colors select-none flex items-center justify-center gap-1"
+                  className="px-1 sm:px-4 font-bold text-gray-800 text-center text-sm sm:text-lg cursor-pointer hover:bg-gray-200 rounded transition-colors select-none flex items-center justify-center gap-1 whitespace-nowrap"
                   onClick={handleDateClick}
                 >
-                  <CalendarDaysIcon className="w-4 h-4 text-indigo-500" />
+                  <CalendarDaysIcon className="w-4 h-4 text-indigo-500 flex-shrink-0" />
                   <span className="sm:hidden">
-                    {currentDate.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', weekday: 'short' })}
+                    {`${currentDate.getMonth() + 1}/${currentDate.getDate()}(${['日','月','火','水','木','金','土'][currentDate.getDay()]})`}
                   </span>
                   <span className="hidden sm:inline">
                     {currentDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
