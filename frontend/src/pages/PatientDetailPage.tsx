@@ -141,7 +141,18 @@ export function PatientDetailPage() {
           </div>
           <div className="py-4 flex flex-col sm:flex-row sm:gap-4">
             <dt className="text-sm font-medium text-text-grey sm:w-40">電話番号</dt>
-            <dd className="mt-1 sm:mt-0 text-text-black">{patient.phone || '-'}</dd>
+            <dd className="mt-1 sm:mt-0 text-text-black">
+              {patient.phone_numbers && patient.phone_numbers.length > 0 ? (
+                <ul className="space-y-1">
+                  {patient.phone_numbers.map((pn, idx) => (
+                    <li key={idx}>
+                      <span className="text-text-grey text-sm mr-2">{pn.label || '電話'}:</span>
+                      {pn.number}
+                    </li>
+                  ))}
+                </ul>
+              ) : '-'}
+            </dd>
           </div>
           <div className="py-4 flex flex-col sm:flex-row sm:gap-4">
             <dt className="text-sm font-medium text-text-grey sm:w-40">ステータス</dt>

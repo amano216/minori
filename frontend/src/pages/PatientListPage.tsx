@@ -88,9 +88,14 @@ export function PatientListPage() {
       key: 'phone',
       header: '電話番号',
       minWidth: 'min-w-[100px]',
-      render: (patient: Patient) => (
-        <span className="text-text-grey whitespace-nowrap">{patient.phone || '-'}</span>
-      ),
+      render: (patient: Patient) => {
+        const firstPhone = patient.phone_numbers?.[0];
+        return (
+          <span className="text-text-grey whitespace-nowrap">
+            {firstPhone ? firstPhone.number : '-'}
+          </span>
+        );
+      },
     },
     {
       key: 'care_requirements',

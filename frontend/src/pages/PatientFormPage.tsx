@@ -88,17 +88,36 @@ export function PatientFormPage() {
     );
   };
 
+  const handlePhoneNumberChange = (index: number, field: 'number' | 'label', value: string) => {
+    setPhoneNumbers((prev) => {
+      const newNumbers = [...prev];
+      newNumbers[index] = { ...newNumbers[index], [field]: value };
+      return newNumbers;
+    });
+  };
+
+  const addPhoneNumber = () => {
+    setPhoneNumbers((prev) => [...prev, { number: '', label: '電話' }]);
+  };
+
+  const removePhoneNumber = (index: number) => {
+    setPhoneNumbers((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     setSubmitting(true);
+
+    // 空の電話番号を除外
+    const validPhoneNumbers = phoneNumbers.filter(pn => pn.number.trim() !== '');
 
     const patientData: PatientInput = {
       name,
       name_kana: nameKana || undefined,
       postal_code: postalCode || undefined,
       address: address || undefined,
-      phone: phone || undefined,
+      phone_numbers: validPhoneNumbers.length > 0 ? validPhoneNumbers : undefined,
       date_of_birth: dateOfBirth || undefined,
       gender: gender || undefined,
       patient_code: patientCode || undefined,
@@ -265,18 +284,6 @@ export function PatientFormPage() {
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="phone">電話番号</Label>
-                <Input
-                  type="tel"
-                  id="phone"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  disabled={submitting}
-                  placeholder="例: 03-1234-5678"
-                />
-              </div>
-
               <div className="space-y-1.5 md:col-span-2">
                 <Label htmlFor="address">住所</Label>
                 <Input
@@ -288,6 +295,57 @@ export function PatientFormPage() {
                   placeholder="例: 東京都渋谷区..."
                 />
               </div>
+            </div>
+
+            {/* 電話番号 */}
+            <div className="mt-4 space-y-2">
+              <Label>電話番号</Label>
+              {phoneNumbers.map((pn, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <select
+                    value={pn.label || '電話'}
+                    onChange={(e) => handlePhoneNumberChange(index, 'label', e.target.value)}
+                    disabled={submitting}
+                    className="w-32 px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
+                  >
+                    {PHONE_LABEL_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                  <Input
+                    type="tel"
+                    value={pn.number}
+                    onChange={(e) => handlePhoneNumberChange(index, 'number', e.target.value)}
+                    disabled={submitting}
+                    placeholder="例: 03-1234-5678"
+                    className="flex-1"
+                  />
+                  {phoneNumbers.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removePhoneNumber(index)}
+                      disabled={submitting}
+                      className="p-2 text-text-gray hover:text-danger transition-colors"
+                      title="削除"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addPhoneNumber}
+                disabled={submitting}
+                className="flex items-center gap-1 text-sm text-main hover:text-main-dark transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                </svg>
+                電話番号を追加
+              </button>
             </div>
           </div>
 
