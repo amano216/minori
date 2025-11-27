@@ -12,6 +12,8 @@ class Patient < ApplicationRecord
     meal_assistance
   ].freeze
 
+  belongs_to :organization, optional: true
+  belongs_to :group, optional: true
   has_many :visits, dependent: :destroy
 
   validates :name, presence: true
