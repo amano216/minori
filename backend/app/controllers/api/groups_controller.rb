@@ -10,7 +10,7 @@ module Api
                   Group.none
       end
 
-      render json: @groups.as_json(only: %i[id name group_type])
+      render json: @groups.as_json(only: %i[id name group_type parent_id])
     end
   end
 end
