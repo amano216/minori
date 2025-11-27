@@ -14,6 +14,7 @@ import {
   fetchWeeklySchedule,
   fetchStaffs,
   fetchGroups,
+  fetchPlanningLanes,
   cancelVisit,
   completeVisit,
   updateVisit,
@@ -23,6 +24,7 @@ import {
   type Group,
   type ScheduleVisit,
   type Visit,
+  type PlanningLane,
 } from '../api/client';
 import { Spinner } from '../components/atoms/Spinner';
 import { NewVisitPanel } from '../components/organisms/NewVisitPanel';
@@ -60,6 +62,7 @@ export function UnifiedSchedulePage() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroupIds, setSelectedGroupIds] = useState<number[]>([]);
   const [staffs, setStaffs] = useState<Staff[]>([]);
+  const [planningLanes, setPlanningLanes] = useState<PlanningLane[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [allWeeklyVisits, setAllWeeklyVisits] = useState<Visit[]>([]);
   
@@ -82,14 +85,16 @@ export function UnifiedSchedulePage() {
     const loadMasterData = async () => {
       try {
         console.log('Loading master data...');
-        const [groupsData, staffsData] = await Promise.all([
+        const [groupsData, staffsData, lanesData] = await Promise.all([
           fetchGroups(),
           fetchStaffs({ status: 'active' }),
+          fetchPlanningLanes(),
         ]);
-        console.log('Master data loaded:', { groups: groupsData.length, staffs: staffsData.length });
+        console.log('Master data loaded:', { groups: groupsData.length, staffs: staffsData.length, lanes: lanesData.length });
         setGroups(groupsData);
         setSelectedGroupIds(groupsData.map(g => g.id));
         setStaffs(staffsData);
+        setPlanningLanes(lanesData);
         setMasterDataLoaded(true);
       } catch (err) {
         console.error('Failed to load master data:', err);
@@ -349,9 +354,20 @@ export function UnifiedSchedulePage() {
     );
   }
 
-  // Split visits
-  const assignedVisits = (viewMode === 'day' ? visits : allWeeklyVisits).filter(v => v.staff_id && v.status !== 'unassigned');
-  const unassignedVisits = (viewMode === 'day' ? visits : allWeeklyVisits).filter(v => !v.staff_id || v.status === 'unassigned');
+  // Helper to check if a visit belongs to selected groups (via planning lane)
+  const isVisitInSelectedGroups = (visit: Visit): boolean => {
+    if (!visit.planning_lane_id) return true; // Show visits without lane
+    const lane = planningLanes.find(l => l.id === visit.planning_lane_id);
+    if (!lane || !lane.group_id) return true; // Show if lane has no group
+    return selectedGroupIds.includes(lane.group_id);
+  };
+
+  // Split visits and filter by selected groups
+  const baseVisits = viewMode === 'day' ? visits : allWeeklyVisits;
+  const assignedVisits = baseVisits.filter(v => v.staff_id && v.status !== 'unassigned');
+  const unassignedVisits = baseVisits.filter(v => 
+    (!v.staff_id || v.status === 'unassigned') && isVisitInSelectedGroups(v)
+  );
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
