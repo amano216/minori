@@ -14,6 +14,19 @@ class Visit < ApplicationRecord
   validate :user_availability, if: -> { user_id.present? && scheduled_at.present? }
   validate :patient_availability, if: -> { patient_id.present? && scheduled_at.present? }
 
+  # staff_id/user_idとstatusの整合性を自動で保証
+  before_save :ensure_status_consistency
+
+  def ensure_status_consistency
+    # スタッフが割り当てられているのにunassignedの場合、scheduledに変更
+    if user_id.present? && status == "unassigned"
+      self.status = "scheduled"
+    # スタッフが未割り当てでscheduledの場合、unassignedに変更
+    elsif user_id.blank? && status == "scheduled"
+      self.status = "unassigned"
+    end
+  end
+
   scope :scheduled, -> { where(status: "scheduled") }
   scope :in_progress, -> { where(status: "in_progress") }
   scope :completed, -> { where(status: "completed") }
