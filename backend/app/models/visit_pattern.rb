@@ -4,7 +4,7 @@ class VisitPattern < ApplicationRecord
   belongs_to :planning_lane, optional: true
   belongs_to :patient
   belongs_to :organization
-  belongs_to :default_staff, class_name: 'User', optional: true
+  belongs_to :default_staff, class_name: "User", optional: true
 
   has_many :visits, dependent: :nullify
 
@@ -15,7 +15,7 @@ class VisitPattern < ApplicationRecord
   # "09:00" → DBに09:00:00として保存
   def start_time=(value)
     if value.is_a?(String) && value.match?(/\A\d{2}:\d{2}\z/)
-      h, m = value.split(':').map(&:to_i)
+      h, m = value.split(":").map(&:to_i)
       super(Time.utc(2000, 1, 1, h, m, 0))
     else
       super
@@ -24,7 +24,7 @@ class VisitPattern < ApplicationRecord
 
   # DBの値をそのまま "09:00" 形式で返す
   def start_time_string
-    start_time&.utc&.strftime('%H:%M')
+    start_time&.utc&.strftime("%H:%M")
   end
 
   # 曜日の名前を返す
@@ -49,7 +49,7 @@ class VisitPattern < ApplicationRecord
       visit_pattern: self,
       scheduled_at: Time.zone.local(target_date.year, target_date.month, target_date.day, h, m, 0),
       duration: duration,
-      status: default_staff ? 'scheduled' : 'unassigned'
+      status: default_staff ? "scheduled" : "unassigned"
     )
   end
 
@@ -62,7 +62,7 @@ class VisitPattern < ApplicationRecord
     (start_date..end_date).each do |date|
       # 曜日フィルタが指定されている場合、その曜日のみ処理
       next if day_of_weeks.present? && !day_of_weeks.include?(date.wday)
-      
+
       patterns.where(day_of_week: date.wday).find_each do |pattern|
         # 既に同じパターンから生成された訪問がないかチェック
         existing = Visit.exists?(

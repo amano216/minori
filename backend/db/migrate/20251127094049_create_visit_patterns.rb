@@ -12,8 +12,8 @@ class CreateVisitPatterns < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :visit_patterns, [:organization_id, :day_of_week]
-    add_index :visit_patterns, [:planning_lane_id, :day_of_week]
+    add_index :visit_patterns, [ :organization_id, :day_of_week ]
+    add_index :visit_patterns, [ :planning_lane_id, :day_of_week ]
 
     # visitsテーブルにvisit_pattern_idを追加
     add_reference :visits, :visit_pattern, foreign_key: true

@@ -11,7 +11,7 @@ module Api
 
       Rails.logger.info "[VisitPatterns#index] User: #{current_user.email}, Org: #{current_user.organization_id}"
       Rails.logger.info "[VisitPatterns#index] Params: #{params.inspect}"
-      
+
       # フィルタリング
       @visit_patterns = @visit_patterns.where(day_of_week: params[:day_of_week]) if params[:day_of_week].present?
       @visit_patterns = @visit_patterns.where(planning_lane_id: params[:planning_lane_id]) if params[:planning_lane_id].present?
@@ -19,7 +19,7 @@ module Api
       @visit_patterns = @visit_patterns.order(:day_of_week, :start_time)
 
       Rails.logger.info "[VisitPatterns#index] Returning #{@visit_patterns.count} patterns"
-      
+
       render json: @visit_patterns.map { |p| pattern_json(p) }
     end
 
@@ -65,7 +65,7 @@ module Api
       Rails.logger.info "[GenerateVisits] Patterns count for org: #{current_user.organization.visit_patterns.count}"
 
       if end_date - start_date > 31
-        return render json: { error: '生成期間は最大31日間です' }, status: :unprocessable_entity
+        return render json: { error: "生成期間は最大31日間です" }, status: :unprocessable_entity
       end
 
       generated = VisitPattern.generate_visits_for_period(
