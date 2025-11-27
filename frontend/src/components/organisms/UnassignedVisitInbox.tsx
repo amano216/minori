@@ -12,9 +12,6 @@ function VisitCard({ visit, onClick, onEditClick }: VisitCardProps) {
   // Type assertion for patient with group
   const patient = visit.patient as { id: number; name: string; group?: { id: number; name: string } };
 
-  // Type assertion for patient with group
-  const patient = visit.patient as { id: number; name: string; group?: { id: number; name: string } };
-
   return (
     <div
       onClick={() => onClick(visit)}

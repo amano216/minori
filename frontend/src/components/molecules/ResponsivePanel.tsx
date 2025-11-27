@@ -60,14 +60,16 @@ export function ResponsivePanel({
       const timer = setTimeout(() => setIsVisible(true), 10);
       // bodyのスクロールを無効化
       document.body.style.overflow = 'hidden';
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        document.body.style.overflow = '';
+      };
     } else {
-      setIsVisible(false);
+      // isOpenがfalseになったとき、タイマーで非表示にする
+      const timer = setTimeout(() => setIsVisible(false), 0);
       document.body.style.overflow = '';
+      return () => clearTimeout(timer);
     }
-    return () => {
-      document.body.style.overflow = '';
-    };
   }, [isOpen]);
 
   const handleClose = () => {
