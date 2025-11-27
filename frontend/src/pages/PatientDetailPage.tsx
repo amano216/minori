@@ -157,6 +157,10 @@ export function PatientDetailPage() {
             </dd>
           </div>
           <div className="py-4 flex flex-col sm:flex-row sm:gap-4">
+            <dt className="text-sm font-medium text-text-grey sm:w-40">担当グループ</dt>
+            <dd className="mt-1 sm:mt-0 text-text-black">{patient.group?.name || '-'}</dd>
+          </div>
+          <div className="py-4 flex flex-col sm:flex-row sm:gap-4">
             <dt className="text-sm font-medium text-text-grey sm:w-40">ステータス</dt>
             <dd className="mt-1 sm:mt-0">
               <Badge variant={STATUS_VARIANTS[patient.status] || 'default'}>
