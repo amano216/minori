@@ -28,6 +28,7 @@ import {
 } from '../api/client';
 import { Spinner } from '../components/atoms/Spinner';
 import { NewVisitPanel } from '../components/organisms/NewVisitPanel';
+import { NewPatternPanel } from '../components/organisms/NewPatternPanel';
 import { VisitDetailPanel } from '../components/organisms/VisitDetailPanel';
 import { TimelineResourceView } from '../components/organisms/TimelineResourceView';
 import PatientCalendarView from '../components/organisms/PatientCalendarView';
@@ -77,6 +78,11 @@ export function UnifiedSchedulePage() {
   const [newVisitInitialDate, setNewVisitInitialDate] = useState<Date | undefined>(undefined);
   const [newVisitInitialStaffId, setNewVisitInitialStaffId] = useState<number | undefined>(undefined);
   const [newVisitInitialPlanningLaneId, setNewVisitInitialPlanningLaneId] = useState<number | undefined>(undefined);
+  
+  // New Pattern Panel State
+  const [isNewPatternPanelOpen, setIsNewPatternPanelOpen] = useState(false);
+  const [newPatternInitialTime, setNewPatternInitialTime] = useState<string>('09:00');
+  const [newPatternInitialLaneId, setNewPatternInitialLaneId] = useState<number | undefined>(undefined);
   
   const [isInboxOpen, setIsInboxOpen] = useState(true);
   const [isMonthlyCalendarOpen, setIsMonthlyCalendarOpen] = useState(false);
@@ -571,13 +577,21 @@ export function UnifiedSchedulePage() {
                 selectedGroupIds={selectedGroupIds}
                 onVisitClick={handleVisitSelect}
                 onTimeSlotClick={(hour, laneId) => {
-                  const selectedDate = new Date(currentDate);
-                  selectedDate.setHours(hour, 0, 0, 0);
-                  setNewVisitInitialDate(selectedDate);
-                  setNewVisitInitialStaffId(undefined); // Virtual lanes don't map to staff
-                  setNewVisitInitialPlanningLaneId(Number(laneId));
-                  setIsNewVisitPanelOpen(true);
-                  setSelectedVisit(null);
+                  if (dataMode === 'pattern') {
+                    // Pattern mode: open pattern panel
+                    setNewPatternInitialTime(`${String(hour).padStart(2, '0')}:00`);
+                    setNewPatternInitialLaneId(Number(laneId));
+                    setIsNewPatternPanelOpen(true);
+                  } else {
+                    // Actual mode: open visit panel
+                    const selectedDate = new Date(currentDate);
+                    selectedDate.setHours(hour, 0, 0, 0);
+                    setNewVisitInitialDate(selectedDate);
+                    setNewVisitInitialStaffId(undefined);
+                    setNewVisitInitialPlanningLaneId(Number(laneId));
+                    setIsNewVisitPanelOpen(true);
+                    setSelectedVisit(null);
+                  }
                 }}
                 dataMode={dataMode}
                 selectedDayOfWeek={selectedDayOfWeek}
@@ -617,6 +631,23 @@ export function UnifiedSchedulePage() {
             initialDate={newVisitInitialDate}
             initialStaffId={newVisitInitialStaffId}
             initialPlanningLaneId={newVisitInitialPlanningLaneId}
+            groups={groups}
+          />
+
+          {/* New Pattern Panel */}
+          <NewPatternPanel
+            isOpen={isNewPatternPanelOpen}
+            onClose={() => setIsNewPatternPanelOpen(false)}
+            onCreated={() => {
+              // Trigger pattern reload in PatientCalendarView
+              // For now, we need to force a re-render by changing selectedDayOfWeek temporarily
+              const current = selectedDayOfWeek;
+              setSelectedDayOfWeek(0);
+              setTimeout(() => setSelectedDayOfWeek(current), 10);
+            }}
+            initialDayOfWeek={selectedDayOfWeek}
+            initialTime={newPatternInitialTime}
+            initialPlanningLaneId={newPatternInitialLaneId}
             groups={groups}
           />
 
