@@ -68,13 +68,19 @@ CSV.foreach(CSV_PATH, headers: true) do |row|
     ].compact.reject(&:empty?)
     full_address = address_parts.join(' ')
     
-    # Build notes with additional info (kana, DOB, gender, care level)
+    # Handle different column names for kana (氏名カナ or ﾌﾘｶﾞﾅ)
+    kana = row['氏名カナ'] || row['ﾌﾘｶﾞﾅ']
+    
+    # Build notes with additional info (kana, DOB, gender, care level, location)
     notes_parts = []
-    notes_parts << "フリガナ: #{row['氏名カナ']}" if row['氏名カナ'].present?
+    notes_parts << "フリガナ: #{kana}" if kana.present?
     notes_parts << "生年月日: #{convert_japanese_date(row['生年月日'])}" if row['生年月日'].present?
     notes_parts << "性別: #{row['性別']}" if row['性別'].present?
+    notes_parts << "年齢: #{row['年齢']}" if row['年齢'].present?
     notes_parts << "要介護度: #{row['要介護度']}" if row['要介護度'].present?
     notes_parts << "注意事項: #{row['注意事項']}" if row['注意事項'].present?
+    notes_parts << "拠点: #{row['基本情報 本体･ｻﾃﾗｲﾄ']}" if row['基本情報 本体･ｻﾃﾗｲﾄ'].present?
+    notes_parts << "利用者コード: #{row['利用者ｺｰﾄﾞ']}" if row['利用者ｺｰﾄﾞ'].present?
     
     # care_requirements should be an array
     care_reqs = []
