@@ -28,6 +28,19 @@ class Patient < ApplicationRecord
     status == "active"
   end
 
+  def age
+    return nil unless date_of_birth
+
+    today = Date.current
+    age = today.year - date_of_birth.year
+    age -= 1 if today < date_of_birth + age.years
+    age
+  end
+
+  def as_json(options = {})
+    super(options.merge(methods: :age))
+  end
+
   private
 
   def validate_care_requirements
