@@ -20,7 +20,9 @@ import {
   type Visit,
   type Group,
   type VisitPattern,
+  type ScheduleEvent,
 } from '../../api/client';
+import { EventCard } from '../molecules/EventCard';
 
 // Extend Visit type for pattern mode to carry original pattern data
 export interface PatternVisit extends Visit {
@@ -38,9 +40,11 @@ import {
 interface PatientCalendarViewProps {
   date: Date;
   visits: Visit[];
+  events?: ScheduleEvent[];
   groups: Group[];
   selectedGroupIds: number[];
   onVisitClick: (visit: Visit) => void;
+  onEventClick?: (event: ScheduleEvent) => void;
   onTimeSlotClick?: (hour: number, laneId: string) => void;
   onPatternClick?: (pattern: VisitPattern) => void;
   dataMode?: 'actual' | 'pattern';
@@ -420,8 +424,10 @@ const EditLanePanel: React.FC<EditLanePanelProps> = ({ lane, onClose, onSave, gr
 interface LaneRowProps {
   lane: Lane;
   visits: Visit[];
+  events?: ScheduleEvent[];
   date: Date;
   onVisitClick: (visit: Visit) => void;
+  onEventClick?: (event: ScheduleEvent) => void;
   onTimeSlotClick?: (hour: number, laneId: string) => void;
   onRemove: () => void;
   onRename: (newLabel: string) => void;
@@ -431,9 +437,11 @@ interface LaneRowProps {
 
 const LaneRow: React.FC<LaneRowProps> = ({ 
   lane, 
-  visits, 
+  visits,
+  events = [],
   date, 
-  onVisitClick, 
+  onVisitClick,
+  onEventClick,
   onTimeSlotClick,
   onRemove,
   onRename,
@@ -453,10 +461,25 @@ const LaneRow: React.FC<LaneRowProps> = ({
     });
   }, [visits, date, lane.id]);
 
+  const todaysEvents = useMemo(() => {
+    return events.filter(e => {
+      const eventDate = new Date(e.scheduled_at);
+      return eventDate.toDateString() === date.toDateString() && e.planning_lane_id === lane.id;
+    });
+  }, [events, date, lane.id]);
+
   const getVisitsForHour = (hour: number) => {
     return todaysVisits.filter(v => {
       const visitDate = new Date(v.scheduled_at);
       const startHour = visitDate.getHours();
+      return startHour === hour;
+    });
+  };
+
+  const getEventsForHour = (hour: number) => {
+    return todaysEvents.filter(e => {
+      const eventDate = new Date(e.scheduled_at);
+      const startHour = eventDate.getHours();
       return startHour === hour;
     });
   };
@@ -522,7 +545,8 @@ const LaneRow: React.FC<LaneRowProps> = ({
       <div className="flex-1 flex">
         {visibleHours.map(hour => {
           const hourVisits = getVisitsForHour(hour);
-          const hasConflict = hourVisits.length > 1;
+          const hourEvents = getEventsForHour(hour);
+          const hasConflict = hourVisits.length > 1 || (hourVisits.length + hourEvents.length) > 1;
           
           return (
             <DroppableTimeSlot
@@ -552,6 +576,13 @@ const LaneRow: React.FC<LaneRowProps> = ({
                   onClick={() => onVisitClick(visit)}
                 />
               ))}
+              {hourEvents.map(event => (
+                <EventCard
+                  key={`event-${event.id}`}
+                  event={event}
+                  onClick={() => onEventClick?.(event)}
+                />
+              ))}
             </DroppableTimeSlot>
           );
         })}
@@ -563,9 +594,11 @@ const LaneRow: React.FC<LaneRowProps> = ({
 export default function PatientCalendarView({
   date,
   visits,
+  events = [],
   groups,
   selectedGroupIds,
   onVisitClick,
+  onEventClick,
   onTimeSlotClick,
   onPatternClick,
   dataMode = 'actual',
@@ -840,8 +873,10 @@ export default function PatientCalendarView({
                 key={lane.id}
                 lane={lane}
                 visits={todaysVisits}
+                events={events}
                 date={date}
                 onVisitClick={handleItemClick}
+                onEventClick={onEventClick}
                 onTimeSlotClick={onTimeSlotClick}
                 onRemove={() => removeLane(lane.id)}
                 onRename={(newLabel) => renameLane(lane.id, newLabel)}
