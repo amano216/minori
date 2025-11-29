@@ -699,9 +699,11 @@ export function UnifiedSchedulePage() {
               <PatientCalendarView
                 date={currentDate}
                 visits={visits}
+                events={events}
                 groups={groups}
                 selectedGroupIds={selectedGroupIds}
                 onVisitClick={handleVisitSelect}
+                onEventClick={handleEventSelect}
                 onPatternClick={() => {}}
                 onTimeSlotClick={(hour, laneId) => handleLaneTimeSlotClick(hour, Number(laneId))}
                 dataMode="actual"
