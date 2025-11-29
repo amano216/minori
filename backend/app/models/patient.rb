@@ -20,6 +20,7 @@ class Patient < ApplicationRecord
   validates :status, inclusion: { in: STATUSES }
   validate :validate_care_requirements
   validate :validate_phone_numbers
+  validate :validate_external_urls
 
   scope :active, -> { where(status: "active") }
   scope :with_care_requirement, ->(req) { where("care_requirements @> ?", [ req ].to_json) }
@@ -60,6 +61,16 @@ class Patient < ApplicationRecord
     phone_numbers.each_with_index do |phone, index|
       unless phone.is_a?(Hash) && phone["number"].present?
         errors.add(:phone_numbers, "電話番号#{index + 1}が無効です")
+      end
+    end
+  end
+
+  def validate_external_urls
+    return if external_urls.blank?
+
+    external_urls.each_with_index do |url_entry, index|
+      unless url_entry.is_a?(Hash) && url_entry["url"].present?
+        errors.add(:external_urls, "URL#{index + 1}が無効です")
       end
     end
   end

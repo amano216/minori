@@ -64,7 +64,8 @@ module Api
         :date_of_birth, :gender, :patient_code,
         :notes, :status, :group_id,
         care_requirements: [],
-        phone_numbers: [ :number, :label ]
+        phone_numbers: [ :number, :label ],
+        external_urls: [ :url, :label ]
       )
     end
   end

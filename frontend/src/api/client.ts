@@ -262,6 +262,11 @@ export interface PhoneNumber {
   label?: string;
 }
 
+export interface ExternalUrl {
+  url: string;
+  label?: string;
+}
+
 export interface PatientGroup {
   id: number;
   name: string;
@@ -275,6 +280,7 @@ export interface Patient {
   postal_code?: string;
   address?: string;
   phone_numbers: PhoneNumber[];
+  external_urls: ExternalUrl[];
   date_of_birth?: string;
   gender?: string;
   age?: number;
@@ -294,6 +300,7 @@ export interface PatientInput {
   postal_code?: string;
   address?: string;
   phone_numbers?: PhoneNumber[];
+  external_urls?: ExternalUrl[];
   date_of_birth?: string;
   gender?: string;
   patient_code?: string;
@@ -341,7 +348,7 @@ export interface Visit {
   staff_id: number | null;
   patient_id: number;
   staff: { id: number; name: string } | null;
-  patient: { id: number; name: string; address?: string };
+  patient: { id: number; name: string; address?: string; external_urls?: ExternalUrl[] };
   status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'unassigned';
   notes: string;
   created_at: string;

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X, Clock, User, FileText, MapPin, Calendar, Edit, Trash2, CheckCircle, XCircle, RefreshCw, Save } from 'lucide-react';
+import { X, Clock, User, FileText, MapPin, Calendar, Edit, Trash2, CheckCircle, XCircle, RefreshCw, Save, ExternalLink } from 'lucide-react';
 import { Button } from '../atoms/Button';
 import { Badge } from '../atoms/Badge';
 import { fetchVisits, type Staff, type Visit, type Group } from '../../api/client';
@@ -361,6 +361,26 @@ export function VisitDetailPanel({
                   >
                     {visit.patient.address}
                   </a>
+                </div>
+              )}
+
+              {/* External URLs */}
+              {visit.patient.external_urls && visit.patient.external_urls.length > 0 && (
+                <div className="flex items-start gap-4">
+                  <ExternalLink className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <div className="space-y-1">
+                    {visit.patient.external_urls.map((urlEntry, index) => (
+                      <a
+                        key={index}
+                        href={urlEntry.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block font-medium text-indigo-600 hover:text-indigo-800 hover:underline"
+                      >
+                        {urlEntry.label || urlEntry.url}
+                      </a>
+                    ))}
+                  </div>
                 </div>
               )}
 

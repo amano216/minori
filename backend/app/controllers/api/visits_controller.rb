@@ -17,7 +17,7 @@ module Api
         methods: [ :staff_id ],
         include: {
           user: { only: [ :id, :name ], methods: [] },
-          patient: { only: [ :id, :name ] }
+          patient: { only: [ :id, :name, :address, :external_urls ] }
         }
       ).map { |v| v.merge("staff" => v.delete("user")) }
     end
@@ -162,7 +162,7 @@ module Api
         planning_lane_id: visit.planning_lane_id,
         lock_version: visit.lock_version,
         staff: visit.user&.as_json(only: [ :id, :name ]),
-        patient: visit.patient&.as_json(only: [ :id, :name ])
+        patient: visit.patient&.as_json(only: [ :id, :name, :address, :external_urls ])
       }
     end
 

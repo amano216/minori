@@ -170,7 +170,7 @@ module Api
         duration: visit.duration,
         status: visit.status,
         notes: visit.notes,
-        patient: visit.patient.as_json(only: [ :id, :name, :address ]),
+        patient: visit.patient.as_json(only: [ :id, :name, :address, :external_urls ]),
         staff_id: visit.user_id,
         planning_lane_id: visit.planning_lane_id
       }

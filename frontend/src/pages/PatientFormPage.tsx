@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { FormEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { fetchPatient, createPatient, updatePatient, fetchGroups, type PatientInput, type PhoneNumber, type Group } from '../api/client';
+import { fetchPatient, createPatient, updatePatient, fetchGroups, type PatientInput, type PhoneNumber, type ExternalUrl, type Group } from '../api/client';
 import { Button } from '../components/atoms/Button';
 import { Input } from '../components/atoms/Input';
 import { Label } from '../components/atoms/Label';
@@ -49,6 +49,7 @@ export function PatientFormPage() {
   const [postalCode, setPostalCode] = useState('');
   const [address, setAddress] = useState('');
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([{ number: '', label: '' }]);
+  const [externalUrls, setExternalUrls] = useState<ExternalUrl[]>([{ url: '', label: '' }]);
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [gender, setGender] = useState('');
   const [patientCode, setPatientCode] = useState('');
@@ -101,6 +102,9 @@ export function PatientFormPage() {
         setPhoneNumbers(patient.phone_numbers?.length > 0 
           ? patient.phone_numbers 
           : [{ number: '', label: '' }]);
+        setExternalUrls(patient.external_urls?.length > 0 
+          ? patient.external_urls 
+          : [{ url: '', label: '' }]);
         setDateOfBirth(patient.date_of_birth || '');
         setGender(patient.gender || '');
         setPatientCode(patient.patient_code || '');
@@ -139,6 +143,22 @@ export function PatientFormPage() {
     setPhoneNumbers((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleExternalUrlChange = (index: number, field: 'url' | 'label', value: string) => {
+    setExternalUrls((prev) => {
+      const newUrls = [...prev];
+      newUrls[index] = { ...newUrls[index], [field]: value };
+      return newUrls;
+    });
+  };
+
+  const addExternalUrl = () => {
+    setExternalUrls((prev) => [...prev, { url: '', label: '' }]);
+  };
+
+  const removeExternalUrl = (index: number) => {
+    setExternalUrls((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
@@ -146,6 +166,8 @@ export function PatientFormPage() {
 
     // 空の電話番号を除外
     const validPhoneNumbers = phoneNumbers.filter(pn => pn.number.trim() !== '');
+    // 空のURLを除外
+    const validExternalUrls = externalUrls.filter(eu => eu.url.trim() !== '');
 
     const patientData: PatientInput = {
       name,
@@ -153,6 +175,7 @@ export function PatientFormPage() {
       postal_code: postalCode || undefined,
       address: address || undefined,
       phone_numbers: validPhoneNumbers.length > 0 ? validPhoneNumbers : undefined,
+      external_urls: validExternalUrls.length > 0 ? validExternalUrls : undefined,
       date_of_birth: dateOfBirth || undefined,
       gender: gender || undefined,
       patient_code: patientCode || undefined,
@@ -404,6 +427,56 @@ export function PatientFormPage() {
                   <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                 </svg>
                 電話番号を追加
+              </button>
+            </div>
+
+            {/* 外部URL */}
+            <div className="mt-4 space-y-2">
+              <Label>外部URL</Label>
+              <p className="text-xs text-text-gray mb-2">介護記録システムなど、外部サービスへのリンクを登録できます</p>
+              {externalUrls.map((eu, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Input
+                    type="text"
+                    value={eu.label || ''}
+                    onChange={(e) => handleExternalUrlChange(index, 'label', e.target.value)}
+                    disabled={submitting}
+                    placeholder="例: 介護記録"
+                    className="w-32"
+                  />
+                  <Input
+                    type="url"
+                    value={eu.url}
+                    onChange={(e) => handleExternalUrlChange(index, 'url', e.target.value)}
+                    disabled={submitting}
+                    placeholder="例: https://example.com/care/123"
+                    className="flex-1"
+                  />
+                  {externalUrls.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeExternalUrl(index)}
+                      disabled={submitting}
+                      className="p-2 text-text-gray hover:text-danger transition-colors"
+                      title="削除"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addExternalUrl}
+                disabled={submitting}
+                className="flex items-center gap-1 text-sm text-main hover:text-main-dark transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                </svg>
+                URLを追加
               </button>
             </div>
           </div>
