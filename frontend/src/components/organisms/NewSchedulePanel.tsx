@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { X, User, Calendar, Clock, FileText, Save, Plus, Users } from 'lucide-react';
 import { CalendarIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 import {
@@ -6,13 +6,10 @@ import {
   createEvent,
   fetchStaffs,
   fetchPatients,
-  fetchPlanningLanes,
   type VisitInput,
   type Staff,
   type Patient,
-  type Group,
   type EventType,
-  type PlanningLane,
 } from '../../api/client';
 import { Button } from '../atoms/Button';
 import { Spinner } from '../atoms/Spinner';
@@ -28,7 +25,6 @@ interface NewSchedulePanelProps {
   initialStaffId?: number;
   initialPlanningLaneId?: number;
   initialTab?: TabType;
-  groups?: Group[];
 }
 
 const EVENT_TYPE_LABELS: Record<EventType, string> = {
@@ -46,7 +42,6 @@ export function NewSchedulePanel({
   initialStaffId,
   initialPlanningLaneId,
   initialTab = 'visit',
-  groups = [],
 }: NewSchedulePanelProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
@@ -70,7 +65,6 @@ export function NewSchedulePanel({
   // Data State
   const [staffs, setStaffs] = useState<Staff[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [planningLanes, setPlanningLanes] = useState<PlanningLane[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -121,14 +115,12 @@ export function NewSchedulePanel({
   const loadMasterData = async () => {
     try {
       setLoading(true);
-      const [staffsData, patientsData, lanesData] = await Promise.all([
+      const [staffsData, patientsData] = await Promise.all([
         fetchStaffs({ status: 'active' }),
         fetchPatients({ status: 'active' }),
-        fetchPlanningLanes(),
       ]);
       setStaffs(staffsData);
       setPatients(patientsData);
-      setPlanningLanes(lanesData);
     } catch (err: unknown) {
       console.error('Failed to load master data:', err);
       setError('マスターデータの取得に失敗しました');
@@ -137,18 +129,8 @@ export function NewSchedulePanel({
     }
   };
 
-  // Filter patients by planning lane's group
-  const filteredPatients = useMemo(() => {
-    if (!planningLaneId) return patients;
-    
-    const lane = planningLanes.find(l => l.id === planningLaneId);
-    if (!lane || !lane.group_id) return patients;
-    
-    const group = groups.find(g => g.id === lane.group_id);
-    if (!group) return patients;
-    
-    return patients.filter(p => p.group_id === lane.group_id);
-  }, [patients, planningLaneId, planningLanes, groups]);
+  // All patients are selectable regardless of planning lane
+  // This allows flexibility for backup staff assignments across teams
 
   const handleClose = () => {
     setIsVisible(false);
@@ -306,7 +288,7 @@ export function NewSchedulePanel({
                       患者
                     </label>
                     <SearchableSelect
-                      options={filteredPatients.map(p => ({ value: p.id, label: p.name }))}
+                      options={patients.map(p => ({ value: p.id, label: p.name }))}
                       value={patientId}
                       onChange={(val) => setPatientId(val as number)}
                       placeholder="患者を選択..."
