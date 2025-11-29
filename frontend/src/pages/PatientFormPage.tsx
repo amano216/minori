@@ -266,8 +266,8 @@ export function PatientFormPage() {
                   className="w-full px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
                 >
                   <option value="active">利用中</option>
-                  <option value="inactive">休止中</option>
-                  <option value="discharged">退所</option>
+                  <option value="hospitalized">入院中</option>
+                  <option value="inactive">終了</option>
                 </select>
               </div>
 

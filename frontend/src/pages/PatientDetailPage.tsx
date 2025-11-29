@@ -20,14 +20,14 @@ const CARE_REQUIREMENT_LABELS: Record<string, string> = {
 
 const STATUS_LABELS: Record<string, string> = {
   active: '利用中',
-  inactive: '休止中',
-  discharged: '退所',
+  hospitalized: '入院中',
+  inactive: '終了',
 };
 
 const STATUS_VARIANTS: Record<string, 'success' | 'warning' | 'error'> = {
   active: 'success',
-  inactive: 'warning',
-  discharged: 'error',
+  hospitalized: 'warning',
+  inactive: 'error',
 };
 
 export function PatientDetailPage() {

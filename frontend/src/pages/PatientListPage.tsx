@@ -21,14 +21,14 @@ const CARE_REQUIREMENT_LABELS: Record<string, string> = {
 
 const STATUS_LABELS: Record<string, string> = {
   active: '利用中',
-  inactive: '休止中',
-  discharged: '退所',
+  hospitalized: '入院中',
+  inactive: '終了',
 };
 
 const STATUS_VARIANTS: Record<string, 'success' | 'warning' | 'error' | 'default'> = {
   active: 'success',
-  inactive: 'warning',
-  discharged: 'error',
+  hospitalized: 'warning',
+  inactive: 'error',
 };
 
 export function PatientListPage() {
@@ -189,8 +189,8 @@ export function PatientListPage() {
       >
         <option value="">すべてのステータス</option>
         <option value="active">利用中</option>
-        <option value="inactive">休止中</option>
-        <option value="discharged">退所</option>
+        <option value="hospitalized">入院中</option>
+        <option value="inactive">終了</option>
       </select>
     </div>
   );
