@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_29_092154) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_29_111126) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -89,6 +89,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_29_092154) do
     t.jsonb "care_requirements", default: []
     t.datetime "created_at", null: false
     t.date "date_of_birth"
+    t.jsonb "external_urls", default: []
     t.string "gender"
     t.bigint "group_id"
     t.string "name", null: false
