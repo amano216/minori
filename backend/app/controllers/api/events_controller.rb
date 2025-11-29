@@ -3,7 +3,7 @@
 module Api
   class EventsController < ApplicationController
     before_action :set_organization
-    before_action :set_event, only: [:show, :update, :destroy]
+    before_action :set_event, only: [ :show, :update, :destroy ]
 
     # GET /api/events
     def index

@@ -4,7 +4,7 @@ team_meeting:
   scheduled_at: <%= Time.zone.now.beginning_of_day + 10.hours %>
   duration: 60
   notes: "週次ミーティング"
-  organization: one
+  organization: default
 
 facility_visit:
   title: "施設訪問"
@@ -12,7 +12,7 @@ facility_visit:
   scheduled_at: <%= Time.zone.now.beginning_of_day + 14.hours %>
   duration: 120
   notes: "新規施設の見学"
-  organization: one
+  organization: default
 
 training_session:
   title: "研修会"
@@ -20,4 +20,4 @@ training_session:
   scheduled_at: <%= 1.day.from_now.beginning_of_day + 9.hours %>
   duration: 180
   notes: "新人研修"
-  organization: one
+  organization: default
