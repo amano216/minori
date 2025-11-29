@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useDroppable, useDndContext, DragOverlay } from '@dnd-kit/core';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import type { Staff, Group, Visit } from '../../api/client';
+import type { Staff, Group, Visit, ScheduleEvent } from '../../api/client';
 import { DraggableVisitCard, VisitCard } from '../molecules/VisitCard';
+import { EventCard } from '../molecules/EventCard';
 
 interface TimelineResourceViewProps {
   date: Date;
@@ -10,7 +11,9 @@ interface TimelineResourceViewProps {
   groups: Group[];
   selectedGroupIds?: number[];
   visits: Visit[];
+  events?: ScheduleEvent[];
   onVisitClick: (visit: Visit) => void;
+  onEventClick?: (event: ScheduleEvent) => void;
   onTimeSlotClick?: (staffId: number, time: Date) => void;
 }
 
@@ -22,9 +25,11 @@ interface TimelineStaffRowProps {
   staff: Staff;
   groupName?: string;
   visits: Visit[];
+  events?: ScheduleEvent[];
   visibleHours: number[];
   date: Date;
   onVisitClick: (visit: Visit) => void;
+  onEventClick?: (event: ScheduleEvent) => void;
   onTimeSlotClick?: (staffId: number, time: Date) => void;
 }
 
@@ -61,7 +66,7 @@ const DroppableTimeSlot = ({ hour, staff, date, children, onClick }: DroppableTi
   );
 };
 
-function TimelineStaffRow({ staff, groupName, visits, visibleHours, date, onVisitClick, onTimeSlotClick }: TimelineStaffRowProps) {
+function TimelineStaffRow({ staff, groupName, visits, events = [], visibleHours, date, onVisitClick, onEventClick, onTimeSlotClick }: TimelineStaffRowProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `staff-${staff.id}`,
     data: { staff },
@@ -71,6 +76,14 @@ function TimelineStaffRow({ staff, groupName, visits, visibleHours, date, onVisi
     return visits.filter(v => {
       const visitDate = new Date(v.scheduled_at);
       const startHour = visitDate.getHours();
+      return startHour === hour;
+    });
+  };
+
+  const getEventsForHour = (hour: number) => {
+    return events.filter(e => {
+      const eventDate = new Date(e.scheduled_at);
+      const startHour = eventDate.getHours();
       return startHour === hour;
     });
   };
@@ -106,6 +119,7 @@ function TimelineStaffRow({ staff, groupName, visits, visibleHours, date, onVisi
       <div className="flex">
         {visibleHours.map(hour => {
           const hourVisits = getVisitsForHour(hour);
+          const hourEvents = getEventsForHour(hour);
           
           return (
             <DroppableTimeSlot
@@ -122,6 +136,13 @@ function TimelineStaffRow({ staff, groupName, visits, visibleHours, date, onVisi
                   onClick={() => onVisitClick(visit)}
                 />
               ))}
+              {hourEvents.map(event => (
+                <EventCard
+                  key={`event-${event.id}`}
+                  event={event}
+                  onClick={() => onEventClick?.(event)}
+                />
+              ))}
             </DroppableTimeSlot>
           );
         })}
@@ -136,7 +157,9 @@ export function TimelineResourceView({
   groups,
   selectedGroupIds,
   visits,
+  events = [],
   onVisitClick,
+  onEventClick,
   onTimeSlotClick,
 }: TimelineResourceViewProps) {
   // 表示する時間範囲の状態管理
@@ -163,6 +186,11 @@ export function TimelineResourceView({
       setStartHour(prev => Math.min(22, prev + 2));
       setEndHour(prev => Math.min(24, prev + 2));
     }
+  };
+
+  // Get events for a specific staff member
+  const getEventsForStaff = (staffId: number) => {
+    return events.filter(e => e.participant_ids.includes(staffId));
   };
 
   const hierarchy = useMemo(() => {
@@ -202,15 +230,18 @@ export function TimelineResourceView({
   const renderStaffRows = (staffList: Staff[], groupName?: string) => {
     return staffList.map(staff => {
       const staffVisits = visits.filter(v => v.staff_id === staff.id);
+      const staffEvents = getEventsForStaff(staff.id);
       return (
         <TimelineStaffRow
           key={staff.id}
           staff={staff}
           groupName={groupName}
           visits={staffVisits}
+          events={staffEvents}
           visibleHours={visibleHours}
           date={date}
           onVisitClick={onVisitClick}
+          onEventClick={onEventClick}
           onTimeSlotClick={onTimeSlotClick}
         />
       );

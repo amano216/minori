@@ -51,6 +51,9 @@ Rails.application.routes.draw do
       end
     end
 
+    # Event routes (ミーティング・施設訪問など)
+    resources :events
+
     # Planning Lane routes
     resources :planning_lanes
 

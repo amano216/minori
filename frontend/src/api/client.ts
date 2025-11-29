@@ -681,3 +681,77 @@ export async function generateVisitsFromPatterns(
     }),
   });
 }
+
+// Event API (ミーティング・施設訪問など)
+export type EventType = 'meeting' | 'facility' | 'training' | 'other';
+export type ParticipantStatus = 'confirmed' | 'tentative' | 'declined';
+
+export interface EventParticipant {
+  id: number;
+  name: string;
+  status: ParticipantStatus;
+}
+
+export interface ScheduleEvent {
+  id: number;
+  title: string;
+  event_type: EventType;
+  scheduled_at: string;
+  duration: number;
+  notes: string | null;
+  planning_lane_id: number | null;
+  planning_lane: { id: number; name: string } | null;
+  participant_ids: number[];
+  participants: EventParticipant[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EventInput {
+  title: string;
+  event_type: EventType;
+  scheduled_at: string;
+  duration?: number;
+  notes?: string;
+  planning_lane_id?: number | null;
+  participant_ids?: number[];
+}
+
+export async function fetchEvents(params?: {
+  date?: string;
+  start_date?: string;
+  end_date?: string;
+  staff_id?: number;
+  planning_lane_id?: number;
+}): Promise<ScheduleEvent[]> {
+  const query = new URLSearchParams();
+  if (params?.date) query.append('date', params.date);
+  if (params?.start_date) query.append('start_date', params.start_date);
+  if (params?.end_date) query.append('end_date', params.end_date);
+  if (params?.staff_id) query.append('staff_id', String(params.staff_id));
+  if (params?.planning_lane_id) query.append('planning_lane_id', String(params.planning_lane_id));
+  const queryString = query.toString();
+  return apiRequest(`/api/events${queryString ? `?${queryString}` : ''}`);
+}
+
+export async function fetchEvent(id: number): Promise<ScheduleEvent> {
+  return apiRequest(`/api/events/${id}`);
+}
+
+export async function createEvent(event: EventInput): Promise<ScheduleEvent> {
+  return apiRequest('/api/events', {
+    method: 'POST',
+    body: JSON.stringify({ event }),
+  });
+}
+
+export async function updateEvent(id: number, event: Partial<EventInput>): Promise<ScheduleEvent> {
+  return apiRequest(`/api/events/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ event }),
+  });
+}
+
+export async function deleteEvent(id: number): Promise<void> {
+  return apiRequest(`/api/events/${id}`, { method: 'DELETE' });
+}

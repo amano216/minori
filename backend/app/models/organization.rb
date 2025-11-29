@@ -7,6 +7,7 @@ class Organization < ApplicationRecord
   has_many :visit_patterns, dependent: :destroy
   has_many :staffs, dependent: :destroy
   has_many :planning_lanes, dependent: :destroy
+  has_many :events, dependent: :destroy
 
   validates :name, presence: true
   validates :subdomain, uniqueness: true, allow_nil: true

@@ -10,9 +10,36 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_27_094049) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_29_092154) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "event_participants", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "event_id", null: false
+    t.bigint "staff_id", null: false
+    t.string "status", default: "confirmed", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_id", "staff_id"], name: "index_event_participants_on_event_id_and_staff_id", unique: true
+    t.index ["event_id"], name: "index_event_participants_on_event_id"
+    t.index ["staff_id"], name: "index_event_participants_on_staff_id"
+  end
+
+  create_table "events", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "duration", default: 60, null: false
+    t.string "event_type", default: "meeting", null: false
+    t.text "notes"
+    t.bigint "organization_id", null: false
+    t.bigint "planning_lane_id"
+    t.datetime "scheduled_at", null: false
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_type"], name: "index_events_on_event_type"
+    t.index ["organization_id"], name: "index_events_on_organization_id"
+    t.index ["planning_lane_id"], name: "index_events_on_planning_lane_id"
+    t.index ["scheduled_at"], name: "index_events_on_scheduled_at"
+  end
 
   create_table "group_memberships", force: :cascade do |t|
     t.datetime "created_at", null: false
@@ -158,6 +185,10 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_27_094049) do
     t.index ["visit_pattern_id"], name: "index_visits_on_visit_pattern_id"
   end
 
+  add_foreign_key "event_participants", "events"
+  add_foreign_key "event_participants", "users", column: "staff_id"
+  add_foreign_key "events", "organizations"
+  add_foreign_key "events", "planning_lanes"
   add_foreign_key "group_memberships", "groups"
   add_foreign_key "group_memberships", "users"
   add_foreign_key "groups", "groups", column: "parent_id"
