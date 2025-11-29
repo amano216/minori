@@ -116,6 +116,17 @@ export function UnifiedSchedulePage() {
   const [isMonthlyCalendarOpen, setIsMonthlyCalendarOpen] = useState(false);
   const [isGeneratePanelOpen, setIsGeneratePanelOpen] = useState(false);
   const [masterDataLoaded, setMasterDataLoaded] = useState(false);
+  
+  // New button dropdown state (for mobile)
+  const [showNewDropdown, setShowNewDropdown] = useState(false);
+  // Time slot click options state (for staff view)
+  const [showTimeSlotOptions, setShowTimeSlotOptions] = useState(false);
+  const [pendingTimeSlotStaffId, setPendingTimeSlotStaffId] = useState<number | undefined>(undefined);
+  const [pendingTimeSlotDate, setPendingTimeSlotDate] = useState<Date | undefined>(undefined);
+  // Lane time slot click options state (for lane view)
+  const [showLaneTimeSlotOptions, setShowLaneTimeSlotOptions] = useState(false);
+  const [pendingLaneId, setPendingLaneId] = useState<number | undefined>(undefined);
+  const [pendingLaneDate, setPendingLaneDate] = useState<Date | undefined>(undefined);
 
   // Load master data
   useEffect(() => {
@@ -331,10 +342,49 @@ export function UnifiedSchedulePage() {
 
   const handleTimeSlotClick = (staffId: number, time: Date) => {
     setSelectedVisit(null); // Close detail panel
-    setNewVisitInitialStaffId(staffId);
-    setNewVisitInitialDate(time);
+    setSelectedEvent(null);
+    setPendingTimeSlotStaffId(staffId);
+    setPendingTimeSlotDate(time);
+    setShowTimeSlotOptions(true);
+  };
+
+  const handleTimeSlotVisitSelect = () => {
+    setShowTimeSlotOptions(false);
+    setNewVisitInitialStaffId(pendingTimeSlotStaffId);
+    setNewVisitInitialDate(pendingTimeSlotDate);
     setNewVisitInitialPlanningLaneId(undefined);
     setIsNewVisitPanelOpen(true);
+  };
+
+  const handleTimeSlotEventSelect = () => {
+    setShowTimeSlotOptions(false);
+    setNewEventInitialDate(pendingTimeSlotDate);
+    setIsNewEventPanelOpen(true);
+  };
+
+  // Lane time slot handlers
+  const handleLaneTimeSlotClick = (hour: number, laneId: number) => {
+    setSelectedVisit(null);
+    setSelectedEvent(null);
+    const selectedDate = new Date(currentDate);
+    selectedDate.setHours(hour, 0, 0, 0);
+    setPendingLaneDate(selectedDate);
+    setPendingLaneId(laneId);
+    setShowLaneTimeSlotOptions(true);
+  };
+
+  const handleLaneTimeSlotVisitSelect = () => {
+    setShowLaneTimeSlotOptions(false);
+    setNewVisitInitialDate(pendingLaneDate);
+    setNewVisitInitialStaffId(undefined);
+    setNewVisitInitialPlanningLaneId(pendingLaneId);
+    setIsNewVisitPanelOpen(true);
+  };
+
+  const handleLaneTimeSlotEventSelect = () => {
+    setShowLaneTimeSlotOptions(false);
+    setNewEventInitialDate(pendingLaneDate);
+    setIsNewEventPanelOpen(true);
   };
 
   const handleNewVisitClick = () => {
@@ -599,30 +649,46 @@ export function UnifiedSchedulePage() {
               </div>
             )}
 
-            {/* Add button with dropdown */}
-            <div className="relative group">
+            {/* Add button with dropdown - click to toggle for mobile support */}
+            <div className="relative">
               <button 
+                onClick={() => setShowNewDropdown(!showNewDropdown)}
                 className="bg-indigo-600 text-white p-2 sm:p-3 rounded-full shadow-lg hover:bg-indigo-700 hover:shadow-xl transition-all flex items-center justify-center"
                 title="新規作成"
               >
                 <PlusIcon className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
-              <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-xl border border-gray-200 py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 min-w-[140px]">
-                <button
-                  onClick={handleNewVisitClick}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                >
-                  <CalendarIcon className="w-4 h-4 text-indigo-500" />
-                  新規訪問
-                </button>
-                <button
-                  onClick={handleNewEventClick}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                >
-                  <UserGroupIcon className="w-4 h-4 text-purple-500" />
-                  新規イベント
-                </button>
-              </div>
+              {showNewDropdown && (
+                <>
+                  {/* Backdrop to close dropdown */}
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setShowNewDropdown(false)}
+                  />
+                  <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-50 min-w-[140px]">
+                    <button
+                      onClick={() => {
+                        setShowNewDropdown(false);
+                        handleNewVisitClick();
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    >
+                      <CalendarIcon className="w-4 h-4 text-indigo-500" />
+                      新規訪問
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowNewDropdown(false);
+                        handleNewEventClick();
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    >
+                      <UserGroupIcon className="w-4 h-4 text-purple-500" />
+                      新規イベント
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -666,15 +732,7 @@ export function UnifiedSchedulePage() {
                 selectedGroupIds={selectedGroupIds}
                 onVisitClick={handleVisitSelect}
                 onPatternClick={() => {}}
-                onTimeSlotClick={(hour, laneId) => {
-                  const selectedDate = new Date(currentDate);
-                  selectedDate.setHours(hour, 0, 0, 0);
-                  setNewVisitInitialDate(selectedDate);
-                  setNewVisitInitialStaffId(undefined);
-                  setNewVisitInitialPlanningLaneId(Number(laneId));
-                  setIsNewVisitPanelOpen(true);
-                  setSelectedVisit(null);
-                }}
+                onTimeSlotClick={(hour, laneId) => handleLaneTimeSlotClick(hour, Number(laneId))}
                 dataMode="actual"
                 selectedDayOfWeek={selectedDayOfWeek}
                 patternVersion={0}
@@ -774,6 +832,80 @@ export function UnifiedSchedulePage() {
               onClose={() => setIsNewEventPanelOpen(false)}
               onCreate={loadScheduleData}
             />
+          )}
+
+          {/* Time Slot Options Modal */}
+          {showTimeSlotOptions && (
+            <>
+              <div 
+                className="fixed inset-0 bg-black/30 z-50"
+                onClick={() => setShowTimeSlotOptions(false)}
+              />
+              <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 z-50 min-w-[200px]">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                  {pendingTimeSlotDate?.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })} に作成
+                </h3>
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={handleTimeSlotVisitSelect}
+                    className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-indigo-50 rounded-lg flex items-center gap-3 transition-colors"
+                  >
+                    <CalendarIcon className="w-5 h-5 text-indigo-500" />
+                    <span>新規訪問</span>
+                  </button>
+                  <button
+                    onClick={handleTimeSlotEventSelect}
+                    className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-purple-50 rounded-lg flex items-center gap-3 transition-colors"
+                  >
+                    <UserGroupIcon className="w-5 h-5 text-purple-500" />
+                    <span>新規イベント</span>
+                  </button>
+                </div>
+                <button
+                  onClick={() => setShowTimeSlotOptions(false)}
+                  className="mt-3 w-full py-2 text-sm text-gray-500 hover:text-gray-700 text-center"
+                >
+                  キャンセル
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Lane Time Slot Options Modal */}
+          {showLaneTimeSlotOptions && (
+            <>
+              <div 
+                className="fixed inset-0 bg-black/30 z-50"
+                onClick={() => setShowLaneTimeSlotOptions(false)}
+              />
+              <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 z-50 min-w-[200px]">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                  {pendingLaneDate?.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })} に作成
+                </h3>
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={handleLaneTimeSlotVisitSelect}
+                    className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-indigo-50 rounded-lg flex items-center gap-3 transition-colors"
+                  >
+                    <CalendarIcon className="w-5 h-5 text-indigo-500" />
+                    <span>新規訪問</span>
+                  </button>
+                  <button
+                    onClick={handleLaneTimeSlotEventSelect}
+                    className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-purple-50 rounded-lg flex items-center gap-3 transition-colors"
+                  >
+                    <UserGroupIcon className="w-5 h-5 text-purple-500" />
+                    <span>新規イベント</span>
+                  </button>
+                </div>
+                <button
+                  onClick={() => setShowLaneTimeSlotOptions(false)}
+                  className="mt-3 w-full py-2 text-sm text-gray-500 hover:text-gray-700 text-center"
+                >
+                  キャンセル
+                </button>
+              </div>
+            </>
           )}
 
           {/* Monthly Calendar Modal - Removed as it is now a popover */}
