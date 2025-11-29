@@ -436,22 +436,24 @@ export function PatientFormPage() {
               <p className="text-xs text-text-gray mb-2">介護記録システムなど、外部サービスへのリンクを登録できます</p>
               {externalUrls.map((eu, index) => (
                 <div key={index} className="flex items-center gap-2">
-                  <Input
-                    type="text"
-                    value={eu.label || ''}
-                    onChange={(e) => handleExternalUrlChange(index, 'label', e.target.value)}
-                    disabled={submitting}
-                    placeholder="例: 介護記録"
-                    className="w-32"
-                  />
-                  <Input
-                    type="url"
-                    value={eu.url}
-                    onChange={(e) => handleExternalUrlChange(index, 'url', e.target.value)}
-                    disabled={submitting}
-                    placeholder="例: https://example.com/care/123"
-                    className="flex-1"
-                  />
+                  <div className="w-32 flex-shrink-0">
+                    <Input
+                      type="text"
+                      value={eu.label || ''}
+                      onChange={(e) => handleExternalUrlChange(index, 'label', e.target.value)}
+                      disabled={submitting}
+                      placeholder="例: 介護記録"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <Input
+                      type="url"
+                      value={eu.url}
+                      onChange={(e) => handleExternalUrlChange(index, 'url', e.target.value)}
+                      disabled={submitting}
+                      placeholder="例: https://example.com/care/123"
+                    />
+                  </div>
                   {externalUrls.length > 1 && (
                     <button
                       type="button"
