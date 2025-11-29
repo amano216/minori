@@ -2,7 +2,7 @@ require "test_helper"
 
 class Api::EventsControllerTest < ActionDispatch::IntegrationTest
   def setup
-    @organization = organizations(:one)
+    @organization = organizations(:default)
     @user = users(:admin)
     @event = events(:team_meeting)
   end
