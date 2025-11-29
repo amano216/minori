@@ -156,7 +156,7 @@ patients_data = [
   {
     name: "山田 太郎",
     address: "東京都渋谷区神宮前1-2-3 サンライズマンション101",
-    phone: "03-1234-5678",
+    phone_numbers: [ { "number" => "03-1234-5678", "label" => "自宅" } ],
     care_requirements: %w[nursing_care vital_check medication_management],
     notes: "79歳男性。週3回の訪問が必要。高血圧、糖尿病の管理。",
     status: "active",
@@ -165,7 +165,7 @@ patients_data = [
   {
     name: "佐藤 花子",
     address: "東京都新宿区歌舞伎町2-4-5 グリーンハイツ202",
-    phone: "03-2345-6789",
+    phone_numbers: [ { "number" => "03-2345-6789", "label" => "自宅" } ],
     care_requirements: %w[rehabilitation bathing_assistance],
     notes: "脳梗塞後のリハビリ重点。週2回の訪問。",
     status: "active",
@@ -174,7 +174,7 @@ patients_data = [
   {
     name: "鈴木 一郎",
     address: "東京都世田谷区三軒茶屋3-7-8 パークサイド303",
-    phone: "03-3456-7890",
+    phone_numbers: [ { "number" => "03-3456-7890", "label" => "自宅" } ],
     care_requirements: %w[wound_care nursing_care],
     notes: "褥瘡の処置が必要。週4回訪問。",
     status: "active",
@@ -183,7 +183,7 @@ patients_data = [
   {
     name: "高橋 美咲",
     address: "東京都品川区大崎4-10-12 リバーサイドコート404",
-    phone: "03-4567-8901",
+    phone_numbers: [ { "number" => "03-4567-8901", "label" => "自宅" } ],
     care_requirements: %w[nursing_care medication_management vital_check],
     notes: "心不全の管理。毎日の訪問が必要。",
     status: "active",
@@ -192,7 +192,7 @@ patients_data = [
   {
     name: "田中 健太",
     address: "東京都目黒区自由が丘1-15-20 メゾン自由505",
-    phone: "03-5678-9012",
+    phone_numbers: [ { "number" => "03-5678-9012", "label" => "自宅" } ],
     care_requirements: %w[rehabilitation bathing_assistance meal_assistance],
     notes: "パーキンソン病。週3回のリハビリと入浴介助。",
     status: "active",
@@ -201,7 +201,7 @@ patients_data = [
   {
     name: "伊藤 幸子",
     address: "東京都杉並区荻窪5-22-33 ハイムきぼう606",
-    phone: "03-6789-0123",
+    phone_numbers: [ { "number" => "03-6789-0123", "label" => "自宅" } ],
     care_requirements: %w[nursing_care wound_care vital_check],
     notes: "糖尿病性足潰瘍の処置。週3回訪問。",
     status: "active",
@@ -210,7 +210,7 @@ patients_data = [
   {
     name: "渡辺 正男",
     address: "東京都中野区中野6-25-40 サニーコート707",
-    phone: "03-7890-1234",
+    phone_numbers: [ { "number" => "03-7890-1234", "label" => "自宅" } ],
     care_requirements: %w[rehabilitation nursing_care],
     notes: "大腿骨骨折後のリハビリ。週2回の訪問。",
     status: "active",
@@ -219,7 +219,7 @@ patients_data = [
   {
     name: "小林 京子",
     address: "東京都豊島区池袋2-30-45 グランドメゾン808",
-    phone: "03-8901-2345",
+    phone_numbers: [ { "number" => "03-8901-2345", "label" => "自宅" } ],
     care_requirements: %w[medication_management vital_check nursing_care],
     notes: "認知症。服薬管理が必要。週4回訪問。",
     status: "active",
@@ -228,7 +228,7 @@ patients_data = [
   {
     name: "加藤 博",
     address: "東京都北区赤羽3-35-50 レジデンス赤羽909",
-    phone: "03-9012-3456",
+    phone_numbers: [ { "number" => "03-9012-3456", "label" => "自宅" } ],
     care_requirements: %w[nursing_care bathing_assistance],
     notes: "COPD（慢性閉塞性肺疾患）。週2回の訪問。",
     status: "active",
@@ -237,7 +237,7 @@ patients_data = [
   {
     name: "木村 和子",
     address: "東京都足立区北千住4-40-55 ライフコート1010",
-    phone: "03-0123-4567",
+    phone_numbers: [ { "number" => "03-0123-4567", "label" => "自宅" } ],
     care_requirements: %w[rehabilitation meal_assistance],
     notes: "脳梗塞後遺症。嚥下訓練と食事介助。週3回訪問。",
     status: "active",
@@ -246,7 +246,7 @@ patients_data = [
   {
     name: "中村 勇",
     address: "東京都葛飾区亀有5-45-60 グリーンハウス1101",
-    phone: "03-1234-6789",
+    phone_numbers: [ { "number" => "03-1234-6789", "label" => "自宅" } ],
     care_requirements: %w[nursing_care wound_care medication_management],
     notes: "透析患者。シャント管理。週3回訪問。",
     status: "active",
@@ -255,7 +255,7 @@ patients_data = [
   {
     name: "松本 春江",
     address: "東京都江戸川区小岩6-50-65 メープルタワー1202",
-    phone: "03-2345-7890",
+    phone_numbers: [ { "number" => "03-2345-7890", "label" => "自宅" } ],
     care_requirements: %w[bathing_assistance nursing_care vital_check],
     notes: "リウマチ。入浴介助と疼痛管理。週2回訪問。",
     status: "active",
@@ -264,7 +264,7 @@ patients_data = [
   {
     name: "石井 光男",
     address: "東京都板橋区高島平7-55-70 ハイライフ1303",
-    phone: "03-3456-8901",
+    phone_numbers: [ { "number" => "03-3456-8901", "label" => "自宅" } ],
     care_requirements: %w[rehabilitation nursing_care],
     notes: "脊柱管狭窄症術後。リハビリ継続中。週2回訪問。",
     status: "active",
@@ -273,7 +273,7 @@ patients_data = [
   {
     name: "森 千代子",
     address: "東京都練馬区大泉学園8-60-75 パークレジデンス1404",
-    phone: "03-4567-9012",
+    phone_numbers: [ { "number" => "03-4567-9012", "label" => "自宅" } ],
     care_requirements: %w[medication_management vital_check nursing_care],
     notes: "うつ病と高血圧。服薬管理と見守り。週3回訪問。",
     status: "active",
@@ -282,7 +282,7 @@ patients_data = [
   {
     name: "吉田 清",
     address: "東京都大田区蒲田9-65-80 サンシャインビル1505",
-    phone: "03-5678-0123",
+    phone_numbers: [ { "number" => "03-5678-0123", "label" => "自宅" } ],
     care_requirements: %w[nursing_care bathing_assistance meal_assistance],
     notes: "ALS（筋萎縮性側索硬化症）。全介助。週5回訪問。",
     status: "active",
@@ -293,7 +293,7 @@ patients_data = [
   {
     name: "デフォルト患者A",
     address: "東京都千代田区1-1-1",
-    phone: "03-0000-0001",
+    phone_numbers: [ { "number" => "03-0000-0001", "label" => "自宅" } ],
     care_requirements: %w[nursing_care],
     notes: "テスト用患者",
     status: "active",
@@ -302,7 +302,7 @@ patients_data = [
   {
     name: "デフォルト患者B",
     address: "東京都港区2-2-2",
-    phone: "03-0000-0002",
+    phone_numbers: [ { "number" => "03-0000-0002", "label" => "自宅" } ],
     care_requirements: %w[rehabilitation],
     notes: "テスト用患者",
     status: "active",
@@ -311,7 +311,7 @@ patients_data = [
   {
     name: "デフォルト患者C",
     address: "東京都中央区3-3-3",
-    phone: "03-0000-0003",
+    phone_numbers: [ { "number" => "03-0000-0003", "label" => "自宅" } ],
     care_requirements: %w[bathing_assistance],
     notes: "テスト用患者",
     status: "inactive",
