@@ -82,7 +82,7 @@ export function MultiGroupSelector({ groups, selectedGroupIds, onChange, compact
   }, [selectedTeamCount, isAllSelected, teamsWithLabels, selectedGroupIds]);
 
   return (
-    <div className="relative" ref={containerRef}>
+    <div className="relative z-[100]" ref={containerRef}>
       {/* Desktop: full button, Mobile: icon only when compact */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -114,7 +114,7 @@ export function MultiGroupSelector({ groups, selectedGroupIds, onChange, compact
       </button>
 
       {isOpen && (
-        <div className={`absolute top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden max-h-[60vh] flex flex-col ${compact ? 'left-0 right-auto w-72 sm:left-0' : 'left-0 w-72'}`}>
+        <div className={`absolute top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-[200] overflow-hidden max-h-[60vh] flex flex-col ${compact ? 'left-0 right-auto w-72 sm:left-0' : 'left-0 w-72'}`}>
           <div className="p-2 border-b border-gray-100 flex justify-between text-xs flex-shrink-0 bg-gray-50">
             <button
               onClick={selectAll}
