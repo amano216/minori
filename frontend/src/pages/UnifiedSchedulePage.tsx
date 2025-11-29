@@ -752,7 +752,6 @@ export function UnifiedSchedulePage() {
             initialStaffId={newScheduleInitialStaffId}
             initialPlanningLaneId={newScheduleInitialPlanningLaneId}
             initialTab={newScheduleInitialTab}
-            groups={groups}
           />
 
           {/* Monthly Calendar Modal - Removed as it is now a popover */}
