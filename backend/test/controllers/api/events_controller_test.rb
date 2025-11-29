@@ -111,7 +111,7 @@ class Api::EventsControllerTest < ActionDispatch::IntegrationTest
   private
 
   def auth_headers(user)
-    token = JsonWebToken.encode(user_id: user.id)
+    token = JwtService.encode(user_id: user.id)
     { "Authorization" => "Bearer #{token}" }
   end
 end
