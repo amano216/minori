@@ -1,0 +1,23 @@
+team_meeting:
+  title: "チームミーティング"
+  event_type: meeting
+  scheduled_at: <%= Time.zone.now.beginning_of_day + 10.hours %>
+  duration: 60
+  notes: "週次ミーティング"
+  organization: one
+
+facility_visit:
+  title: "施設訪問"
+  event_type: facility
+  scheduled_at: <%= Time.zone.now.beginning_of_day + 14.hours %>
+  duration: 120
+  notes: "新規施設の見学"
+  organization: one
+
+training_session:
+  title: "研修会"
+  event_type: training
+  scheduled_at: <%= 1.day.from_now.beginning_of_day + 9.hours %>
+  duration: 180
+  notes: "新人研修"
+  organization: one

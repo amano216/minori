@@ -15,10 +15,12 @@ import {
   fetchStaffs,
   fetchGroups,
   fetchPlanningLanes,
+  fetchEvents,
   cancelVisit,
   completeVisit,
   updateVisit,
   deleteVisit,
+  deleteEvent,
   generateVisitsFromPatterns,
   ApiError,
   type Staff,
@@ -27,12 +29,15 @@ import {
   type Visit,
   type PlanningLane,
   type VisitPattern,
+  type ScheduleEvent,
 } from '../api/client';
 import { Spinner } from '../components/atoms/Spinner';
 import { NewVisitPanel } from '../components/organisms/NewVisitPanel';
 import { NewPatternPanel } from '../components/organisms/NewPatternPanel';
 import { EditPatternPanel } from '../components/organisms/EditPatternPanel';
 import { VisitDetailPanel } from '../components/organisms/VisitDetailPanel';
+import { EventDetailPanel } from '../components/organisms/EventDetailPanel';
+import { NewEventPanel } from '../components/organisms/NewEventPanel';
 import { TimelineResourceView } from '../components/organisms/TimelineResourceView';
 import PatientCalendarView from '../components/organisms/PatientCalendarView';
 import { UserGroupIcon } from '@heroicons/react/24/outline';
@@ -73,8 +78,10 @@ export function UnifiedSchedulePage() {
   const [, setPlanningLanes] = useState<PlanningLane[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [allWeeklyVisits, setAllWeeklyVisits] = useState<Visit[]>([]);
+  const [events, setEvents] = useState<ScheduleEvent[]>([]);
   
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -97,6 +104,10 @@ export function UnifiedSchedulePage() {
   const [isNewPatternPanelOpen, setIsNewPatternPanelOpen] = useState(false);
   const [newPatternInitialTime, setNewPatternInitialTime] = useState<string>('09:00');
   const [newPatternInitialLaneId, setNewPatternInitialLaneId] = useState<number | undefined>(undefined);
+  
+  // New Event Panel State
+  const [isNewEventPanelOpen, setIsNewEventPanelOpen] = useState(false);
+  const [newEventInitialDate, setNewEventInitialDate] = useState<Date | undefined>(undefined);
   
   // Edit Pattern Panel State
   const [selectedPattern, setSelectedPattern] = useState<VisitPattern | null>(null);
@@ -146,9 +157,15 @@ export function UnifiedSchedulePage() {
       // Always fetch weekly data to have context, but we focus on daily view
       // Use currentDate as start date for sliding window
       const startDate = currentDate.toISOString().split('T')[0];
+      const endDate = new Date(currentDate);
+      endDate.setDate(endDate.getDate() + 6);
+      const endDateStr = endDate.toISOString().split('T')[0];
 
       console.log('Fetching weekly schedule for:', startDate);
-      const scheduleData = await fetchWeeklySchedule({ start_date: startDate });
+      const [scheduleData, eventsData] = await Promise.all([
+        fetchWeeklySchedule({ start_date: startDate }),
+        fetchEvents({ start_date: startDate, end_date: endDateStr }),
+      ]);
       
       // Convert ScheduleVisit[] to Visit[]
       const allVisits: Visit[] = [];
@@ -175,8 +192,15 @@ export function UnifiedSchedulePage() {
         return visitDate.toDateString() === currentDate.toDateString();
       });
 
-      console.log('Todays visits:', todaysVisits.length);
+      // Filter events for current date
+      const todaysEvents = eventsData.filter(e => {
+        const eventDate = new Date(e.scheduled_at);
+        return eventDate.toDateString() === currentDate.toDateString();
+      });
+
+      console.log('Todays visits:', todaysVisits.length, 'Todays events:', todaysEvents.length);
       setVisits(todaysVisits);
+      setEvents(todaysEvents);
     } catch (err) {
       console.error('Failed to load schedule:', err);
       setError(err instanceof Error ? err.message : 'スケジュールの取得に失敗しました');
@@ -277,6 +301,32 @@ export function UnifiedSchedulePage() {
       console.error('Failed to delete visit:', err);
       throw err; // エラーを再スローして呼び出し元でハンドリング
     }
+  };
+
+  // Event handlers
+  const handleEventSelect = (event: ScheduleEvent) => {
+    setIsNewVisitPanelOpen(false);
+    setIsNewEventPanelOpen(false);
+    setSelectedVisit(null);
+    setSelectedEvent(event);
+  };
+
+  const handleEventDelete = async (eventId: number) => {
+    try {
+      await deleteEvent(eventId);
+      await loadScheduleData();
+      setSelectedEvent(null);
+    } catch (err: unknown) {
+      console.error('Failed to delete event:', err);
+      throw err;
+    }
+  };
+
+  const handleNewEventClick = () => {
+    setSelectedVisit(null);
+    setSelectedEvent(null);
+    setNewEventInitialDate(currentDate);
+    setIsNewEventPanelOpen(true);
   };
 
   const handleTimeSlotClick = (staffId: number, time: Date) => {
@@ -549,13 +599,31 @@ export function UnifiedSchedulePage() {
               </div>
             )}
 
-            <button 
-              onClick={handleNewVisitClick}
-              className="bg-indigo-600 text-white p-2 sm:p-3 rounded-full shadow-lg hover:bg-indigo-700 hover:shadow-xl transition-all flex items-center justify-center"
-              title="新規訪問"
-            >
-              <PlusIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-            </button>
+            {/* Add button with dropdown */}
+            <div className="relative group">
+              <button 
+                className="bg-indigo-600 text-white p-2 sm:p-3 rounded-full shadow-lg hover:bg-indigo-700 hover:shadow-xl transition-all flex items-center justify-center"
+                title="新規作成"
+              >
+                <PlusIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+              <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-xl border border-gray-200 py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 min-w-[140px]">
+                <button
+                  onClick={handleNewVisitClick}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                >
+                  <CalendarIcon className="w-4 h-4 text-indigo-500" />
+                  新規訪問
+                </button>
+                <button
+                  onClick={handleNewEventClick}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                >
+                  <UserGroupIcon className="w-4 h-4 text-purple-500" />
+                  新規イベント
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -621,7 +689,9 @@ export function UnifiedSchedulePage() {
                 groups={groups}
                 selectedGroupIds={selectedGroupIds}
                 visits={assignedVisits}
+                events={events}
                 onVisitClick={handleVisitSelect}
+                onEventClick={handleEventSelect}
                 onTimeSlotClick={handleTimeSlotClick}
               />
             )}
@@ -686,6 +756,25 @@ export function UnifiedSchedulePage() {
             onClose={() => setIsGeneratePanelOpen(false)}
             onGenerate={handleGenerateVisits}
           />
+
+          {/* Event Detail Panel */}
+          {selectedEvent && (
+            <EventDetailPanel
+              event={selectedEvent}
+              onClose={() => setSelectedEvent(null)}
+              onUpdate={loadScheduleData}
+              onDelete={handleEventDelete}
+            />
+          )}
+
+          {/* New Event Panel */}
+          {isNewEventPanelOpen && newEventInitialDate && (
+            <NewEventPanel
+              initialDate={newEventInitialDate}
+              onClose={() => setIsNewEventPanelOpen(false)}
+              onCreate={loadScheduleData}
+            />
+          )}
 
           {/* Monthly Calendar Modal - Removed as it is now a popover */}
         </div>

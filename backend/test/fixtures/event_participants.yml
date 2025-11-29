@@ -1,0 +1,14 @@
+meeting_admin:
+  event: team_meeting
+  staff: admin
+  status: confirmed
+
+meeting_staff:
+  event: team_meeting
+  staff: staff
+  status: confirmed
+
+training_staff:
+  event: training_session
+  staff: staff
+  status: tentative
