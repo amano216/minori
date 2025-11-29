@@ -146,7 +146,7 @@ module Api
     end
 
     def visit_with_staff_json(visit)
-      patient_json = visit.patient&.as_json(only: [ :id, :name, :address ])
+      patient_json = visit.patient&.as_json(only: [ :id, :name, :address, :external_urls ])
       if visit.patient&.group
         patient_json[:group] = { id: visit.patient.group.id, name: visit.patient.group.name }
       end
