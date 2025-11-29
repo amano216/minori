@@ -353,7 +353,14 @@ export function VisitDetailPanel({
               {visit.patient.address && (
                 <div className="flex items-center gap-4">
                   <MapPin className="w-5 h-5 text-gray-400" />
-                  <div className="font-medium text-gray-900">{visit.patient.address}</div>
+                  <a 
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(visit.patient.address)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-indigo-600 hover:text-indigo-800 hover:underline"
+                  >
+                    {visit.patient.address}
+                  </a>
                 </div>
               )}
 
