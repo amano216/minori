@@ -32,12 +32,11 @@ import {
   type ScheduleEvent,
 } from '../api/client';
 import { Spinner } from '../components/atoms/Spinner';
-import { NewVisitPanel } from '../components/organisms/NewVisitPanel';
 import { NewPatternPanel } from '../components/organisms/NewPatternPanel';
 import { EditPatternPanel } from '../components/organisms/EditPatternPanel';
 import { VisitDetailPanel } from '../components/organisms/VisitDetailPanel';
 import { EventDetailPanel } from '../components/organisms/EventDetailPanel';
-import { NewEventPanel } from '../components/organisms/NewEventPanel';
+import { NewSchedulePanel } from '../components/organisms/NewSchedulePanel';
 import { TimelineResourceView } from '../components/organisms/TimelineResourceView';
 import PatientCalendarView from '../components/organisms/PatientCalendarView';
 import { UserGroupIcon } from '@heroicons/react/24/outline';
@@ -94,20 +93,17 @@ export function UnifiedSchedulePage() {
     })
   );
 
-  // New Visit Panel State
-  const [isNewVisitPanelOpen, setIsNewVisitPanelOpen] = useState(false);
-  const [newVisitInitialDate, setNewVisitInitialDate] = useState<Date | undefined>(undefined);
-  const [newVisitInitialStaffId, setNewVisitInitialStaffId] = useState<number | undefined>(undefined);
-  const [newVisitInitialPlanningLaneId, setNewVisitInitialPlanningLaneId] = useState<number | undefined>(undefined);
+  // New Schedule Panel State (unified for visit/event)
+  const [isNewSchedulePanelOpen, setIsNewSchedulePanelOpen] = useState(false);
+  const [newScheduleInitialDate, setNewScheduleInitialDate] = useState<Date | undefined>(undefined);
+  const [newScheduleInitialStaffId, setNewScheduleInitialStaffId] = useState<number | undefined>(undefined);
+  const [newScheduleInitialPlanningLaneId, setNewScheduleInitialPlanningLaneId] = useState<number | undefined>(undefined);
+  const [newScheduleInitialTab, setNewScheduleInitialTab] = useState<'visit' | 'event'>('visit');
   
   // New Pattern Panel State
   const [isNewPatternPanelOpen, setIsNewPatternPanelOpen] = useState(false);
   const [newPatternInitialTime, setNewPatternInitialTime] = useState<string>('09:00');
   const [newPatternInitialLaneId, setNewPatternInitialLaneId] = useState<number | undefined>(undefined);
-  
-  // New Event Panel State
-  const [isNewEventPanelOpen, setIsNewEventPanelOpen] = useState(false);
-  const [newEventInitialDate, setNewEventInitialDate] = useState<Date | undefined>(undefined);
   
   // Edit Pattern Panel State
   const [selectedPattern, setSelectedPattern] = useState<VisitPattern | null>(null);
@@ -119,14 +115,6 @@ export function UnifiedSchedulePage() {
   
   // New button dropdown state (for mobile)
   const [showNewDropdown, setShowNewDropdown] = useState(false);
-  // Time slot click options state (for staff view)
-  const [showTimeSlotOptions, setShowTimeSlotOptions] = useState(false);
-  const [pendingTimeSlotStaffId, setPendingTimeSlotStaffId] = useState<number | undefined>(undefined);
-  const [pendingTimeSlotDate, setPendingTimeSlotDate] = useState<Date | undefined>(undefined);
-  // Lane time slot click options state (for lane view)
-  const [showLaneTimeSlotOptions, setShowLaneTimeSlotOptions] = useState(false);
-  const [pendingLaneId, setPendingLaneId] = useState<number | undefined>(undefined);
-  const [pendingLaneDate, setPendingLaneDate] = useState<Date | undefined>(undefined);
 
   // Load master data
   useEffect(() => {
@@ -316,8 +304,7 @@ export function UnifiedSchedulePage() {
 
   // Event handlers
   const handleEventSelect = (event: ScheduleEvent) => {
-    setIsNewVisitPanelOpen(false);
-    setIsNewEventPanelOpen(false);
+    setIsNewSchedulePanelOpen(false);
     setSelectedVisit(null);
     setSelectedEvent(event);
   };
@@ -333,74 +320,58 @@ export function UnifiedSchedulePage() {
     }
   };
 
+  // Open unified schedule panel with visit tab (from header button)
+  const handleNewVisitClick = () => {
+    setSelectedVisit(null);
+    setSelectedEvent(null);
+    setNewScheduleInitialDate(currentDate);
+    setNewScheduleInitialStaffId(undefined);
+    setNewScheduleInitialPlanningLaneId(undefined);
+    setNewScheduleInitialTab('visit');
+    setIsNewSchedulePanelOpen(true);
+  };
+
+  // Open unified schedule panel with event tab (from header button)
   const handleNewEventClick = () => {
     setSelectedVisit(null);
     setSelectedEvent(null);
-    setNewEventInitialDate(currentDate);
-    setIsNewEventPanelOpen(true);
+    setNewScheduleInitialDate(currentDate);
+    setNewScheduleInitialStaffId(undefined);
+    setNewScheduleInitialPlanningLaneId(undefined);
+    setNewScheduleInitialTab('event');
+    setIsNewSchedulePanelOpen(true);
   };
 
+  // Staff view: time slot click -> open panel with staff pre-selected
   const handleTimeSlotClick = (staffId: number, time: Date) => {
-    setSelectedVisit(null); // Close detail panel
+    setSelectedVisit(null);
     setSelectedEvent(null);
-    setPendingTimeSlotStaffId(staffId);
-    setPendingTimeSlotDate(time);
-    setShowTimeSlotOptions(true);
+    setNewScheduleInitialDate(time);
+    setNewScheduleInitialStaffId(staffId);
+    setNewScheduleInitialPlanningLaneId(undefined);
+    setNewScheduleInitialTab('visit');
+    setIsNewSchedulePanelOpen(true);
   };
 
-  const handleTimeSlotVisitSelect = () => {
-    setShowTimeSlotOptions(false);
-    setNewVisitInitialStaffId(pendingTimeSlotStaffId);
-    setNewVisitInitialDate(pendingTimeSlotDate);
-    setNewVisitInitialPlanningLaneId(undefined);
-    setIsNewVisitPanelOpen(true);
-  };
-
-  const handleTimeSlotEventSelect = () => {
-    setShowTimeSlotOptions(false);
-    setNewEventInitialDate(pendingTimeSlotDate);
-    setIsNewEventPanelOpen(true);
-  };
-
-  // Lane time slot handlers
+  // Lane view: time slot click -> open panel with lane pre-selected
   const handleLaneTimeSlotClick = (hour: number, laneId: number) => {
     setSelectedVisit(null);
     setSelectedEvent(null);
     const selectedDate = new Date(currentDate);
     selectedDate.setHours(hour, 0, 0, 0);
-    setPendingLaneDate(selectedDate);
-    setPendingLaneId(laneId);
-    setShowLaneTimeSlotOptions(true);
-  };
-
-  const handleLaneTimeSlotVisitSelect = () => {
-    setShowLaneTimeSlotOptions(false);
-    setNewVisitInitialDate(pendingLaneDate);
-    setNewVisitInitialStaffId(undefined);
-    setNewVisitInitialPlanningLaneId(pendingLaneId);
-    setIsNewVisitPanelOpen(true);
-  };
-
-  const handleLaneTimeSlotEventSelect = () => {
-    setShowLaneTimeSlotOptions(false);
-    setNewEventInitialDate(pendingLaneDate);
-    setIsNewEventPanelOpen(true);
-  };
-
-  const handleNewVisitClick = () => {
-    setSelectedVisit(null); // Close detail panel
-    setNewVisitInitialStaffId(undefined);
-    setNewVisitInitialDate(currentDate);
-    setNewVisitInitialPlanningLaneId(undefined);
-    setIsNewVisitPanelOpen(true);
+    setNewScheduleInitialDate(selectedDate);
+    setNewScheduleInitialStaffId(undefined);
+    setNewScheduleInitialPlanningLaneId(laneId);
+    setNewScheduleInitialTab('visit');
+    setIsNewSchedulePanelOpen(true);
   };
 
   const handleVisitSelect = (visit: Visit) => {
-    setIsNewVisitPanelOpen(false); // Close new visit panel
+    setIsNewSchedulePanelOpen(false);
     setSelectedVisit(visit);
   };
 
-  const handleNewVisitCreated = async () => {
+  const handleNewScheduleCreated = async () => {
     await loadScheduleData();
   };
 
@@ -769,17 +740,6 @@ export function UnifiedSchedulePage() {
             onDelete={handleVisitDelete}
           />
 
-          {/* New Visit Panel */}
-          <NewVisitPanel
-            isOpen={isNewVisitPanelOpen}
-            onClose={() => setIsNewVisitPanelOpen(false)}
-            onCreated={handleNewVisitCreated}
-            initialDate={newVisitInitialDate}
-            initialStaffId={newVisitInitialStaffId}
-            initialPlanningLaneId={newVisitInitialPlanningLaneId}
-            groups={groups}
-          />
-
           {/* New Pattern Panel */}
           <NewPatternPanel
             isOpen={isNewPatternPanelOpen}
@@ -825,88 +785,17 @@ export function UnifiedSchedulePage() {
             />
           )}
 
-          {/* New Event Panel */}
-          {isNewEventPanelOpen && newEventInitialDate && (
-            <NewEventPanel
-              initialDate={newEventInitialDate}
-              onClose={() => setIsNewEventPanelOpen(false)}
-              onCreate={loadScheduleData}
-            />
-          )}
-
-          {/* Time Slot Options Modal */}
-          {showTimeSlotOptions && (
-            <>
-              <div 
-                className="fixed inset-0 bg-black/30 z-50"
-                onClick={() => setShowTimeSlotOptions(false)}
-              />
-              <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 z-50 min-w-[200px]">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">
-                  {pendingTimeSlotDate?.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })} に作成
-                </h3>
-                <div className="flex flex-col gap-2">
-                  <button
-                    onClick={handleTimeSlotVisitSelect}
-                    className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-indigo-50 rounded-lg flex items-center gap-3 transition-colors"
-                  >
-                    <CalendarIcon className="w-5 h-5 text-indigo-500" />
-                    <span>新規訪問</span>
-                  </button>
-                  <button
-                    onClick={handleTimeSlotEventSelect}
-                    className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-purple-50 rounded-lg flex items-center gap-3 transition-colors"
-                  >
-                    <UserGroupIcon className="w-5 h-5 text-purple-500" />
-                    <span>新規イベント</span>
-                  </button>
-                </div>
-                <button
-                  onClick={() => setShowTimeSlotOptions(false)}
-                  className="mt-3 w-full py-2 text-sm text-gray-500 hover:text-gray-700 text-center"
-                >
-                  キャンセル
-                </button>
-              </div>
-            </>
-          )}
-
-          {/* Lane Time Slot Options Modal */}
-          {showLaneTimeSlotOptions && (
-            <>
-              <div 
-                className="fixed inset-0 bg-black/30 z-50"
-                onClick={() => setShowLaneTimeSlotOptions(false)}
-              />
-              <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 z-50 min-w-[200px]">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">
-                  {pendingLaneDate?.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })} に作成
-                </h3>
-                <div className="flex flex-col gap-2">
-                  <button
-                    onClick={handleLaneTimeSlotVisitSelect}
-                    className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-indigo-50 rounded-lg flex items-center gap-3 transition-colors"
-                  >
-                    <CalendarIcon className="w-5 h-5 text-indigo-500" />
-                    <span>新規訪問</span>
-                  </button>
-                  <button
-                    onClick={handleLaneTimeSlotEventSelect}
-                    className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-purple-50 rounded-lg flex items-center gap-3 transition-colors"
-                  >
-                    <UserGroupIcon className="w-5 h-5 text-purple-500" />
-                    <span>新規イベント</span>
-                  </button>
-                </div>
-                <button
-                  onClick={() => setShowLaneTimeSlotOptions(false)}
-                  className="mt-3 w-full py-2 text-sm text-gray-500 hover:text-gray-700 text-center"
-                >
-                  キャンセル
-                </button>
-              </div>
-            </>
-          )}
+          {/* Unified New Schedule Panel (Visit/Event tabs) */}
+          <NewSchedulePanel
+            isOpen={isNewSchedulePanelOpen}
+            onClose={() => setIsNewSchedulePanelOpen(false)}
+            onCreated={handleNewScheduleCreated}
+            initialDate={newScheduleInitialDate}
+            initialStaffId={newScheduleInitialStaffId}
+            initialPlanningLaneId={newScheduleInitialPlanningLaneId}
+            initialTab={newScheduleInitialTab}
+            groups={groups}
+          />
 
           {/* Monthly Calendar Modal - Removed as it is now a popover */}
         </div>
@@ -914,5 +803,6 @@ export function UnifiedSchedulePage() {
     </DndContext>
   );
 }
+
 
 
