@@ -112,9 +112,6 @@ export function UnifiedSchedulePage() {
   const [isMonthlyCalendarOpen, setIsMonthlyCalendarOpen] = useState(false);
   const [isGeneratePanelOpen, setIsGeneratePanelOpen] = useState(false);
   const [masterDataLoaded, setMasterDataLoaded] = useState(false);
-  
-  // New button dropdown state (for mobile)
-  const [showNewDropdown, setShowNewDropdown] = useState(false);
 
   // Load master data
   useEffect(() => {
@@ -320,7 +317,7 @@ export function UnifiedSchedulePage() {
     }
   };
 
-  // Open unified schedule panel with visit tab (from header button)
+  // Open unified schedule panel (from header button or time slot click)
   const handleNewVisitClick = () => {
     setSelectedVisit(null);
     setSelectedEvent(null);
@@ -328,17 +325,6 @@ export function UnifiedSchedulePage() {
     setNewScheduleInitialStaffId(undefined);
     setNewScheduleInitialPlanningLaneId(undefined);
     setNewScheduleInitialTab('visit');
-    setIsNewSchedulePanelOpen(true);
-  };
-
-  // Open unified schedule panel with event tab (from header button)
-  const handleNewEventClick = () => {
-    setSelectedVisit(null);
-    setSelectedEvent(null);
-    setNewScheduleInitialDate(currentDate);
-    setNewScheduleInitialStaffId(undefined);
-    setNewScheduleInitialPlanningLaneId(undefined);
-    setNewScheduleInitialTab('event');
     setIsNewSchedulePanelOpen(true);
   };
 
@@ -620,47 +606,14 @@ export function UnifiedSchedulePage() {
               </div>
             )}
 
-            {/* Add button with dropdown - click to toggle for mobile support */}
-            <div className="relative">
-              <button 
-                onClick={() => setShowNewDropdown(!showNewDropdown)}
-                className="bg-indigo-600 text-white p-2 sm:p-3 rounded-full shadow-lg hover:bg-indigo-700 hover:shadow-xl transition-all flex items-center justify-center"
-                title="新規作成"
-              >
-                <PlusIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-              </button>
-              {showNewDropdown && (
-                <>
-                  {/* Backdrop to close dropdown */}
-                  <div 
-                    className="fixed inset-0 z-40" 
-                    onClick={() => setShowNewDropdown(false)}
-                  />
-                  <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-50 min-w-[140px]">
-                    <button
-                      onClick={() => {
-                        setShowNewDropdown(false);
-                        handleNewVisitClick();
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                    >
-                      <CalendarIcon className="w-4 h-4 text-indigo-500" />
-                      新規訪問
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowNewDropdown(false);
-                        handleNewEventClick();
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                    >
-                      <UserGroupIcon className="w-4 h-4 text-purple-500" />
-                      新規イベント
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+            {/* Add button - opens unified panel directly */}
+            <button 
+              onClick={handleNewVisitClick}
+              className="bg-indigo-600 text-white p-2 sm:p-3 rounded-full shadow-lg hover:bg-indigo-700 hover:shadow-xl transition-all flex items-center justify-center"
+              title="新規作成"
+            >
+              <PlusIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
           </div>
         </div>
 
