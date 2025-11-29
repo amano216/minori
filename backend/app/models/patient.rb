@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Patient < ApplicationRecord
-  STATUSES = %w[active inactive discharged].freeze
+  STATUSES = %w[active hospitalized inactive].freeze
   CARE_REQUIREMENTS = %w[
     nursing_care
     rehabilitation

@@ -289,7 +289,7 @@ export interface Patient {
   group?: PatientGroup;
   care_requirements: string[];
   notes?: string;
-  status: 'active' | 'inactive' | 'discharged';
+  status: 'active' | 'hospitalized' | 'inactive';
   created_at: string;
   updated_at: string;
 }
