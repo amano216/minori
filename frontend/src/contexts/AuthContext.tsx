@@ -20,13 +20,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const token = getToken();
     if (token) {
-      fetchCurrentUser()
+      const AUTH_TIMEOUT = 15000; // 15 seconds
+      let timeoutId: ReturnType<typeof setTimeout>;
+      
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error('Authentication timeout'));
+        }, AUTH_TIMEOUT);
+      });
+      
+      Promise.race([fetchCurrentUser(), timeoutPromise])
         .then((data) => setUser(data.user))
         .catch(() => {
           removeToken();
           setUser(null);
         })
-        .finally(() => setIsLoading(false));
+        .finally(() => {
+          clearTimeout(timeoutId);
+          setIsLoading(false);
+        });
     } else {
       // Set loading to false in next tick to avoid setState during effect
       Promise.resolve().then(() => setIsLoading(false));
