@@ -613,7 +613,7 @@ export interface VisitPattern {
   day_name: string;
   start_time: string;
   duration: number;
-  patient: { id: number; name: string } | null;
+  patient: { id: number; name: string; address?: string } | null;
   staff: { id: number; name: string } | null;
   planning_lane: { id: number; name: string } | null;
   created_at: string;

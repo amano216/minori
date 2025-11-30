@@ -107,7 +107,7 @@ module Api
         day_name: pattern.day_name,
         start_time: pattern.start_time_string,
         duration: pattern.duration,
-        patient: pattern.patient ? { id: pattern.patient.id, name: pattern.patient.name } : nil,
+        patient: pattern.patient ? { id: pattern.patient.id, name: pattern.patient.name, address: pattern.patient.address } : nil,
         staff: pattern.default_staff ? { id: pattern.default_staff.id, name: pattern.default_staff.name } : nil,
         planning_lane: pattern.planning_lane ? { id: pattern.planning_lane.id, name: pattern.planning_lane.name } : nil,
         created_at: pattern.created_at,
