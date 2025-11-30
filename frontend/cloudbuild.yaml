@@ -49,3 +49,5 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 timeout: 1200s
+
+# Cloud Buildの実行リージョン（gcloud builds submit --region=asia-northeast1 で指定）
