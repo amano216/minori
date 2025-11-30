@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import type { Visit } from '../../api/client';
+import { extractTownName } from '../../utils/addressUtils';
 
 interface VisitCardProps {
   visit: Visit;
@@ -13,6 +14,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({ visit, isOverlay, classNam
   const visitDate = new Date(visit.scheduled_at);
   const durationMinutes = visit.duration || 60;
   const endDate = new Date(visitDate.getTime() + durationMinutes * 60000);
+  const townName = extractTownName(visit.patient.address);
 
   const formatTime = (d: Date) => 
     `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -41,6 +43,11 @@ export const VisitCard: React.FC<VisitCardProps> = ({ visit, isOverlay, classNam
       <div className="font-semibold text-gray-800 leading-tight truncate">
         {visit.patient.name}
       </div>
+      {townName && (
+        <div className="text-gray-400 text-[9px] leading-tight truncate">
+          {townName}
+        </div>
+      )}
       <div className="text-gray-500 text-[10px] leading-tight flex items-center gap-1">
         <span>{formatTime(visitDate)}-{formatTime(endDate)}</span>
       </div>
