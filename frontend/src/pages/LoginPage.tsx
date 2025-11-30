@@ -140,48 +140,26 @@ export function LoginPage() {
             </Button>
           </form>
 
-          {/* Dev Account Quick Fill */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <p className="text-sm text-gray-600 mb-3 font-medium">開発用クイックログイン</p>
-            <div className="flex flex-col gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => fillTestAccount('admin@kaihatsu-nursing.jp', 'password123')}
-                className="text-left justify-start"
-              >
-                <div className="flex flex-col items-start">
-                  <span className="font-medium">開発訪問看護ステーション（管理者）</span>
-                  <span className="text-xs text-gray-500">admin@kaihatsu-nursing.jp / password123</span>
-                </div>
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => fillTestAccount('tanaka.hanako@kaihatsu-nursing.jp', 'password123')}
-                className="text-left justify-start"
-              >
-                <div className="flex flex-col items-start">
-                  <span className="font-medium">開発訪問看護ステーション（田中 花子）</span>
-                  <span className="text-xs text-gray-500">tanaka.hanako@kaihatsu-nursing.jp / password123</span>
-                </div>
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => fillTestAccount('admin@example.com', 'password123')}
-                className="text-left justify-start"
-              >
-                <div className="flex flex-col items-start">
-                  <span className="font-medium">デフォルト組織（管理者）</span>
-                  <span className="text-xs text-gray-500">admin@example.com / password123</span>
-                </div>
-              </Button>
+          {/* Dev Account Quick Fill - Only shown in development environment */}
+          {import.meta.env.DEV && (
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <p className="text-sm text-gray-600 mb-3 font-medium">開発用クイックログイン</p>
+              <div className="flex flex-col gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => fillTestAccount('admin@example.com', 'password123')}
+                  className="text-left justify-start"
+                >
+                  <div className="flex flex-col items-start">
+                    <span className="font-medium">デフォルト組織（管理者）</span>
+                    <span className="text-xs text-gray-500">admin@example.com / password123</span>
+                  </div>
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </Card>
 
         {/* Signup Link */}
