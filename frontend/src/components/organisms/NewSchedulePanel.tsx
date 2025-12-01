@@ -221,9 +221,9 @@ export function NewSchedulePanel({
       />
       
       {/* Panel */}
-      <div className={`fixed inset-y-0 right-0 w-full sm:w-96 bg-white shadow-2xl z-50 transform transition-transform duration-200 ${isVisible ? 'translate-x-0' : 'translate-x-full'} flex flex-col`}>
+      <div className={`fixed top-0 right-0 bottom-0 w-full sm:w-96 md:w-[420px] bg-white shadow-2xl z-50 transform transition-transform duration-200 ${isVisible ? 'translate-x-0' : 'translate-x-full'} flex flex-col overflow-hidden`}>
         {/* Header */}
-        <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-white">
+        <div className="flex-none px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-white">
           <div className="flex items-center gap-2">
             <Plus className="w-5 h-5 text-indigo-600" />
             <span className="font-semibold text-gray-900">新規作成</span>
@@ -237,7 +237,7 @@ export function NewSchedulePanel({
         </div>
 
         {/* Tabs */}
-        <div className="flex-shrink-0 px-4 pt-3 border-b border-gray-200 bg-gray-50">
+        <div className="flex-none px-4 pt-3 border-b border-gray-200 bg-gray-50">
           <div className="flex gap-1">
             <button
               onClick={() => setActiveTab('visit')}
@@ -265,7 +265,7 @@ export function NewSchedulePanel({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4 min-h-0">
           {loading ? (
             <div className="flex justify-center py-8">
               <Spinner />
@@ -446,7 +446,7 @@ export function NewSchedulePanel({
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 bg-gray-50 flex justify-end gap-2">
+        <div className="flex-none px-4 py-3 border-t border-gray-200 bg-gray-50 flex justify-end gap-2">
           <Button
             variant="secondary"
             onClick={handleClose}

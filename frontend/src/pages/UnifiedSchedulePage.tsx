@@ -34,6 +34,7 @@ import {
 import { Spinner } from '../components/atoms/Spinner';
 import { NewPatternPanel } from '../components/organisms/NewPatternPanel';
 import { EditPatternPanel } from '../components/organisms/EditPatternPanel';
+import { PatternHistoryPanel } from '../components/organisms/PatternHistoryPanel';
 import { VisitDetailPanel } from '../components/organisms/VisitDetailPanel';
 import { EventDetailPanel } from '../components/organisms/EventDetailPanel';
 import { NewSchedulePanel } from '../components/organisms/NewSchedulePanel';
@@ -108,6 +109,7 @@ export function UnifiedSchedulePage() {
   // Edit Pattern Panel State
   const [selectedPattern, setSelectedPattern] = useState<VisitPattern | null>(null);
   const [patternVersion, setPatternVersion] = useState(0); // Increment to trigger reload
+  const [isPatternHistoryOpen, setIsPatternHistoryOpen] = useState(false);
   
   const [isMonthlyCalendarOpen, setIsMonthlyCalendarOpen] = useState(false);
   const [isGeneratePanelOpen, setIsGeneratePanelOpen] = useState(false);
@@ -583,6 +585,15 @@ export function UnifiedSchedulePage() {
                   <CalendarDaysIcon className="w-4 h-4" />
                   <span className="hidden sm:inline">反映</span>
                 </button>
+                {/* Pattern History Button */}
+                <button
+                  onClick={() => setIsPatternHistoryOpen(true)}
+                  className="px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 transition-colors shadow-sm flex items-center gap-1 border border-gray-300"
+                  title="パターン変更履歴"
+                >
+                  <ClockIcon className="w-4 h-4" />
+                  <span className="hidden sm:inline">履歴</span>
+                </button>
               </div>
             )}
           </div>
@@ -731,6 +742,12 @@ export function UnifiedSchedulePage() {
             isOpen={isGeneratePanelOpen}
             onClose={() => setIsGeneratePanelOpen(false)}
             onGenerate={handleGenerateVisits}
+          />
+
+          {/* Pattern History Panel */}
+          <PatternHistoryPanel
+            isOpen={isPatternHistoryOpen}
+            onClose={() => setIsPatternHistoryOpen(false)}
           />
 
           {/* Event Detail Panel */}

@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { organizationApi } from '../api/organizationApi';
 import { forgotPassword } from '../api/client';
+import { fetchVersions, type AuditVersion } from '../api/versionsApi';
 import type { User, Group } from '../types/organization';
 import { Icon } from '../components/atoms/Icon';
 import { SearchableSelect } from '../components/molecules/SearchableSelect';
+import { HistoryItem } from '../components/molecules/HistoryItem';
+import { Spinner } from '../components/atoms/Spinner';
 
 const QUALIFICATION_OPTIONS = [
   { value: 'nurse', label: '看護師' },
@@ -34,6 +37,68 @@ const getRoleLabel = (role: string): string => {
   return ROLE_OPTIONS.find(r => r.value === role)?.label || role;
 };
 
+const USER_FIELD_LABELS: Record<string, string> = {
+  email: 'メールアドレス',
+  name: '名前',
+  role: 'ロール',
+  qualifications: '資格',
+  staff_status: 'ステータス',
+  group_id: '所属グループ',
+  encrypted_password: 'パスワード',
+  otp_required_for_login: '2段階認証',
+};
+
+const EVENT_LABELS: Record<string, string> = {
+  create: '作成',
+  update: '更新',
+  destroy: '削除',
+};
+
+/**
+ * changesを正しいフォーマットに変換
+ */
+function formatChangesForHistoryItem(objectChanges: Record<string, unknown> | null | undefined): Record<string, { before: unknown; after: unknown }> | undefined {
+  if (!objectChanges) return undefined;
+  
+  const result: Record<string, { before: unknown; after: unknown }> = {};
+  
+  for (const [key, value] of Object.entries(objectChanges)) {
+    if (Array.isArray(value) && value.length === 2) {
+      let before = value[0];
+      let after = value[1];
+      
+      // ロールの変換
+      if (key === 'role') {
+        before = ROLE_OPTIONS.find(r => r.value === before)?.label || before;
+        after = ROLE_OPTIONS.find(r => r.value === after)?.label || after;
+      }
+      // ステータスの変換
+      if (key === 'staff_status') {
+        before = STATUS_OPTIONS.find(s => s.value === before)?.label || before;
+        after = STATUS_OPTIONS.find(s => s.value === after)?.label || after;
+      }
+      // 資格の変換
+      if (key === 'qualifications') {
+        const formatQuals = (quals: unknown) => {
+          if (!Array.isArray(quals)) return quals;
+          return quals.map(q => QUALIFICATION_OPTIONS.find(opt => opt.value === q)?.label || q).join(', ') || '(なし)';
+        };
+        before = formatQuals(before);
+        after = formatQuals(after);
+      }
+      // パスワードは「変更」とだけ表示
+      if (key === 'encrypted_password') {
+        before = '***';
+        after = '(変更されました)';
+      }
+      
+      result[key] = { before, after };
+    }
+  }
+  
+  return Object.keys(result).length > 0 ? result : undefined;
+}
+
 // グループの階層表示用ヘルパー
 const getGroupHierarchyLabel = (group: Group, allGroups: Group[]) => {
   if (group.parent_id) {
@@ -49,7 +114,11 @@ export function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPanelVisible, setIsPanelVisible] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [modalTab, setModalTab] = useState<'edit' | 'history'>('edit');
+  const [versions, setVersions] = useState<AuditVersion[]>([]);
+  const [versionsLoading, setVersionsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -64,6 +133,13 @@ export function UsersPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  // 履歴タブが選択されたときにデータを読み込む
+  useEffect(() => {
+    if (modalTab === 'history' && editingUser && versions.length === 0) {
+      loadUserVersions(editingUser.id);
+    }
+  }, [modalTab, editingUser]);
 
   const loadData = async () => {
     try {
@@ -83,7 +159,26 @@ export function UsersPage() {
     }
   };
 
+  const loadUserVersions = async (userId: number) => {
+    try {
+      setVersionsLoading(true);
+      const response = await fetchVersions({
+        item_type: 'User',
+        item_id: userId,
+        per_page: 50,
+      });
+      setVersions(response.versions);
+    } catch (err) {
+      console.error('Failed to load user history:', err);
+      setVersions([]);
+    } finally {
+      setVersionsLoading(false);
+    }
+  };
+
   const handleOpenModal = (user?: User) => {
+    setModalTab('edit');
+    setVersions([]);
     if (user) {
       setEditingUser(user);
       setFormData({
@@ -110,21 +205,18 @@ export function UsersPage() {
       });
     }
     setIsModalOpen(true);
+    // アニメーション用に少し遅延
+    setTimeout(() => setIsPanelVisible(true), 10);
   };
 
   const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingUser(null);
-    setError(null);
-  };
-
-  const handleQualificationChange = (qualification: string) => {
-    setFormData(prev => {
-      const newQualifications = prev.qualifications.includes(qualification)
-        ? prev.qualifications.filter(q => q !== qualification)
-        : [...prev.qualifications, qualification];
-      return { ...prev, qualifications: newQualifications };
-    });
+    setIsPanelVisible(false);
+    // アニメーション完了後にモーダルを閉じる
+    setTimeout(() => {
+      setIsModalOpen(false);
+      setEditingUser(null);
+      setError(null);
+    }, 200);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -144,6 +236,15 @@ export function UsersPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleQualificationChange = (qualification: string) => {
+    setFormData(prev => {
+      const newQualifications = prev.qualifications.includes(qualification)
+        ? prev.qualifications.filter(q => q !== qualification)
+        : [...prev.qualifications, qualification];
+      return { ...prev, qualifications: newQualifications };
+    });
   };
 
   const handleDelete = async (id: number) => {
@@ -285,21 +386,94 @@ export function UsersPage() {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Side Panel */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 overflow-y-auto p-0 sm:p-4">
-          <div className="bg-white rounded-t-xl sm:rounded-lg p-4 sm:p-6 w-full sm:max-w-lg max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg sm:text-xl font-bold text-text-primary mb-4">
-              {editingUser ? 'ユーザー編集' : '新規ユーザー'}
-            </h2>
+        <>
+          {/* Backdrop */}
+          <div
+            className={`fixed inset-0 bg-black/20 z-40 transition-opacity duration-200 ${isPanelVisible ? 'opacity-100' : 'opacity-0'}`}
+            onClick={handleCloseModal}
+          />
 
-            {error && (
-              <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">
-                {error}
+          {/* Panel */}
+          <div className={`fixed top-0 right-0 bottom-0 w-full sm:w-[420px] md:w-[480px] bg-white shadow-2xl z-50 transform transition-transform duration-200 ${isPanelVisible ? 'translate-x-0' : 'translate-x-full'} flex flex-col overflow-hidden`}>
+            {/* Header */}
+            <div className="flex-none px-4 py-3 border-b border-border flex items-center justify-between bg-gray-50">
+              <h2 className="text-lg font-semibold text-text-primary">
+                {editingUser ? 'ユーザー編集' : '新規ユーザー'}
+              </h2>
+              <button
+                onClick={handleCloseModal}
+                className="p-1.5 rounded-full hover:bg-gray-200 text-gray-500 transition-colors"
+              >
+                <Icon name="X" size={20} />
+              </button>
+            </div>
+
+            {/* Tabs - 編集モードでのみ表示 */}
+            {editingUser && (
+              <div className="flex-none flex border-b border-border bg-white">
+                <button
+                  type="button"
+                  onClick={() => setModalTab('edit')}
+                  className={`flex-1 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                    modalTab === 'edit'
+                      ? 'border-main text-main bg-primary-50'
+                      : 'border-transparent text-text-grey hover:text-text-primary hover:bg-gray-50'
+                  }`}
+                >
+                  編集
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModalTab('history')}
+                  className={`flex-1 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                    modalTab === 'history'
+                      ? 'border-main text-main bg-primary-50'
+                      : 'border-transparent text-text-grey hover:text-text-primary hover:bg-gray-50'
+                  }`}
+                >
+                  変更履歴
+                </button>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-4 min-h-0">
+              {error && (
+                <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">
+                  {error}
+                </div>
+              )}
+
+              {/* 履歴タブ */}
+              {modalTab === 'history' && editingUser ? (
+                <div className="space-y-3">
+                  {versionsLoading ? (
+                    <div className="flex justify-center py-8">
+                      <Spinner />
+                    </div>
+                  ) : versions.length === 0 ? (
+                    <div className="text-center text-text-grey py-8">
+                      変更履歴がありません
+                    </div>
+                  ) : (
+                    versions.map((version) => (
+                      <HistoryItem
+                        key={version.id}
+                        event={version.event as 'create' | 'update' | 'destroy'}
+                        eventLabel={EVENT_LABELS[version.event] || version.event}
+                        whodunnitName={version.whodunnit_name}
+                        createdAt={version.created_at}
+                        changes={formatChangesForHistoryItem(version.object_changes)}
+                        fieldLabels={USER_FIELD_LABELS}
+                      />
+                    ))
+                  )}
+                </div>
+              ) : (
+                /* 編集フォーム */
+                <form onSubmit={handleSubmit} className="space-y-4">
               {/* 基本情報 */}
               <div className="border-b pb-4">
                 <h3 className="text-sm font-semibold text-text-grey mb-3">基本情報</h3>
@@ -486,8 +660,23 @@ export function UsersPage() {
                 </button>
               </div>
             </form>
+              )}
+            </div>
+
+            {/* 履歴タブ時の閉じるボタン */}
+            {modalTab === 'history' && (
+              <div className="flex-none p-4 sm:p-6 pt-0 border-t border-border">
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="w-full px-4 py-2 bg-bg-base text-text-primary rounded hover:bg-gray-200 transition-colors"
+                >
+                  閉じる
+                </button>
+              </div>
+            )}
           </div>
-        </div>
+        </>
       )}
     </div>
   );

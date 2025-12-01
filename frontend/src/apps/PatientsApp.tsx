@@ -2,7 +2,6 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { AppContainerLayout } from "../components/templates/AppContainerLayout";
 import { APPS, PATIENTS_ROUTES } from "../types/apps";
 import { PatientListPage } from "../pages/PatientListPage";
-import { PatientFormPage } from "../pages/PatientFormPage";
 
 const patientsApp = APPS.find((app) => app.id === "patients")!;
 
@@ -12,8 +11,10 @@ export function PatientsApp() {
       <Routes>
         <Route path="/" element={<Navigate to="/patients/list" replace />} />
         <Route path="/list" element={<PatientListPage />} />
-        <Route path="/new" element={<PatientFormPage />} />
-        <Route path="/:id/edit" element={<PatientFormPage />} />
+        {/* 旧ルートからの互換性のためリダイレクト */}
+        <Route path="/new" element={<Navigate to="/patients/list" replace />} />
+        <Route path="/:id" element={<Navigate to="/patients/list" replace />} />
+        <Route path="/:id/edit" element={<Navigate to="/patients/list" replace />} />
       </Routes>
     </AppContainerLayout>
   );
