@@ -14,27 +14,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_01_053726) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
-  create_table "chat_messages", force: :cascade do |t|
-    t.bigint "chat_session_id", null: false
-    t.text "content"
-    t.datetime "created_at", null: false
-    t.jsonb "metadata"
-    t.integer "role"
-    t.datetime "updated_at", null: false
-    t.index ["chat_session_id"], name: "index_chat_messages_on_chat_session_id"
-  end
-
-  create_table "chat_sessions", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.bigint "organization_id", null: false
-    t.integer "status"
-    t.string "title"
-    t.datetime "updated_at", null: false
-    t.bigint "user_id", null: false
-    t.index ["organization_id"], name: "index_chat_sessions_on_organization_id"
-    t.index ["user_id"], name: "index_chat_sessions_on_user_id"
-  end
-
   create_table "event_participants", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "event_id", null: false
@@ -226,9 +205,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_01_053726) do
     t.index ["visit_pattern_id"], name: "index_visits_on_visit_pattern_id"
   end
 
-  add_foreign_key "chat_messages", "chat_sessions"
-  add_foreign_key "chat_sessions", "organizations"
-  add_foreign_key "chat_sessions", "users"
   add_foreign_key "event_participants", "events"
   add_foreign_key "event_participants", "users", column: "staff_id"
   add_foreign_key "events", "organizations"

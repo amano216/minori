@@ -68,7 +68,8 @@ Rails.application.routes.draw do
     resource :organization, only: [ :show, :update ]
 
     # Audit log routes（3省2ガイドライン準拠）
-    resources :versions, only: [ :index, :show ]
+    get "audit_logs", to: "versions#index"
+    get "audit_logs/:id", to: "versions#show", as: :audit_log
 
     # Admin routes
     namespace :admin do

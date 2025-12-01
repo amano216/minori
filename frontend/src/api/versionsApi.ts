@@ -82,12 +82,12 @@ export async function fetchVersions(params?: {
   if (params?.page) query.append('page', String(params.page));
   if (params?.per_page) query.append('per_page', String(params.per_page));
   const queryString = query.toString();
-  return apiRequest<AuditVersionsResponse>(`/api/versions${queryString ? `?${queryString}` : ''}`);
+  return apiRequest<AuditVersionsResponse>(`/api/audit_logs${queryString ? `?${queryString}` : ''}`);
 }
 
 /**
  * 監査ログの詳細を取得（変更差分を含む）
  */
 export async function fetchVersionDetail(id: number): Promise<AuditVersionDetailResponse> {
-  return apiRequest<AuditVersionDetailResponse>(`/api/versions/${id}`);
+  return apiRequest<AuditVersionDetailResponse>(`/api/audit_logs/${id}`);
 }

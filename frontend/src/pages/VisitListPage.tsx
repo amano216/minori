@@ -1,13 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { fetchVisits, cancelVisit, completeVisit, deleteVisit, fetchGroups, type Visit, type Group } from '../api/client';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import type { FormEvent } from 'react';
+import { X } from 'lucide-react';
+import { fetchVisits, fetchVisit, cancelVisit, completeVisit, deleteVisit, createVisit, updateVisit, fetchStaffs, fetchPatients, type Visit, type VisitInput, type Staff, type Patient } from '../api/client';
+import { fetchVersions, type AuditVersion } from '../api/versionsApi';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
 import { Spinner } from '../components/atoms/Spinner';
+import { Label } from '../components/atoms/Label';
 import { DataTable } from '../components/organisms/DataTable';
 import { ListLayout } from '../components/templates/ListLayout';
 import { Modal } from '../components/molecules/Modal';
-import { NewVisitPanel } from '../components/organisms/NewVisitPanel';
+import { HistoryItem } from '../components/molecules/HistoryItem';
 
 const STATUS_LABELS: Record<string, string> = {
   scheduled: '予定',
@@ -25,6 +28,29 @@ const STATUS_VARIANTS: Record<string, 'info' | 'warning' | 'success' | 'error' |
   unassigned: 'default',
 };
 
+const VISIT_FIELD_LABELS: Record<string, string> = {
+  scheduled_at: '訪問日時',
+  duration: '所要時間',
+  patient_id: '患者',
+  staff_id: '担当スタッフ',
+  status: 'ステータス',
+  notes: '備考',
+};
+
+const EVENT_LABELS: Record<string, string> = {
+  create: '作成',
+  update: '更新',
+  destroy: '削除',
+};
+
+const DURATION_OPTIONS = [
+  { value: 30, label: '30分' },
+  { value: 45, label: '45分' },
+  { value: 60, label: '60分' },
+  { value: 90, label: '90分' },
+  { value: 120, label: '120分' },
+];
+
 function formatDateTime(dateString: string): string {
   const date = new Date(dateString);
   return date.toLocaleString('ja-JP', {
@@ -36,16 +62,81 @@ function formatDateTime(dateString: string): string {
   });
 }
 
+function formatChangesForHistoryItem(
+  objectChanges: Record<string, unknown> | null | undefined,
+  staffs: Staff[],
+  patients: Patient[]
+): Record<string, { before: unknown; after: unknown }> | undefined {
+  if (!objectChanges) return undefined;
+  const result: Record<string, { before: unknown; after: unknown }> = {};
+  
+  const staffMap = new Map(staffs.map(s => [s.id, s.name]));
+  const patientMap = new Map(patients.map(p => [p.id, p.name]));
+  
+  for (const [key, value] of Object.entries(objectChanges)) {
+    if (Array.isArray(value) && value.length === 2) {
+      let before = value[0];
+      let after = value[1];
+      
+      if (key === 'status') {
+        before = STATUS_LABELS[before as string] || before;
+        after = STATUS_LABELS[after as string] || after;
+      }
+      if (key === 'staff_id') {
+        before = before ? staffMap.get(before as number) || `ID:${before}` : '未割当';
+        after = after ? staffMap.get(after as number) || `ID:${after}` : '未割当';
+      }
+      if (key === 'patient_id') {
+        before = before ? patientMap.get(before as number) || `ID:${before}` : '-';
+        after = after ? patientMap.get(after as number) || `ID:${after}` : '-';
+      }
+      if (key === 'duration') {
+        before = before ? `${before}分` : '-';
+        after = after ? `${after}分` : '-';
+      }
+      if (key === 'scheduled_at') {
+        before = before ? formatDateTime(before as string) : '-';
+        after = after ? formatDateTime(after as string) : '-';
+      }
+      
+      result[key] = { before, after };
+    }
+  }
+  return Object.keys(result).length > 0 ? result : undefined;
+}
+
 export function VisitListPage() {
-  const navigate = useNavigate();
   const [visits, setVisits] = useState<Visit[]>([]);
-  const [groups, setGroups] = useState<Group[]>([]);
+  const [staffs, setStaffs] = useState<Staff[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [actionModal, setActionModal] = useState<{ type: 'complete' | 'cancel' | 'delete'; visit: Visit } | null>(null);
-  const [isNewVisitPanelOpen, setIsNewVisitPanelOpen] = useState(false);
+
+  // Side Panel State
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [isPanelVisible, setIsPanelVisible] = useState(false);
+  const [editingVisit, setEditingVisit] = useState<Visit | null>(null);
+  const [panelTab, setPanelTab] = useState<'edit' | 'history'>('edit');
+  const [panelLoading, setPanelLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  // History State
+  const [versions, setVersions] = useState<AuditVersion[]>([]);
+  const [versionsLoading, setVersionsLoading] = useState(false);
+
+  // Form State
+  const [formData, setFormData] = useState({
+    scheduledDate: '',
+    scheduledTime: '09:00',
+    duration: 60,
+    staffId: undefined as number | undefined,
+    patientId: undefined as number | undefined,
+    status: 'scheduled',
+    notes: '',
+  });
 
   const loadVisits = useCallback(async () => {
     try {
@@ -66,18 +157,147 @@ export function VisitListPage() {
     loadVisits();
   }, [loadVisits]);
 
-  // グループ取得
+  // マスタデータ取得
   useEffect(() => {
-    const loadGroups = async () => {
+    const loadMasterData = async () => {
       try {
-        const data = await fetchGroups();
-        setGroups(data);
+        const [staffsData, patientsData] = await Promise.all([
+          fetchStaffs({ status: 'active' }),
+          fetchPatients({ status: 'active' }),
+        ]);
+        setStaffs(staffsData);
+        setPatients(patientsData);
       } catch (err) {
-        console.error('グループ取得に失敗:', err);
+        console.error('マスタデータ取得に失敗:', err);
       }
     };
-    loadGroups();
+    loadMasterData();
   }, []);
+
+  // History load on tab change
+  useEffect(() => {
+    if (panelTab === 'history' && editingVisit && versions.length === 0) {
+      loadVisitVersions(editingVisit.id);
+    }
+  }, [panelTab, editingVisit, versions.length]);
+
+  const loadVisitVersions = async (visitId: number) => {
+    try {
+      setVersionsLoading(true);
+      const response = await fetchVersions({
+        item_type: 'Visit',
+        item_id: visitId,
+        per_page: 50,
+      });
+      setVersions(response.versions);
+    } catch (err) {
+      console.error('Failed to load visit history:', err);
+      setVersions([]);
+    } finally {
+      setVersionsLoading(false);
+    }
+  };
+
+  // Patient options filtered by group
+  const filteredPatients = useMemo(() => {
+    return patients;
+  }, [patients]);
+
+  // Staff options filtered by group
+  const filteredStaffs = useMemo(() => {
+    return staffs;
+  }, [staffs]);
+
+  const handleOpenPanel = async (visit?: Visit) => {
+    setPanelTab('edit');
+    setVersions([]);
+    setError('');
+
+    if (visit) {
+      setPanelLoading(true);
+      setEditingVisit(visit);
+      setIsPanelOpen(true);
+      setTimeout(() => setIsPanelVisible(true), 10);
+
+      try {
+        const fullVisit = await fetchVisit(visit.id);
+        const date = new Date(fullVisit.scheduled_at);
+        setFormData({
+          scheduledDate: date.toISOString().split('T')[0],
+          scheduledTime: date.toTimeString().slice(0, 5),
+          duration: fullVisit.duration,
+          staffId: fullVisit.staff_id || undefined,
+          patientId: fullVisit.patient_id,
+          status: fullVisit.status,
+          notes: fullVisit.notes || '',
+        });
+        setEditingVisit(fullVisit);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '訪問予定の取得に失敗しました');
+      } finally {
+        setPanelLoading(false);
+      }
+    } else {
+      setEditingVisit(null);
+      setFormData({
+        scheduledDate: new Date().toISOString().split('T')[0],
+        scheduledTime: '09:00',
+        duration: 60,
+        staffId: undefined,
+        patientId: undefined,
+        status: 'scheduled',
+        notes: '',
+      });
+      setIsPanelOpen(true);
+      setTimeout(() => setIsPanelVisible(true), 10);
+    }
+  };
+
+  const handleClosePanel = () => {
+    setIsPanelVisible(false);
+    setTimeout(() => {
+      setIsPanelOpen(false);
+      setEditingVisit(null);
+      setError('');
+    }, 200);
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (!formData.patientId) {
+      setError('患者を選択してください');
+      return;
+    }
+
+    setSubmitting(true);
+
+    const scheduledAt = new Date(`${formData.scheduledDate}T${formData.scheduledTime}:00`).toISOString();
+
+    const visitData: VisitInput = {
+      scheduled_at: scheduledAt,
+      duration: formData.duration,
+      staff_id: formData.staffId || null,
+      patient_id: formData.patientId,
+      status: formData.staffId ? formData.status : 'unassigned',
+      notes: formData.notes || undefined,
+    };
+
+    try {
+      if (editingVisit) {
+        await updateVisit(editingVisit.id, visitData);
+      } else {
+        await createVisit(visitData);
+      }
+      await loadVisits();
+      handleClosePanel();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '保存に失敗しました');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleAction = async () => {
     if (!actionModal) return;
@@ -106,9 +326,9 @@ export function VisitListPage() {
       header: '日時',
       minWidth: 'min-w-[130px]',
       render: (visit: Visit) => (
-        <Link to={`/schedule/visits/${visit.id}`} className="text-main hover:underline font-medium whitespace-nowrap text-xs sm:text-sm">
+        <button onClick={() => handleOpenPanel(visit)} className="text-main hover:underline font-medium whitespace-nowrap text-xs sm:text-sm text-left">
           {formatDateTime(visit.scheduled_at)}
-        </Link>
+        </button>
       ),
     },
     {
@@ -174,7 +394,7 @@ export function VisitListPage() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => navigate(`/schedule/visits/${visit.id}/edit`)}
+            onClick={() => handleOpenPanel(visit)}
           >
             編集
           </Button>
@@ -262,13 +482,13 @@ export function VisitListPage() {
         title="訪問予定管理"
         description={`${visits.length}件の訪問予定があります`}
         actions={
-          <Button variant="primary" onClick={() => setIsNewVisitPanelOpen(true)}>
+          <Button variant="primary" onClick={() => handleOpenPanel()}>
             新規登録
           </Button>
         }
         filters={filterContent}
       >
-        {error && (
+        {error && !isPanelOpen && (
           <div className="bg-danger-100 border border-danger-300 text-danger rounded-md p-3 text-sm mb-4">
             {error}
           </div>
@@ -287,6 +507,207 @@ export function VisitListPage() {
         )}
       </ListLayout>
 
+      {/* Side Panel */}
+      {isPanelOpen && (
+        <>
+          <div
+            className={`fixed inset-0 bg-black/20 z-40 transition-opacity duration-200 ${isPanelVisible ? 'opacity-100' : 'opacity-0'}`}
+            onClick={handleClosePanel}
+          />
+          <div className={`fixed top-0 right-0 bottom-0 w-full sm:w-[480px] md:w-[540px] bg-white shadow-2xl z-50 transform transition-transform duration-200 ${isPanelVisible ? 'translate-x-0' : 'translate-x-full'} flex flex-col overflow-hidden`}>
+            {/* Header */}
+            <div className="flex-none px-4 py-3 border-b border-border flex items-center justify-between bg-gray-50">
+              <h2 className="text-lg font-semibold text-text-primary">{editingVisit ? '訪問予定編集' : '新規訪問予定登録'}</h2>
+              <button onClick={handleClosePanel} className="p-1.5 rounded-full hover:bg-gray-200 text-gray-500 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Tabs */}
+            {editingVisit && (
+              <div className="flex-none flex border-b border-border bg-white">
+                <button
+                  type="button"
+                  onClick={() => setPanelTab('edit')}
+                  className={`flex-1 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${panelTab === 'edit' ? 'border-main text-main bg-primary-50' : 'border-transparent text-text-grey hover:text-text-primary hover:bg-gray-50'}`}
+                >
+                  編集
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPanelTab('history')}
+                  className={`flex-1 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${panelTab === 'history' ? 'border-main text-main bg-primary-50' : 'border-transparent text-text-grey hover:text-text-primary hover:bg-gray-50'}`}
+                >
+                  変更履歴
+                </button>
+              </div>
+            )}
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-4 min-h-0">
+              {error && <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">{error}</div>}
+
+              {panelLoading ? (
+                <div className="flex justify-center py-12"><Spinner size="lg" /></div>
+              ) : panelTab === 'history' && editingVisit ? (
+                <div className="space-y-3">
+                  {versionsLoading ? (
+                    <div className="flex justify-center py-8"><Spinner /></div>
+                  ) : versions.length === 0 ? (
+                    <div className="text-center text-text-grey py-8">変更履歴がありません</div>
+                  ) : (
+                    versions.map((version) => (
+                      <HistoryItem
+                        key={version.id}
+                        event={version.event as 'create' | 'update' | 'destroy'}
+                        eventLabel={EVENT_LABELS[version.event] || version.event}
+                        whodunnitName={version.whodunnit_name}
+                        createdAt={version.created_at}
+                        changes={formatChangesForHistoryItem(version.object_changes, staffs, patients)}
+                        fieldLabels={VISIT_FIELD_LABELS}
+                      />
+                    ))
+                  )}
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  {/* 患者・スタッフ */}
+                  <div className="border-b border-border pb-4">
+                    <h3 className="text-sm font-semibold text-text-black mb-3">訪問情報</h3>
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <Label htmlFor="patientId" required>患者</Label>
+                        <select
+                          id="patientId"
+                          value={formData.patientId || ''}
+                          onChange={(e) => setFormData({ ...formData, patientId: e.target.value ? Number(e.target.value) : undefined })}
+                          required
+                          disabled={submitting}
+                          className="w-full px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
+                        >
+                          <option value="">選択してください</option>
+                          {filteredPatients.map((patient) => (
+                            <option key={patient.id} value={patient.id}>{patient.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="staffId">担当スタッフ</Label>
+                        <select
+                          id="staffId"
+                          value={formData.staffId || ''}
+                          onChange={(e) => setFormData({ ...formData, staffId: e.target.value ? Number(e.target.value) : undefined })}
+                          disabled={submitting}
+                          className="w-full px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
+                        >
+                          <option value="">未割当</option>
+                          {filteredStaffs.map((staff) => (
+                            <option key={staff.id} value={staff.id}>{staff.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 日時 */}
+                  <div className="border-b border-border pb-4">
+                    <h3 className="text-sm font-semibold text-text-black mb-3">日時</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label htmlFor="scheduledDate" required>日付</Label>
+                        <input
+                          type="date"
+                          id="scheduledDate"
+                          value={formData.scheduledDate}
+                          onChange={(e) => setFormData({ ...formData, scheduledDate: e.target.value })}
+                          required
+                          disabled={submitting}
+                          className="w-full px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="scheduledTime" required>時刻</Label>
+                        <input
+                          type="time"
+                          id="scheduledTime"
+                          value={formData.scheduledTime}
+                          onChange={(e) => setFormData({ ...formData, scheduledTime: e.target.value })}
+                          required
+                          disabled={submitting}
+                          className="w-full px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="duration">所要時間</Label>
+                        <select
+                          id="duration"
+                          value={formData.duration}
+                          onChange={(e) => setFormData({ ...formData, duration: Number(e.target.value) })}
+                          disabled={submitting}
+                          className="w-full px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
+                        >
+                          {DURATION_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      {editingVisit && (
+                        <div className="space-y-1">
+                          <Label htmlFor="status">ステータス</Label>
+                          <select
+                            id="status"
+                            value={formData.status}
+                            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                            disabled={submitting}
+                            className="w-full px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
+                          >
+                            <option value="scheduled">予定</option>
+                            <option value="in_progress">実施中</option>
+                            <option value="completed">完了</option>
+                            <option value="cancelled">キャンセル</option>
+                            <option value="unassigned">未割当</option>
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 備考 */}
+                  <div className="space-y-1">
+                    <Label htmlFor="notes">備考</Label>
+                    <textarea
+                      id="notes"
+                      value={formData.notes}
+                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                      disabled={submitting}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main resize-y"
+                      placeholder="訪問に関する補足情報..."
+                    />
+                  </div>
+
+                  {/* ボタン */}
+                  <div className="flex gap-2 pt-2">
+                    <Button type="submit" variant="primary" disabled={submitting} className="flex-1">
+                      {submitting ? '保存中...' : '保存'}
+                    </Button>
+                    <Button type="button" variant="secondary" onClick={handleClosePanel} disabled={submitting} className="flex-1">
+                      キャンセル
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </div>
+
+            {panelTab === 'history' && (
+              <div className="flex-none p-4 border-t border-border">
+                <Button variant="secondary" onClick={handleClosePanel} className="w-full">閉じる</Button>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
       {/* Action Confirmation Modal */}
       <Modal
         isOpen={!!actionModal}
@@ -303,17 +724,6 @@ export function VisitListPage() {
           </Button>
         </div>
       </Modal>
-
-      {/* New Visit Panel */}
-      <NewVisitPanel
-        isOpen={isNewVisitPanelOpen}
-        onClose={() => setIsNewVisitPanelOpen(false)}
-        onCreated={() => {
-          setIsNewVisitPanelOpen(false);
-          loadVisits();
-        }}
-        groups={groups}
-      />
     </>
   );
 }
