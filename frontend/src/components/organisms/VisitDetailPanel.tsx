@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X, Clock, User, FileText, MapPin, Calendar, Edit, Trash2, CheckCircle, XCircle, RefreshCw, Save, ExternalLink } from 'lucide-react';
+import { X, Clock, User, FileText, MapPin, Calendar, Edit, Trash2, CheckCircle, XCircle, RefreshCw, Save, ExternalLink, History } from 'lucide-react';
 import { Button } from '../atoms/Button';
 import { Badge } from '../atoms/Badge';
+import { HistoryPanel } from '../molecules/HistoryPanel';
 import { fetchVisits, type Staff, type Visit, type Group } from '../../api/client';
 
 interface VisitDetailPanelProps {
@@ -31,6 +32,18 @@ const STATUS_COLORS: Record<string, string> = {
   completed: 'bg-green-100 text-green-800',
   cancelled: 'bg-red-100 text-red-800',
   unassigned: 'bg-gray-100 text-gray-800',
+};
+
+// 監査ログ用のフィールドラベル
+const VISIT_FIELD_LABELS: Record<string, string> = {
+  scheduled_at: '予定日時',
+  duration: '所要時間',
+  user_id: '担当スタッフ',
+  staff_id: '担当スタッフ',
+  patient_id: '利用者',
+  status: 'ステータス',
+  notes: '備考',
+  planning_lane_id: 'レーン',
 };
 
 function formatDateTime(dateString: string): string {
@@ -161,7 +174,7 @@ export function VisitDetailPanel({
   onDelete,
 }: VisitDetailPanelProps) {
   const [isVisible, setIsVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState<'details' | 'calendar'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'calendar' | 'history'>('details');
   const [isReassigning, setIsReassigning] = useState(false);
   const [selectedStaffId, setSelectedStaffId] = useState<number | ''>('');
   const [updating, setUpdating] = useState(false);
@@ -281,11 +294,25 @@ export function VisitDetailPanel({
           </div>
           <div className="flex gap-1 sm:gap-2">
             <button
-              onClick={() => setActiveTab(activeTab === 'details' ? 'calendar' : 'details')}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors text-indigo-600"
-              title={activeTab === 'details' ? 'カレンダーを表示' : '詳細を表示'}
+              onClick={() => setActiveTab('details')}
+              className={`p-2 hover:bg-gray-100 rounded-full transition-colors ${activeTab === 'details' ? 'text-indigo-600 bg-indigo-50' : 'text-gray-400'}`}
+              title="詳細を表示"
             >
-              {activeTab === 'details' ? <Calendar className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
+              <FileText className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setActiveTab('calendar')}
+              className={`p-2 hover:bg-gray-100 rounded-full transition-colors ${activeTab === 'calendar' ? 'text-indigo-600 bg-indigo-50' : 'text-gray-400'}`}
+              title="カレンダーを表示"
+            >
+              <Calendar className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`p-2 hover:bg-gray-100 rounded-full transition-colors ${activeTab === 'history' ? 'text-indigo-600 bg-indigo-50' : 'text-gray-400'}`}
+              title="変更履歴を表示"
+            >
+              <History className="w-5 h-5" />
             </button>
             <button
               onClick={handleClose}
@@ -392,7 +419,7 @@ export function VisitDetailPanel({
                 </div>
               )}
             </div>
-          ) : (
+          ) : activeTab === 'calendar' ? (
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
                 <User className="w-5 h-5 text-gray-400" />
@@ -400,6 +427,13 @@ export function VisitDetailPanel({
               </div>
               <PatientCalendar patientId={visit.patient_id} />
             </div>
+          ) : (
+            <HistoryPanel
+              itemType="Visit"
+              itemId={visit.id}
+              fieldLabels={VISIT_FIELD_LABELS}
+              className="border-0"
+            />
           )}
         </div>
 

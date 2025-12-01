@@ -10,9 +10,30 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_29_111126) do
+ActiveRecord::Schema[8.1].define(version: 2025_12_01_053726) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "chat_messages", force: :cascade do |t|
+    t.bigint "chat_session_id", null: false
+    t.text "content"
+    t.datetime "created_at", null: false
+    t.jsonb "metadata"
+    t.integer "role"
+    t.datetime "updated_at", null: false
+    t.index ["chat_session_id"], name: "index_chat_messages_on_chat_session_id"
+  end
+
+  create_table "chat_sessions", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "organization_id", null: false
+    t.integer "status"
+    t.string "title"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["organization_id"], name: "index_chat_sessions_on_organization_id"
+    t.index ["user_id"], name: "index_chat_sessions_on_user_id"
+  end
 
   create_table "event_participants", force: :cascade do |t|
     t.datetime "created_at", null: false
@@ -145,6 +166,25 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_29_111126) do
     t.index ["staff_status"], name: "index_users_on_staff_status"
   end
 
+  create_table "versions", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "event", null: false
+    t.string "ip_address"
+    t.bigint "item_id", null: false
+    t.string "item_type", null: false
+    t.jsonb "object"
+    t.jsonb "object_changes"
+    t.bigint "organization_id"
+    t.string "user_agent"
+    t.string "whodunnit"
+    t.string "whodunnit_name"
+    t.string "whodunnit_role"
+    t.index ["created_at"], name: "index_versions_on_created_at"
+    t.index ["item_type", "item_id"], name: "index_versions_on_item_type_and_item_id"
+    t.index ["organization_id"], name: "index_versions_on_organization_id"
+    t.index ["whodunnit"], name: "index_versions_on_whodunnit"
+  end
+
   create_table "visit_patterns", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "day_of_week", null: false
@@ -186,6 +226,9 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_29_111126) do
     t.index ["visit_pattern_id"], name: "index_visits_on_visit_pattern_id"
   end
 
+  add_foreign_key "chat_messages", "chat_sessions"
+  add_foreign_key "chat_sessions", "organizations"
+  add_foreign_key "chat_sessions", "users"
   add_foreign_key "event_participants", "events"
   add_foreign_key "event_participants", "users", column: "staff_id"
   add_foreign_key "events", "organizations"

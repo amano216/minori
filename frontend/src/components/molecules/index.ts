@@ -5,3 +5,5 @@ export { Toast, ToastContainer } from './Toast';
 export { Dropdown, DropdownItem, DropdownDivider } from './Dropdown';
 export { DatePicker, TimePicker, DateTimePicker } from './DatePicker';
 export { EventCard } from './EventCard';
+export { HistoryItem } from './HistoryItem';
+export { HistoryPanel } from './HistoryPanel';
