@@ -67,6 +67,9 @@ Rails.application.routes.draw do
     # Organization routes
     resource :organization, only: [ :show, :update ]
 
+    # Audit log routes（3省2ガイドライン準拠）
+    resources :versions, only: [ :index, :show ]
+
     # Admin routes
     namespace :admin do
       resources :users

@@ -2,6 +2,7 @@ class ApplicationController < ActionController::API
   include ActionController::HttpAuthentication::Token::ControllerMethods
 
   before_action :authenticate_request
+  before_action :set_paper_trail_whodunnit
 
   attr_reader :current_user
 
@@ -33,5 +34,21 @@ class ApplicationController < ActionController::API
 
   def skip_authentication
     @current_user = nil
+  end
+
+  # paper_trail用：3省2ガイドライン準拠の監査ログ
+  def user_for_paper_trail
+    current_user&.id&.to_s
+  end
+
+  # paper_trail用：拡張メタデータ
+  def info_for_paper_trail
+    {
+      whodunnit_name: current_user&.name,
+      whodunnit_role: current_user&.role,
+      organization_id: current_user&.organization_id,
+      ip_address: request.remote_ip,
+      user_agent: request.user_agent&.truncate(255)
+    }
   end
 end

@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 class Visit < ApplicationRecord
+  # 3省2ガイドライン準拠の監査ログ（Phase 1）
+  has_paper_trail
+
   STATUSES = %w[scheduled in_progress completed cancelled unassigned].freeze
 
   belongs_to :user, optional: true

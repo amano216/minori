@@ -6,6 +6,7 @@ import { Badge } from '../components/atoms/Badge';
 import { Spinner } from '../components/atoms/Spinner';
 import { Card } from '../components/molecules/Card';
 import { Modal } from '../components/molecules/Modal';
+import { HistoryPanel } from '../components/molecules/HistoryPanel';
 import { PageHeader } from '../components/templates/ListLayout';
 
 const CARE_REQUIREMENT_LABELS: Record<string, string> = {
@@ -30,6 +31,23 @@ const STATUS_VARIANTS: Record<string, 'success' | 'warning' | 'error'> = {
   inactive: 'error',
 };
 
+// 監査ログ用のフィールドラベル
+const PATIENT_FIELD_LABELS: Record<string, string> = {
+  name: '氏名',
+  name_kana: 'フリガナ',
+  date_of_birth: '生年月日',
+  gender: '性別',
+  postal_code: '郵便番号',
+  address: '住所',
+  phone_numbers: '電話番号',
+  external_urls: '外部URL',
+  patient_code: '利用者コード',
+  group_id: '担当グループ',
+  care_requirements: 'ケア内容',
+  notes: '備考',
+  status: 'ステータス',
+};
+
 export function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -37,6 +55,7 @@ export function PatientDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'info' | 'history'>('info');
 
   useEffect(() => {
     const loadPatient = async () => {
@@ -107,8 +126,33 @@ export function PatientDetailPage() {
         }
       />
 
-      <Card>
-        <dl className="divide-y divide-border">
+      {/* タブナビゲーション */}
+      <div className="flex border-b border-secondary-200 mb-4">
+        <button
+          onClick={() => setActiveTab('info')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'info'
+              ? 'border-primary-600 text-primary-600'
+              : 'border-transparent text-secondary-500 hover:text-secondary-700'
+          }`}
+        >
+          基本情報
+        </button>
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'history'
+              ? 'border-primary-600 text-primary-600'
+              : 'border-transparent text-secondary-500 hover:text-secondary-700'
+          }`}
+        >
+          変更履歴
+        </button>
+      </div>
+
+      {activeTab === 'info' ? (
+        <Card>
+          <dl className="divide-y divide-border">
           {/* 基本情報 */}
           <div className="py-4 flex flex-col sm:flex-row sm:gap-4">
             <dt className="text-sm font-medium text-text-grey sm:w-40">利用者コード</dt>
@@ -191,7 +235,14 @@ export function PatientDetailPage() {
             </dd>
           </div>
         </dl>
-      </Card>
+        </Card>
+      ) : (
+        <HistoryPanel
+          itemType="Patient"
+          itemId={patient.id}
+          fieldLabels={PATIENT_FIELD_LABELS}
+        />
+      )}
 
       <div className="mt-6">
         <Link to="/patients" className="text-main hover:underline text-sm">
