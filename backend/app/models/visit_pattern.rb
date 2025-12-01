@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 class VisitPattern < ApplicationRecord
+  # 3省2ガイドライン準拠の監査ログ（Phase 2）
+  has_paper_trail
+
   belongs_to :planning_lane, optional: true
   belongs_to :patient
   belongs_to :organization

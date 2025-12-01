@@ -1,9 +1,11 @@
 // Audit Log API（3省2ガイドライン準拠）
 // 監査ログの取得用API
 
+export type AuditItemType = 'Patient' | 'Visit' | 'User' | 'VisitPattern' | 'Event';
+
 export interface AuditVersion {
   id: number;
-  item_type: 'Patient' | 'Visit';
+  item_type: AuditItemType;
   item_id: number;
   event: 'create' | 'update' | 'destroy';
   event_label: string;
@@ -69,7 +71,7 @@ async function apiRequest<T>(
  * 監査ログの一覧を取得
  */
 export async function fetchVersions(params?: {
-  item_type?: 'Patient' | 'Visit';
+  item_type?: AuditItemType;
   item_id?: number;
   page?: number;
   per_page?: number;

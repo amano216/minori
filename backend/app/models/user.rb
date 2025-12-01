@@ -1,4 +1,7 @@
 class User < ApplicationRecord
+  # 3省2ガイドライン準拠の監査ログ（Phase 2）
+  has_paper_trail
+
   has_secure_password
 
   # ロールシステム（シンプル化）
