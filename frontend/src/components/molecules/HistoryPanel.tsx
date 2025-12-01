@@ -2,10 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { ClipboardDocumentListIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { Spinner } from '../atoms';
 import { HistoryItem } from './HistoryItem';
-import { fetchVersions, fetchVersionDetail, type AuditVersion } from '../../api/versionsApi';
+import { fetchVersions, fetchVersionDetail, type AuditVersion, type AuditItemType } from '../../api/versionsApi';
 
 interface HistoryPanelProps {
-  itemType: 'Patient' | 'Visit';
+  itemType: AuditItemType;
   itemId: number;
   fieldLabels?: Record<string, string>;
   className?: string;

@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 class Event < ApplicationRecord
+  # 3省2ガイドライン準拠の監査ログ（Phase 2）
+  has_paper_trail
+
   EVENT_TYPES = %w[meeting facility training other].freeze
 
   belongs_to :organization
