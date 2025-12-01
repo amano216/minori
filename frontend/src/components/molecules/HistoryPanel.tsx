@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { HiClipboardDocumentList, HiChevronLeft, HiChevronRight } from 'react-icons/hi2';
+import { ClipboardDocumentListIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { Spinner } from '../atoms';
 import { HistoryItem } from './HistoryItem';
 import { fetchVersions, fetchVersionDetail, type AuditVersion } from '../../api/versionsApi';
@@ -87,7 +87,7 @@ export function HistoryPanel({
   return (
     <div className={`bg-white rounded-lg border border-secondary-200 ${className}`}>
       <div className="px-4 py-3 border-b border-secondary-200 flex items-center gap-2">
-        <HiClipboardDocumentList className="w-5 h-5 text-secondary-500" />
+        <ClipboardDocumentListIcon className="w-5 h-5 text-secondary-500" />
         <h3 className="font-medium text-secondary-700">変更履歴</h3>
       </div>
 
@@ -133,7 +133,7 @@ export function HistoryPanel({
               disabled={page === 1}
               className="flex items-center gap-1 px-3 py-1.5 text-sm text-secondary-600 hover:text-secondary-800 disabled:text-secondary-300 disabled:cursor-not-allowed transition-colors"
             >
-              <HiChevronLeft className="w-4 h-4" />
+              <ChevronLeftIcon className="w-4 h-4" />
               前へ
             </button>
             <span className="text-sm text-secondary-500">
@@ -145,7 +145,7 @@ export function HistoryPanel({
               className="flex items-center gap-1 px-3 py-1.5 text-sm text-secondary-600 hover:text-secondary-800 disabled:text-secondary-300 disabled:cursor-not-allowed transition-colors"
             >
               次へ
-              <HiChevronRight className="w-4 h-4" />
+              <ChevronRightIcon className="w-4 h-4" />
             </button>
           </div>
         )}

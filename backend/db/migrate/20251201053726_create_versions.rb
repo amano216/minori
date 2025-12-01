@@ -20,7 +20,7 @@ class CreateVersions < ActiveRecord::Migration[8.1]
     end
 
     # インデックス
-    add_index :versions, [:item_type, :item_id]
+    add_index :versions, [ :item_type, :item_id ]
     add_index :versions, :whodunnit
     add_index :versions, :organization_id
     add_index :versions, :created_at
