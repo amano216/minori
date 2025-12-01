@@ -1,4 +1,7 @@
 class Organization < ApplicationRecord
+  # 3省2ガイドライン準拠の監査ログ（Phase 3）
+  has_paper_trail
+
   has_many :organization_memberships, dependent: :destroy
   has_many :users, through: :organization_memberships
   has_many :groups, dependent: :destroy

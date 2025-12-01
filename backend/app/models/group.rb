@@ -1,4 +1,7 @@
 class Group < ApplicationRecord
+  # 3省2ガイドライン準拠の監査ログ（Phase 3）
+  has_paper_trail
+
   belongs_to :organization
   belongs_to :parent, class_name: "Group", optional: true
   has_many :children, class_name: "Group", foreign_key: "parent_id", dependent: :destroy

@@ -1,7 +1,7 @@
 // Audit Log API（3省2ガイドライン準拠）
 // 監査ログの取得用API
 
-export type AuditItemType = 'Patient' | 'Visit' | 'User' | 'VisitPattern' | 'Event';
+export type AuditItemType = 'Patient' | 'Visit' | 'User' | 'VisitPattern' | 'Event' | 'Organization' | 'Group' | 'PlanningLane';
 
 export interface AuditVersion {
   id: number;
