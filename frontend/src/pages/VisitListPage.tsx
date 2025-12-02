@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { FormEvent } from 'react';
-import { X } from 'lucide-react';
+import { X, Search } from 'lucide-react';
 import { fetchVisits, fetchVisit, cancelVisit, completeVisit, deleteVisit, createVisit, updateVisit, fetchStaffs, fetchPatients, type Visit, type VisitInput, type Staff, type Patient } from '../api/client';
+import { SearchableSelect, type SelectOption } from '../components/molecules/SearchableSelect';
 import { fetchVersions, type AuditVersion } from '../api/versionsApi';
 import { Button } from '../components/atoms/Button';
 import { Badge } from '../components/atoms/Badge';
@@ -113,6 +114,9 @@ export function VisitListPage() {
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
+  const [staffFilter, setStaffFilter] = useState<number | ''>('');
+  const [patientFilter, setPatientFilter] = useState<number | ''>('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [actionModal, setActionModal] = useState<{ type: 'complete' | 'cancel' | 'delete'; visit: Visit } | null>(null);
 
   // Side Panel State
@@ -141,9 +145,11 @@ export function VisitListPage() {
   const loadVisits = useCallback(async () => {
     try {
       setLoading(true);
-      const params: { status?: string; date?: string } = {};
+      const params: { status?: string; date?: string; staff_id?: number; patient_id?: number } = {};
       if (statusFilter) params.status = statusFilter;
       if (dateFilter) params.date = dateFilter;
+      if (staffFilter) params.staff_id = staffFilter;
+      if (patientFilter) params.patient_id = patientFilter;
       const data = await fetchVisits(Object.keys(params).length > 0 ? params : undefined);
       setVisits(data);
     } catch (err) {
@@ -151,7 +157,7 @@ export function VisitListPage() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, dateFilter]);
+  }, [statusFilter, dateFilter, staffFilter, patientFilter]);
 
   useEffect(() => {
     loadVisits();
@@ -207,6 +213,27 @@ export function VisitListPage() {
   const filteredStaffs = useMemo(() => {
     return staffs;
   }, [staffs]);
+
+  // SearchableSelect用のオプション配列
+  const staffOptions: SelectOption[] = useMemo(() => {
+    return staffs.map(s => ({ value: s.id, label: s.name }));
+  }, [staffs]);
+
+  const patientOptions: SelectOption[] = useMemo(() => {
+    return patients.map(p => ({ value: p.id, label: p.name }));
+  }, [patients]);
+
+  // テキスト検索によるクライアントサイドフィルタリング
+  const filteredVisits = useMemo(() => {
+    if (!searchQuery.trim()) return visits;
+    const query = searchQuery.toLowerCase();
+    return visits.filter(visit => {
+      const patientName = visit.patient?.name?.toLowerCase() || '';
+      const staffName = visit.staff?.name?.toLowerCase() || '';
+      const notes = visit.notes?.toLowerCase() || '';
+      return patientName.includes(query) || staffName.includes(query) || notes.includes(query);
+    });
+  }, [visits, searchQuery]);
 
   const handleOpenPanel = async (visit?: Visit) => {
     setPanelTab('edit');
@@ -411,30 +438,83 @@ export function VisitListPage() {
   ];
 
   const filterContent = (
-    <div className="flex gap-3 items-center flex-wrap">
-      <select
-        value={statusFilter}
-        onChange={(e) => setStatusFilter(e.target.value)}
-        className="px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
-      >
-        <option value="">すべてのステータス</option>
-        <option value="scheduled">予定</option>
-        <option value="in_progress">実施中</option>
-        <option value="completed">完了</option>
-        <option value="cancelled">キャンセル</option>
-        <option value="unassigned">未割当</option>
-      </select>
-      <input
-        type="date"
-        value={dateFilter}
-        onChange={(e) => setDateFilter(e.target.value)}
-        className="px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
-      />
-      {dateFilter && (
-        <Button variant="text" size="sm" onClick={() => setDateFilter('')}>
-          日付クリア
-        </Button>
-      )}
+    <div className="flex flex-col gap-3 w-full">
+      {/* 検索入力 */}
+      <div className="relative flex-1 min-w-0">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="患者名、スタッフ名、備考で検索..."
+          className="w-full pl-9 pr-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
+        />
+      </div>
+      
+      {/* フィルター行 */}
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center flex-wrap">
+        {/* スタッフフィルター */}
+        <div className="w-full sm:w-48">
+          <SearchableSelect
+            options={staffOptions}
+            value={staffFilter}
+            onChange={(value) => setStaffFilter(value === '' ? '' : Number(value))}
+            placeholder="担当スタッフ"
+            searchPlaceholder="スタッフを検索..."
+            allowClear
+          />
+        </div>
+        
+        {/* 患者フィルター */}
+        <div className="w-full sm:w-48">
+          <SearchableSelect
+            options={patientOptions}
+            value={patientFilter}
+            onChange={(value) => setPatientFilter(value === '' ? '' : Number(value))}
+            placeholder="患者"
+            searchPlaceholder="患者を検索..."
+            allowClear
+          />
+        </div>
+        
+        {/* ステータスフィルター */}
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-3 py-2.5 border border-border rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
+        >
+          <option value="">すべてのステータス</option>
+          <option value="scheduled">予定</option>
+          <option value="in_progress">実施中</option>
+          <option value="completed">完了</option>
+          <option value="cancelled">キャンセル</option>
+          <option value="unassigned">未割当</option>
+        </select>
+        
+        {/* 日付フィルター */}
+        <input
+          type="date"
+          value={dateFilter}
+          onChange={(e) => setDateFilter(e.target.value)}
+          className="px-3 py-2.5 border border-border rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
+        />
+        
+        {/* クリアボタン */}
+        {(dateFilter || staffFilter || patientFilter || searchQuery) && (
+          <Button
+            variant="text"
+            size="sm"
+            onClick={() => {
+              setDateFilter('');
+              setStaffFilter('');
+              setPatientFilter('');
+              setSearchQuery('');
+            }}
+          >
+            フィルタークリア
+          </Button>
+        )}
+      </div>
     </div>
   );
 
@@ -480,7 +560,7 @@ export function VisitListPage() {
     <>
       <ListLayout
         title="訪問予定管理"
-        description={`${visits.length}件の訪問予定があります`}
+        description={`${filteredVisits.length}件の訪問予定${searchQuery ? '（検索結果）' : 'があります'}`}
         actions={
           <Button variant="primary" onClick={() => handleOpenPanel()}>
             新規登録
@@ -494,13 +574,13 @@ export function VisitListPage() {
           </div>
         )}
 
-        {visits.length === 0 ? (
+        {filteredVisits.length === 0 ? (
           <div className="text-center py-12 text-text-grey">
-            訪問予定が登録されていません
+            {searchQuery ? '検索条件に一致する訪問予定がありません' : '訪問予定が登録されていません'}
           </div>
         ) : (
           <DataTable
-            data={visits}
+            data={filteredVisits}
             columns={columns}
             keyExtractor={(visit) => visit.id}
           />
