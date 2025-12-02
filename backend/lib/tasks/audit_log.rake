@@ -40,23 +40,23 @@ namespace :audit_log do
   desc "Fix organization_id for existing versions records"
   task fix_organization_id: :environment do
     puts "=== Fixing organization_id for versions ==="
-    
+
     null_count = PaperTrail::Version.where(organization_id: nil).count
     puts "Records with NULL organization_id: #{null_count}"
-    
+
     if null_count.zero?
       puts "No records to fix."
       next
     end
-    
+
     fixed = 0
     skipped = 0
-    
+
     PaperTrail::Version.where(organization_id: nil).find_each do |version|
       begin
         klass = version.item_type.constantize
         record = klass.find_by(id: version.item_id)
-        
+
         if record&.respond_to?(:organization_id) && record.organization_id
           version.update_columns(
             organization_id: record.organization_id,
@@ -72,7 +72,7 @@ namespace :audit_log do
         skipped += 1
       end
     end
-    
+
     puts "Fixed: #{fixed}, Skipped: #{skipped}"
     puts "Done."
   end
