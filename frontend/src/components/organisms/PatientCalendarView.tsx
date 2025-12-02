@@ -55,7 +55,14 @@ interface PatientCalendarViewProps {
 const START_HOUR = 0;
 const END_HOUR = 24;
 const TOTAL_HOURS = END_HOUR - START_HOUR;
-const VISIBLE_HOURS = 12; // 一度に表示する時間数
+const DEFAULT_START_HOUR = 9; // デフォルト開始時間 (9:00 AM)
+
+// ズームレベル設定
+const ZOOM_LEVELS = {
+  '8h': { hours: 8, label: '8h' },
+  '24h': { hours: 24, label: '24h' },
+} as const;
+type ZoomLevel = keyof typeof ZOOM_LEVELS;
 
 // Group-based color mapping for consistent visual hierarchy
 const GROUP_COLORS: Record<number, string> = {};
@@ -786,7 +793,8 @@ export default function PatientCalendarView({
     }
   }, [dataMode, selectedDayOfWeek, patternVersion]);
 
-  const [scrollOffset, setScrollOffset] = useState(8); // 初期表示は8:00から
+  const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('8h'); // デフォルト8時間表示
+  const [scrollOffset, setScrollOffset] = useState(DEFAULT_START_HOUR); // 初期表示は9:00から
 
   const handleCreateLane = async (name: string, groupId: number | null) => {
     try {
@@ -848,7 +856,10 @@ export default function PatientCalendarView({
   }, [lanes, selectedGroupIds]);
 
   const hours = Array.from({ length: TOTAL_HOURS }, (_, i) => START_HOUR + i);
-  const visibleHours = hours.slice(scrollOffset, scrollOffset + VISIBLE_HOURS);
+  const currentZoom = ZOOM_LEVELS[zoomLevel];
+  const visibleHours = zoomLevel === '24h' 
+    ? hours 
+    : hours.slice(scrollOffset, scrollOffset + currentZoom.hours);
 
   // Convert patterns to Visit-like objects for rendering
   const patternsAsVisits = useMemo((): PatternVisit[] => {
@@ -907,11 +918,12 @@ export default function PatientCalendarView({
   };
 
   const scrollLater = () => {
-    setScrollOffset(prev => Math.min(TOTAL_HOURS - VISIBLE_HOURS, prev + 4));
+    setScrollOffset(prev => Math.min(TOTAL_HOURS - currentZoom.hours, prev + 4));
   };
 
-  const canScrollEarlier = scrollOffset > 0;
-  const canScrollLater = scrollOffset < TOTAL_HOURS - VISIBLE_HOURS;
+  // 24時間表示時はスクロール不要
+  const canScrollEarlier = zoomLevel !== '24h' && scrollOffset > 0;
+  const canScrollLater = zoomLevel !== '24h' && scrollOffset < TOTAL_HOURS - currentZoom.hours;
 
   if (loading) {
     return <div className="p-4 text-center">読み込み中...</div>;
@@ -934,28 +946,52 @@ export default function PatientCalendarView({
             </button>
           </div>
 
-          <div className="flex items-center gap-1 sm:gap-2">
-            <button
-              onClick={scrollEarlier}
-              disabled={!canScrollEarlier}
-              className="p-1.5 sm:p-2 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed rounded-full transition-colors"
-              title="前の時間帯"
-            >
-              <ChevronLeftIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-            </button>
-            
-            <span className="text-xs sm:text-sm font-medium text-gray-600 min-w-[80px] sm:min-w-[100px] text-center">
-              {visibleHours[0]}:00 - {visibleHours[visibleHours.length - 1]}:59
-            </span>
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* ズームレベル切り替えボタン */}
+            <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+              {(Object.keys(ZOOM_LEVELS) as ZoomLevel[]).map((level) => (
+                <button
+                  key={level}
+                  onClick={() => {
+                    setZoomLevel(level);
+                    // 24h→8hに戻す時、scrollOffsetをリセット
+                    if (level === '8h' && scrollOffset > TOTAL_HOURS - ZOOM_LEVELS['8h'].hours) {
+                      setScrollOffset(DEFAULT_START_HOUR);
+                    }
+                  }}
+                  className={`px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm font-medium transition-colors min-w-[44px] sm:min-w-[52px]
+                    ${zoomLevel === level 
+                      ? 'bg-indigo-600 text-white' 
+                      : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                  title={ZOOM_LEVELS[level].label}
+                >
+                  {ZOOM_LEVELS[level].label}
+                </button>
+              ))}
+            </div>
 
-            <button
-              onClick={scrollLater}
-              disabled={!canScrollLater}
-              className="p-1.5 sm:p-2 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed rounded-full transition-colors"
-              title="次の時間帯"
-            >
-              <ChevronRightIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-            </button>
+            {/* 時間スクロールコントロール（8時間表示時のみ） */}
+            {zoomLevel !== '24h' && (
+              <>
+                <button
+                  onClick={scrollEarlier}
+                  disabled={!canScrollEarlier}
+                  className="p-1.5 sm:p-2 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed rounded-full transition-colors"
+                  title="前の時間帯"
+                >
+                  <ChevronLeftIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
+
+                <button
+                  onClick={scrollLater}
+                  disabled={!canScrollLater}
+                  className="p-1.5 sm:p-2 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed rounded-full transition-colors"
+                  title="次の時間帯"
+                >
+                  <ChevronRightIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
+              </>
+            )}
           </div>
         </div>
 
