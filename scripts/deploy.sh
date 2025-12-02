@@ -47,6 +47,7 @@ deploy_frontend() {
     gcloud builds submit ./frontend \
         --config=./frontend/cloudbuild.yaml \
         --project="$PROJECT_ID" \
+        --region="$REGION" \
         --substitutions=_SHORT_SHA="$GIT_SHA",_VITE_API_URL="https://minori-backend-336192862447.asia-northeast1.run.app"
 
     echo -e "${GREEN}✓ Frontend deployed successfully${NC}"
@@ -64,6 +65,7 @@ deploy_backend() {
     gcloud builds submit ./backend \
         --config=./backend/cloudbuild.yaml \
         --project="$PROJECT_ID" \
+        --region="$REGION" \
         --substitutions=_SHORT_SHA="$GIT_SHA"
 
     echo -e "${GREEN}✓ Backend deployed successfully${NC}"
