@@ -103,25 +103,34 @@ const DroppableTimeSlot = ({
   laneId, 
   children, 
   onClick, 
-  hasConflict 
+  hasConflict,
+  laneColor 
 }: { 
   hour: number, 
   laneId: number, 
   children: React.ReactNode, 
   onClick: () => void, 
-  hasConflict: boolean 
+  hasConflict: boolean,
+  laneColor: string 
 }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: `slot-${laneId}-${hour}`,
     data: { hour, laneId },
   });
 
+  // 背景色の優先順位: コンフリクト > ドラッグオーバー > レーン色
+  const bgColor = hasConflict 
+    ? 'bg-red-50' 
+    : isOver 
+      ? 'bg-indigo-100' 
+      : laneColor;
+
   return (
     <div
       ref={setNodeRef}
       className={`flex-1 min-w-[80px] border-r border-gray-100 p-1 cursor-pointer transition-colors relative group 
-        ${hasConflict ? 'bg-red-50' : ''} 
-        ${isOver ? 'bg-indigo-100 ring-2 ring-inset ring-indigo-400' : 'hover:bg-indigo-50/50'}`}
+        ${bgColor} 
+        ${isOver ? 'ring-2 ring-inset ring-indigo-400' : 'hover:bg-indigo-50/50'}`}
       style={{ minHeight: '70px' }}
       onClick={onClick}
       title={`${String(hour).padStart(2, '0')}:00 - 予定を追加`}
@@ -535,9 +544,9 @@ const LaneRow: React.FC<LaneRowProps> = ({
   };
 
   return (
-    <div className={`flex border-b border-gray-200 min-w-[600px] sm:min-w-0 ${lane.color}`}>
+    <div className="flex border-b border-gray-200 min-w-[600px] sm:min-w-0">
       {/* Lane Label - Mobile Responsive */}
-      <div className="w-28 sm:w-40 flex-shrink-0 px-2 py-2 sm:px-3 sm:py-3 border-r border-gray-200 flex items-center gap-1 sm:gap-2 bg-white/60">
+      <div className={`w-28 sm:w-40 flex-shrink-0 px-2 py-2 sm:px-3 sm:py-3 border-r border-gray-200 flex items-center gap-1 sm:gap-2 ${lane.color}`}>
         {isEditing ? (
           <div className="flex items-center gap-1 flex-1 min-w-0">
             <input
@@ -598,6 +607,7 @@ const LaneRow: React.FC<LaneRowProps> = ({
               hour={hour}
               laneId={lane.id}
               hasConflict={hasConflict}
+              laneColor={lane.color}
               onClick={() => {
                 console.log('Time slot clicked:', hour, lane.id);
                 onTimeSlotClick?.(hour, String(lane.id));
