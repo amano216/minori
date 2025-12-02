@@ -436,6 +436,40 @@ interface LaneRowProps {
   dataMode?: 'actual' | 'pattern';
 }
 
+// カードの位置とサイズを計算する関数
+const calculateCardPosition = (
+  visit: Visit,
+  visibleHours: number[]
+): { leftPercent: number; widthPercent: number; isVisible: boolean } => {
+  const visitDate = new Date(visit.scheduled_at);
+  const startHour = visitDate.getHours();
+  const startMinute = visitDate.getMinutes();
+  const durationMinutes = visit.duration || 60;
+  
+  const visibleStartHour = visibleHours[0];
+  const visibleEndHour = visibleHours[visibleHours.length - 1] + 1; // 次の時間の開始まで
+  const totalVisibleHours = visibleEndHour - visibleStartHour;
+  
+  // 開始位置を時間（小数）で計算
+  const startTimeInHours = startHour + startMinute / 60;
+  const endTimeInHours = startTimeInHours + durationMinutes / 60;
+  
+  // 表示範囲外のカードは非表示
+  if (endTimeInHours <= visibleStartHour || startTimeInHours >= visibleEndHour) {
+    return { leftPercent: 0, widthPercent: 0, isVisible: false };
+  }
+  
+  // 表示範囲内にクリップ
+  const clippedStart = Math.max(startTimeInHours, visibleStartHour);
+  const clippedEnd = Math.min(endTimeInHours, visibleEndHour);
+  
+  // パーセント計算
+  const leftPercent = ((clippedStart - visibleStartHour) / totalVisibleHours) * 100;
+  const widthPercent = ((clippedEnd - clippedStart) / totalVisibleHours) * 100;
+  
+  return { leftPercent, widthPercent, isVisible: true };
+};
+
 const LaneRow: React.FC<LaneRowProps> = ({ 
   lane, 
   visits,
@@ -544,7 +578,8 @@ const LaneRow: React.FC<LaneRowProps> = ({
       </div>
 
       {/* Timeline Grid - Mobile Responsive */}
-      <div className="flex-1 flex">
+      <div className="flex-1 flex relative">
+        {/* ドロップゾーン（グリッド） */}
         {visibleHours.map(hour => {
           const hourVisits = getVisitsForHour(hour);
           const hourEvents = getEventsForHour(hour);
@@ -571,25 +606,107 @@ const LaneRow: React.FC<LaneRowProps> = ({
                   <ExclamationTriangleIcon className="w-3 h-3" />
                 </div>
               )}
-              {hourVisits.map(visit => (
+            </DroppableTimeSlot>
+          );
+        })}
+        
+        {/* カードオーバーレイ（絶対位置） */}
+        <div className="absolute inset-0 pointer-events-none">
+          {(() => {
+            // 重複カードをグループ化して縦に並べる
+            const cardPositions: { visit: Visit; leftPercent: number; widthPercent: number; verticalIndex: number }[] = [];
+            const sortedVisits = [...todaysVisits].sort((a, b) => 
+              new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
+            );
+            
+            sortedVisits.forEach(visit => {
+              const pos = calculateCardPosition(visit, visibleHours);
+              if (!pos.isVisible) return;
+              
+              // 重複をチェックして縦位置を決定
+              let verticalIndex = 0;
+              const visitStart = new Date(visit.scheduled_at).getTime();
+              const visitEnd = visitStart + (visit.duration || 60) * 60000;
+              
+              cardPositions.forEach(existing => {
+                const existingVisit = existing.visit;
+                const existingStart = new Date(existingVisit.scheduled_at).getTime();
+                const existingEnd = existingStart + (existingVisit.duration || 60) * 60000;
+                
+                // 時間が重複している場合
+                if (visitStart < existingEnd && visitEnd > existingStart) {
+                  if (existing.verticalIndex >= verticalIndex) {
+                    verticalIndex = existing.verticalIndex + 1;
+                  }
+                }
+              });
+              
+              cardPositions.push({ visit, ...pos, verticalIndex });
+            });
+            
+            return cardPositions.map(({ visit, leftPercent, widthPercent, verticalIndex }) => (
+              <div
+                key={visit.id}
+                className="absolute pointer-events-auto"
+                style={{
+                  left: `${leftPercent}%`,
+                  width: `${widthPercent}%`,
+                  top: `${4 + verticalIndex * 72}px`, // 4px padding + カード高さ約68px
+                  minWidth: '60px', // 最小幅を確保
+                }}
+              >
                 <DraggableVisitCard
-                  key={visit.id}
                   visit={visit}
                   onClick={() => onVisitClick(visit)}
                   disabled={dataMode === 'pattern'}
                   patternFrequency={(visit as PatternVisit).__pattern?.frequency}
                 />
-              ))}
-              {hourEvents.map(event => (
+              </div>
+            ));
+          })()}
+          
+          {/* イベントカード（元の時間スロットベースで配置） */}
+          {todaysEvents.map(event => {
+            const eventDate = new Date(event.scheduled_at);
+            const startHour = eventDate.getHours();
+            const startMinute = eventDate.getMinutes();
+            const durationMinutes = event.duration || 60;
+            
+            const visibleStartHour = visibleHours[0];
+            const visibleEndHour = visibleHours[visibleHours.length - 1] + 1;
+            const totalVisibleHours = visibleEndHour - visibleStartHour;
+            
+            const startTimeInHours = startHour + startMinute / 60;
+            const endTimeInHours = startTimeInHours + durationMinutes / 60;
+            
+            if (endTimeInHours <= visibleStartHour || startTimeInHours >= visibleEndHour) {
+              return null;
+            }
+            
+            const clippedStart = Math.max(startTimeInHours, visibleStartHour);
+            const clippedEnd = Math.min(endTimeInHours, visibleEndHour);
+            const leftPercent = ((clippedStart - visibleStartHour) / totalVisibleHours) * 100;
+            const widthPercent = ((clippedEnd - clippedStart) / totalVisibleHours) * 100;
+            
+            return (
+              <div
+                key={`event-${event.id}`}
+                className="absolute pointer-events-auto"
+                style={{
+                  left: `${leftPercent}%`,
+                  width: `${widthPercent}%`,
+                  bottom: '4px',
+                  minWidth: '60px',
+                }}
+              >
                 <EventCard
-                  key={`event-${event.id}`}
                   event={event}
                   onClick={() => onEventClick?.(event)}
                 />
-              ))}
-            </DroppableTimeSlot>
-          );
-        })}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
