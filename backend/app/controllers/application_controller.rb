@@ -2,11 +2,18 @@ class ApplicationController < ActionController::API
   include ActionController::HttpAuthentication::Token::ControllerMethods
 
   before_action :authenticate_request
-  before_action :set_paper_trail_whodunnit
+  before_action :setup_paper_trail
 
   attr_reader :current_user
 
   private
+
+  def setup_paper_trail
+    # Paper Trail の whodunnit と controller_info を手動で設定
+    # authenticate_request の後に実行されるので current_user が利用可能
+    ::PaperTrail.request.whodunnit = user_for_paper_trail
+    ::PaperTrail.request.controller_info = info_for_paper_trail
+  end
 
   def authenticate_request
     authenticate_with_http_token do |token, _options|
