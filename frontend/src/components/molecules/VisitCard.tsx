@@ -28,11 +28,15 @@ export const VisitCard: React.FC<VisitCardProps> = ({ visit, isOverlay, classNam
   const formatTime = (d: Date) => 
     `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
 
-  // パターンモードで毎週以外の場合はピンク、それ以外は通常の色
+  // 入院中の患者は灰色、それ以外は従来のロジック
+  const isHospitalized = visit.patient?.status === 'hospitalized';
   const isNonWeeklyPattern = patternFrequency && patternFrequency !== 'weekly';
   
   let bgColor: string;
-  if (isNonWeeklyPattern) {
+  if (isHospitalized) {
+    // 入院中患者: 灰色（最優先）
+    bgColor = 'bg-gray-200 border-l-gray-400';
+  } else if (isNonWeeklyPattern) {
     // 隔週/月2回パターン: ピンク
     bgColor = 'bg-rose-100 border-l-rose-500';
   } else if (patternFrequency) {

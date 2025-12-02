@@ -341,6 +341,8 @@ export async function deletePatient(id: number): Promise<void> {
 }
 
 // Visit API
+export type PatientStatus = 'active' | 'hospitalized' | 'inactive';
+
 export interface Visit {
   id: number;
   scheduled_at: string;
@@ -348,7 +350,7 @@ export interface Visit {
   staff_id: number | null;
   patient_id: number;
   staff: { id: number; name: string } | null;
-  patient: { id: number; name: string; address?: string; external_urls?: ExternalUrl[] };
+  patient: { id: number; name: string; address?: string; external_urls?: ExternalUrl[]; status?: PatientStatus };
   status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'unassigned';
   notes: string;
   created_at: string;
@@ -415,7 +417,7 @@ export async function completeVisit(id: number): Promise<Visit> {
 
 // Schedule API
 export interface ScheduleVisit extends Visit {
-  patient: { id: number; name: string; address?: string; group?: { id: number; name: string } };
+  patient: { id: number; name: string; address?: string; status?: PatientStatus; group?: { id: number; name: string } };
 }
 
 export interface DailySchedule {
@@ -616,7 +618,7 @@ export interface VisitPattern {
   start_time: string;
   duration: number;
   frequency: PatternFrequency;
-  patient: { id: number; name: string; address?: string } | null;
+  patient: { id: number; name: string; address?: string; status?: PatientStatus } | null;
   staff: { id: number; name: string } | null;
   planning_lane: { id: number; name: string } | null;
   created_at: string;
