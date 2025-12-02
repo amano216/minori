@@ -577,6 +577,7 @@ const LaneRow: React.FC<LaneRowProps> = ({
                   visit={visit}
                   onClick={() => onVisitClick(visit)}
                   disabled={dataMode === 'pattern'}
+                  patternFrequency={(visit as PatternVisit).__pattern?.frequency}
                 />
               ))}
               {hourEvents.map(event => (

@@ -4,6 +4,9 @@ class VisitPattern < ApplicationRecord
   # 3省2ガイドライン準拠の監査ログ（Phase 2）
   has_paper_trail
 
+  # 頻度の定数
+  FREQUENCIES = %w[weekly biweekly monthly_1_3 monthly_2_4].freeze
+
   belongs_to :planning_lane, optional: true
   belongs_to :patient
   belongs_to :organization
@@ -14,6 +17,7 @@ class VisitPattern < ApplicationRecord
   validates :day_of_week, presence: true, inclusion: { in: 0..6 }
   validates :start_time, presence: true
   validates :duration, presence: true, numericality: { greater_than: 0 }
+  validates :frequency, inclusion: { in: FREQUENCIES }
 
   # "09:00" → DBに09:00:00として保存
   def start_time=(value)

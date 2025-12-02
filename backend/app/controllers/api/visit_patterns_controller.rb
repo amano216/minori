@@ -93,7 +93,7 @@ module Api
     def visit_pattern_params
       params.require(:visit_pattern).permit(
         :planning_lane_id, :patient_id, :default_staff_id,
-        :day_of_week, :start_time, :duration
+        :day_of_week, :start_time, :duration, :frequency
       )
     end
 
@@ -107,6 +107,7 @@ module Api
         day_name: pattern.day_name,
         start_time: pattern.start_time_string,
         duration: pattern.duration,
+        frequency: pattern.frequency,
         patient: pattern.patient ? { id: pattern.patient.id, name: pattern.patient.name, address: pattern.patient.address } : nil,
         staff: pattern.default_staff ? { id: pattern.default_staff.id, name: pattern.default_staff.name } : nil,
         planning_lane: pattern.planning_lane ? { id: pattern.planning_lane.id, name: pattern.planning_lane.name } : nil,
