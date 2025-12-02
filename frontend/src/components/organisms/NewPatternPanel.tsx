@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, type FormEvent } from 'react';
-import { X, User, Clock, Save } from 'lucide-react';
+import { X, User, Clock, Save, RefreshCw } from 'lucide-react';
 import {
   createVisitPattern,
   fetchStaffs,
@@ -8,10 +8,18 @@ import {
   type Staff,
   type Patient,
   type Group,
+  type PatternFrequency,
 } from '../../api/client';
 import { Button } from '../atoms/Button';
 import { Spinner } from '../atoms/Spinner';
 import { SearchableSelect } from '../molecules/SearchableSelect';
+
+const FREQUENCY_OPTIONS: { value: PatternFrequency; label: string }[] = [
+  { value: 'weekly', label: '毎週' },
+  { value: 'biweekly', label: '隔週' },
+  { value: 'monthly_1_3', label: '第1・3週' },
+  { value: 'monthly_2_4', label: '第2・4週' },
+];
 
 interface NewPatternPanelProps {
   isOpen: boolean;
@@ -40,6 +48,7 @@ export function NewPatternPanel({
   const [dayOfWeek, setDayOfWeek] = useState(initialDayOfWeek);
   const [startTime, setStartTime] = useState(initialTime);
   const [duration, setDuration] = useState(60);
+  const [frequency, setFrequency] = useState<PatternFrequency>('weekly');
   const [staffId, setStaffId] = useState<number | ''>('');
   const [patientId, setPatientId] = useState<number | ''>('');
   const [planningLaneId, setPlanningLaneId] = useState<number | null>(initialPlanningLaneId || null);
@@ -88,6 +97,7 @@ export function NewPatternPanel({
     setDayOfWeek(1);
     setStartTime('09:00');
     setDuration(60);
+    setFrequency('weekly');
     setStaffId('');
     setPatientId('');
     setPlanningLaneId(null);
@@ -115,6 +125,7 @@ export function NewPatternPanel({
         day_of_week: dayOfWeek,
         start_time: startTime,
         duration,
+        frequency,
         patient_id: Number(patientId),
         default_staff_id: staffId ? Number(staffId) : undefined,
         planning_lane_id: planningLaneId,
@@ -213,6 +224,25 @@ export function NewPatternPanel({
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Frequency */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <RefreshCw className="w-4 h-4 inline mr-1" />
+                  頻度
+                </label>
+                <select
+                  value={frequency}
+                  onChange={(e) => setFrequency(e.target.value as PatternFrequency)}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                    frequency !== 'weekly' ? 'border-rose-300 bg-rose-50' : 'border-gray-300'
+                  }`}
+                >
+                  {FREQUENCY_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
               </div>
 
               {/* Time & Duration */}

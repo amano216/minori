@@ -604,6 +604,8 @@ export const api = {
 };
 
 // Visit Pattern API (計画モード)
+export type PatternFrequency = 'weekly' | 'biweekly' | 'monthly_1_3' | 'monthly_2_4';
+
 export interface VisitPattern {
   id: number;
   planning_lane_id: number | null;
@@ -613,6 +615,7 @@ export interface VisitPattern {
   day_name: string;
   start_time: string;
   duration: number;
+  frequency: PatternFrequency;
   patient: { id: number; name: string; address?: string } | null;
   staff: { id: number; name: string } | null;
   planning_lane: { id: number; name: string } | null;
@@ -627,6 +630,7 @@ export interface VisitPatternInput {
   day_of_week: number;
   start_time: string;
   duration?: number;
+  frequency?: PatternFrequency;
 }
 
 export async function fetchVisitPatterns(params?: {

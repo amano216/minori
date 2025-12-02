@@ -1,16 +1,25 @@
 import React, { useRef } from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import type { Visit } from '../../api/client';
+import type { Visit, PatternFrequency } from '../../api/client';
 import { extractTownName } from '../../utils/addressUtils';
+
+// 頻度ラベルのマッピング
+const FREQUENCY_LABELS: Record<PatternFrequency, string> = {
+  weekly: '毎週',
+  biweekly: '隔週',
+  monthly_1_3: '第1・3週',
+  monthly_2_4: '第2・4週',
+};
 
 interface VisitCardProps {
   visit: Visit;
   onClick?: () => void;
   isOverlay?: boolean;
   className?: string;
+  patternFrequency?: PatternFrequency; // パターンモード用
 }
 
-export const VisitCard: React.FC<VisitCardProps> = ({ visit, isOverlay, className = '' }) => {
+export const VisitCard: React.FC<VisitCardProps> = ({ visit, isOverlay, className = '', patternFrequency }) => {
   const visitDate = new Date(visit.scheduled_at);
   const durationMinutes = visit.duration || 60;
   const endDate = new Date(visitDate.getTime() + durationMinutes * 60000);
@@ -19,9 +28,23 @@ export const VisitCard: React.FC<VisitCardProps> = ({ visit, isOverlay, classNam
   const formatTime = (d: Date) => 
     `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
 
-  const bgColor = visit.staff_id
-    ? 'bg-blue-100 border-l-blue-500'
-    : 'bg-amber-100 border-l-amber-500';
+  // パターンモードで毎週以外の場合はピンク、それ以外は通常の色
+  const isNonWeeklyPattern = patternFrequency && patternFrequency !== 'weekly';
+  
+  let bgColor: string;
+  if (isNonWeeklyPattern) {
+    // 隔週/月2回パターン: ピンク
+    bgColor = 'bg-rose-100 border-l-rose-500';
+  } else if (patternFrequency) {
+    // 毎週パターン: 黄色（未割当と同じ）
+    bgColor = 'bg-amber-100 border-l-amber-500';
+  } else if (visit.staff_id) {
+    // 通常訪問（スタッフ割当済み）: 青
+    bgColor = 'bg-blue-100 border-l-blue-500';
+  } else {
+    // 通常訪問（未割当）: 黄色
+    bgColor = 'bg-amber-100 border-l-amber-500';
+  }
 
   return (
     <div
@@ -56,11 +79,26 @@ export const VisitCard: React.FC<VisitCardProps> = ({ visit, isOverlay, classNam
           {visit.staff.name}
         </div>
       )}
+      {patternFrequency && (
+        <div className={`text-[9px] leading-tight truncate mt-0.5 ${isNonWeeklyPattern ? 'text-rose-600 font-medium' : 'text-amber-600'}`}>
+          {FREQUENCY_LABELS[patternFrequency]}
+        </div>
+      )}
     </div>
   );
 };
 
-export const DraggableVisitCard = ({ visit, onClick, disabled = false }: { visit: Visit, onClick: () => void, disabled?: boolean }) => {
+export const DraggableVisitCard = ({ 
+  visit, 
+  onClick, 
+  disabled = false,
+  patternFrequency,
+}: { 
+  visit: Visit; 
+  onClick: () => void; 
+  disabled?: boolean;
+  patternFrequency?: PatternFrequency;
+}) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `visit-${visit.id}`,
     data: { visit },
@@ -115,7 +153,7 @@ export const DraggableVisitCard = ({ visit, onClick, disabled = false }: { visit
       onPointerMove={handlePointerMove}
       onClick={handleClick}
     >
-      <VisitCard visit={visit} onClick={() => {}} />
+      <VisitCard visit={visit} onClick={() => {}} patternFrequency={patternFrequency} />
     </div>
   );
 };
