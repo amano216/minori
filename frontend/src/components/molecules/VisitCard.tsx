@@ -60,10 +60,11 @@ export const VisitCard: React.FC<VisitCardProps> = ({ visit, isOverlay, classNam
   );
 };
 
-export const DraggableVisitCard = ({ visit, onClick }: { visit: Visit, onClick: () => void }) => {
+export const DraggableVisitCard = ({ visit, onClick, disabled = false }: { visit: Visit, onClick: () => void, disabled?: boolean }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `visit-${visit.id}`,
     data: { visit },
+    disabled,
   });
   
   const pointerStartPos = useRef<{ x: number; y: number } | null>(null);
@@ -73,10 +74,12 @@ export const DraggableVisitCard = ({ visit, onClick }: { visit: Visit, onClick: 
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
     zIndex: isDragging ? 1000 : undefined,
     opacity: isDragging ? 0 : 1,
-    touchAction: 'none',
+    touchAction: disabled ? 'auto' : 'none',
+    cursor: disabled ? 'pointer' : 'grab',
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
+    if (disabled) return;
     pointerStartPos.current = { x: e.clientX, y: e.clientY };
     didDrag.current = false;
     // listenersのonPointerDownを呼び出す
