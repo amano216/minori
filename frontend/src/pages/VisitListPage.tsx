@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { FormEvent } from 'react';
-import { X } from 'lucide-react';
+import { X, Search } from 'lucide-react';
 import { fetchVisits, fetchVisit, cancelVisit, completeVisit, deleteVisit, createVisit, updateVisit, fetchStaffs, fetchPatients, type Visit, type VisitInput, type Staff, type Patient } from '../api/client';
 import { fetchVersions, type AuditVersion } from '../api/versionsApi';
 import { Button } from '../components/atoms/Button';
@@ -113,6 +113,7 @@ export function VisitListPage() {
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [actionModal, setActionModal] = useState<{ type: 'complete' | 'cancel' | 'delete'; visit: Visit } | null>(null);
 
   // Side Panel State
@@ -410,12 +411,34 @@ export function VisitListPage() {
     },
   ];
 
+  // テキスト検索によるクライアントサイドフィルタリング
+  const filteredVisits = useMemo(() => {
+    if (!searchQuery.trim()) return visits;
+    const query = searchQuery.toLowerCase();
+    return visits.filter(visit => {
+      const patientName = visit.patient?.name?.toLowerCase() || '';
+      const staffName = visit.staff?.name?.toLowerCase() || '';
+      const notes = visit.notes?.toLowerCase() || '';
+      return patientName.includes(query) || staffName.includes(query) || notes.includes(query);
+    });
+  }, [visits, searchQuery]);
+
   const filterContent = (
-    <div className="flex gap-3 items-center flex-wrap">
+    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
+      <div className="relative flex-1 min-w-0">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="患者名、スタッフ名、備考で検索..."
+          className="w-full pl-9 pr-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
+        />
+      </div>
       <select
         value={statusFilter}
         onChange={(e) => setStatusFilter(e.target.value)}
-        className="px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
+        className="px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main sm:w-auto"
       >
         <option value="">すべてのステータス</option>
         <option value="scheduled">予定</option>
@@ -430,9 +453,9 @@ export function VisitListPage() {
         onChange={(e) => setDateFilter(e.target.value)}
         className="px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
       />
-      {dateFilter && (
-        <Button variant="text" size="sm" onClick={() => setDateFilter('')}>
-          日付クリア
+      {(dateFilter || searchQuery) && (
+        <Button variant="text" size="sm" onClick={() => { setDateFilter(''); setSearchQuery(''); }}>
+          クリア
         </Button>
       )}
     </div>
@@ -480,7 +503,7 @@ export function VisitListPage() {
     <>
       <ListLayout
         title="訪問予定管理"
-        description={`${visits.length}件の訪問予定があります`}
+        description={`${filteredVisits.length}件の訪問予定${searchQuery ? '（検索結果）' : 'があります'}`}
         actions={
           <Button variant="primary" onClick={() => handleOpenPanel()}>
             新規登録
@@ -494,13 +517,13 @@ export function VisitListPage() {
           </div>
         )}
 
-        {visits.length === 0 ? (
+        {filteredVisits.length === 0 ? (
           <div className="text-center py-12 text-text-grey">
-            訪問予定が登録されていません
+            {searchQuery ? '検索条件に一致する訪問予定がありません' : '訪問予定が登録されていません'}
           </div>
         ) : (
           <DataTable
-            data={visits}
+            data={filteredVisits}
             columns={columns}
             keyExtractor={(visit) => visit.id}
           />
