@@ -433,6 +433,7 @@ interface LaneRowProps {
   onRename: (newLabel: string) => void;
   onEdit: () => void;
   visibleHours: number[];
+  dataMode?: 'actual' | 'pattern';
 }
 
 const LaneRow: React.FC<LaneRowProps> = ({ 
@@ -446,7 +447,8 @@ const LaneRow: React.FC<LaneRowProps> = ({
   onRemove,
   onRename,
   onEdit,
-  visibleHours
+  visibleHours,
+  dataMode = 'actual'
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editLabel, setEditLabel] = useState(lane.name);
@@ -574,6 +576,7 @@ const LaneRow: React.FC<LaneRowProps> = ({
                   key={visit.id}
                   visit={visit}
                   onClick={() => onVisitClick(visit)}
+                  disabled={dataMode === 'pattern'}
                 />
               ))}
               {hourEvents.map(event => (
@@ -882,6 +885,7 @@ export default function PatientCalendarView({
                 onRename={(newLabel) => renameLane(lane.id, newLabel)}
                 onEdit={() => setEditingLane(lane)}
                 visibleHours={visibleHours}
+                dataMode={dataMode}
               />
             ))
           )}
