@@ -3,7 +3,7 @@ import { X, Clock, User, FileText, MapPin, Calendar, Edit, Trash2, CheckCircle, 
 import { Button } from '../atoms/Button';
 import { Badge } from '../atoms/Badge';
 import { HistoryPanel } from '../molecules/HistoryPanel';
-import { fetchVisits, type Staff, type Visit, type Group } from '../../api/client';
+import { fetchVisits, fetchPlanningLanes, type Staff, type Visit, type Group, type PlanningLane } from '../../api/client';
 
 interface VisitDetailPanelProps {
   visit: Visit | null;
@@ -14,9 +14,25 @@ interface VisitDetailPanelProps {
   onCancel?: (visitId: number) => void;
   onComplete?: (visitId: number) => void;
   onReassign?: (visitId: number) => void;
-  onUpdate?: (visitId: number, data: { staff_id: number | null; scheduled_at?: string; status?: string }) => Promise<void>;
+  onUpdate?: (visitId: number, data: { 
+    staff_id?: number | null; 
+    scheduled_at?: string; 
+    status?: string;
+    duration?: number;
+    notes?: string;
+    planning_lane_id?: number | null;
+  }) => Promise<void>;
   onDelete?: (visitId: number) => Promise<void>;
 }
+
+// 所要時間の選択肢
+const DURATION_OPTIONS = [
+  { value: 30, label: '30分' },
+  { value: 45, label: '45分' },
+  { value: 60, label: '1時間' },
+  { value: 90, label: '1時間30分' },
+  { value: 120, label: '2時間' },
+];
 
 const STATUS_LABELS: Record<string, string> = {
   scheduled: '予定',
@@ -166,7 +182,8 @@ export function VisitDetailPanel({
   staffs = [],
   groups = [],
   onClose,
-  onEdit,
+  // onEdit is deprecated - inline editing is now used instead
+  onEdit: _onEdit,
   onCancel,
   onComplete,
   onReassign,
@@ -179,6 +196,15 @@ export function VisitDetailPanel({
   const [selectedStaffId, setSelectedStaffId] = useState<number | ''>('');
   const [updating, setUpdating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  
+  // 編集モード用ステート
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedScheduledAt, setEditedScheduledAt] = useState('');
+  const [editedDuration, setEditedDuration] = useState(60);
+  const [editedNotes, setEditedNotes] = useState('');
+  const [editedPlanningLaneId, setEditedPlanningLaneId] = useState<number | null>(null);
+  const [editedStaffId, setEditedStaffId] = useState<number | null>(null);
+  const [planningLanes, setPlanningLanes] = useState<PlanningLane[]>([]);
 
   // スタッフをグループ別にソート（「親 > チーム - スタッフ名」形式）
   const staffsWithGroupLabels = useMemo(() => {
@@ -212,10 +238,37 @@ export function VisitDetailPanel({
       setSelectedStaffId(visit.staff_id || '');
       setUpdating(false); // Reset updating state
       setDeleting(false); // Reset deleting state
+      setIsEditing(false); // Reset editing state
+      // 編集用フィールドを初期化
+      const scheduledDate = new Date(visit.scheduled_at);
+      // datetime-local用のフォーマット（YYYY-MM-DDTHH:mm）
+      const localDatetime = scheduledDate.getFullYear() + '-' +
+        String(scheduledDate.getMonth() + 1).padStart(2, '0') + '-' +
+        String(scheduledDate.getDate()).padStart(2, '0') + 'T' +
+        String(scheduledDate.getHours()).padStart(2, '0') + ':' +
+        String(scheduledDate.getMinutes()).padStart(2, '0');
+      setEditedScheduledAt(localDatetime);
+      setEditedDuration(visit.duration);
+      setEditedNotes(visit.notes || '');
+      setEditedPlanningLaneId(visit.planning_lane_id || null);
+      setEditedStaffId(visit.staff_id || null);
     } else {
       setIsVisible(false);
     }
   }, [visit]);
+
+  // 計画レーンを取得
+  useEffect(() => {
+    const loadPlanningLanes = async () => {
+      try {
+        const lanes = await fetchPlanningLanes();
+        setPlanningLanes(lanes.filter(l => !l.archived_at));
+      } catch (err) {
+        console.error('Failed to load planning lanes:', err);
+      }
+    };
+    loadPlanningLanes();
+  }, []);
 
   if (!visit) return null;
 
@@ -236,6 +289,76 @@ export function VisitDetailPanel({
     } catch (error) {
       console.error('Failed to reassign:', error);
       alert('再割当に失敗しました');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  // 編集モード開始
+  const handleStartEditing = () => {
+    if (!visit) return;
+    setIsEditing(true);
+  };
+
+  // 編集キャンセル
+  const handleCancelEditing = () => {
+    if (!visit) return;
+    // 元の値に戻す
+    const scheduledDate = new Date(visit.scheduled_at);
+    const localDatetime = scheduledDate.getFullYear() + '-' +
+      String(scheduledDate.getMonth() + 1).padStart(2, '0') + '-' +
+      String(scheduledDate.getDate()).padStart(2, '0') + 'T' +
+      String(scheduledDate.getHours()).padStart(2, '0') + ':' +
+      String(scheduledDate.getMinutes()).padStart(2, '0');
+    setEditedScheduledAt(localDatetime);
+    setEditedDuration(visit.duration);
+    setEditedNotes(visit.notes || '');
+    setEditedPlanningLaneId(visit.planning_lane_id || null);
+    setEditedStaffId(visit.staff_id || null);
+    setIsEditing(false);
+  };
+
+  // 編集保存
+  const handleSaveEditing = async () => {
+    if (!visit || !onUpdate) return;
+    setUpdating(true);
+    try {
+      const updateData: {
+        scheduled_at?: string;
+        duration?: number;
+        notes?: string;
+        planning_lane_id?: number | null;
+        staff_id?: number | null;
+        status?: string;
+      } = {};
+
+      // 変更があったフィールドのみ送信
+      const newScheduledAt = new Date(editedScheduledAt).toISOString();
+      if (newScheduledAt !== visit.scheduled_at) {
+        updateData.scheduled_at = newScheduledAt;
+      }
+      if (editedDuration !== visit.duration) {
+        updateData.duration = editedDuration;
+      }
+      if (editedNotes !== (visit.notes || '')) {
+        updateData.notes = editedNotes;
+      }
+      if (editedPlanningLaneId !== visit.planning_lane_id) {
+        updateData.planning_lane_id = editedPlanningLaneId;
+      }
+      if (editedStaffId !== visit.staff_id) {
+        updateData.staff_id = editedStaffId;
+        updateData.status = editedStaffId ? 'scheduled' : 'unassigned';
+      }
+
+      // 変更がある場合のみAPI呼び出し
+      if (Object.keys(updateData).length > 0) {
+        await onUpdate(visit.id, updateData);
+      }
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Failed to save:', error);
+      // エラーは親コンポーネントでハンドリングされる
     } finally {
       setUpdating(false);
     }
@@ -327,31 +450,36 @@ export function VisitDetailPanel({
         <div className="flex-1 overflow-y-auto p-3 sm:p-4">
           {activeTab === 'details' ? (
             <div className="space-y-6">
-              {/* Patient */}
+              {/* Patient（編集不可） */}
               <div className="flex items-center gap-4">
                 <User className="w-5 h-5 text-gray-400" />
                 <div className="font-medium text-gray-900 text-lg">{visit.patient.name}</div>
               </div>
 
-              {/* Staff */}
+              {/* Staff（編集モードまたは担当変更ボタンで変更可能） */}
               <div className="flex items-center gap-4">
                 <User className="w-5 h-5 text-indigo-400" />
                 <div className="flex-1">
-                  {isReassigning ? (
-                    <div className="mt-1">
-                      <select
-                        value={selectedStaffId}
-                        onChange={(e) => setSelectedStaffId(e.target.value ? Number(e.target.value) : '')}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      >
-                        <option value="">未割当</option>
-                        {staffsWithGroupLabels.map((staff) => (
-                          <option key={staff.id} value={staff.id}>
-                            {staff.groupLabel} - {staff.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                  {isEditing || isReassigning ? (
+                    <select
+                      value={isEditing ? (editedStaffId || '') : selectedStaffId}
+                      onChange={(e) => {
+                        const value = e.target.value ? Number(e.target.value) : null;
+                        if (isEditing) {
+                          setEditedStaffId(value);
+                        } else {
+                          setSelectedStaffId(value || '');
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="">未割当</option>
+                      {staffsWithGroupLabels.map((staff) => (
+                        <option key={staff.id} value={staff.id}>
+                          {staff.groupLabel}
+                        </option>
+                      ))}
+                    </select>
                   ) : (
                     <div className="font-medium text-gray-900">
                       {visit.staff?.name || '未割当'}
@@ -363,18 +491,66 @@ export function VisitDetailPanel({
               {/* Scheduled Time */}
               <div className="flex items-center gap-4">
                 <Calendar className="w-5 h-5 text-gray-400" />
-                <div className="font-medium text-gray-900">
-                  {formatDateTime(visit.scheduled_at)}
+                <div className="flex-1">
+                  {isEditing ? (
+                    <input
+                      type="datetime-local"
+                      value={editedScheduledAt}
+                      onChange={(e) => setEditedScheduledAt(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  ) : (
+                    <div className="font-medium text-gray-900">
+                      {formatDateTime(visit.scheduled_at)}
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Duration */}
               <div className="flex items-center gap-4">
                 <Clock className="w-5 h-5 text-gray-400" />
-                <div className="font-medium text-gray-900">
-                  {formatDuration(visit.duration)}
+                <div className="flex-1">
+                  {isEditing ? (
+                    <select
+                      value={editedDuration}
+                      onChange={(e) => setEditedDuration(Number(e.target.value))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      {DURATION_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="font-medium text-gray-900">
+                      {formatDuration(visit.duration)}
+                    </div>
+                  )}
                 </div>
               </div>
+
+              {/* Planning Lane */}
+              {isEditing && (
+                <div className="flex items-center gap-4">
+                  <MapPin className="w-5 h-5 text-gray-400" />
+                  <div className="flex-1">
+                    <select
+                      value={editedPlanningLaneId || ''}
+                      onChange={(e) => setEditedPlanningLaneId(e.target.value ? Number(e.target.value) : null)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="">レーンなし</option>
+                      {planningLanes.map((lane) => (
+                        <option key={lane.id} value={lane.id}>
+                          {lane.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
 
               {/* Address */}
               {visit.patient.address && (
@@ -412,12 +588,24 @@ export function VisitDetailPanel({
               )}
 
               {/* Notes */}
-              {visit.notes && (
-                <div className="flex items-start gap-4">
-                  <FileText className="w-5 h-5 text-gray-400 mt-1" />
-                  <div className="text-gray-700 whitespace-pre-wrap">{visit.notes}</div>
+              <div className="flex items-start gap-4">
+                <FileText className="w-5 h-5 text-gray-400 mt-1" />
+                <div className="flex-1">
+                  {isEditing ? (
+                    <textarea
+                      value={editedNotes}
+                      onChange={(e) => setEditedNotes(e.target.value)}
+                      placeholder="メモを入力..."
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                    />
+                  ) : (
+                    <div className="text-gray-700 whitespace-pre-wrap">
+                      {visit.notes || <span className="text-gray-400">メモなし</span>}
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           ) : activeTab === 'calendar' ? (
             <div className="space-y-4">
@@ -439,7 +627,29 @@ export function VisitDetailPanel({
 
         {/* Actions */}
         <div className="p-4 border-t border-gray-100 bg-gray-50/50 rounded-b-xl space-y-2">
-          {isReassigning ? (
+          {isEditing ? (
+            /* 編集モードのボタン */
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                className="flex-1 flex justify-center items-center"
+                onClick={handleCancelEditing}
+                disabled={updating}
+                title="キャンセル"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+              <Button
+                variant="primary"
+                className="flex-1 flex justify-center items-center"
+                onClick={handleSaveEditing}
+                disabled={updating}
+                title="保存"
+              >
+                <Save className="w-5 h-5" />
+              </Button>
+            </div>
+          ) : isReassigning ? (
             <div className="flex gap-2">
               <Button
                 variant="secondary"
@@ -462,11 +672,11 @@ export function VisitDetailPanel({
             </div>
           ) : (
             <>
-              {onEdit && canEdit && (
+              {onUpdate && canEdit && (
                 <Button
                   variant="primary"
                   className="w-full flex justify-center items-center"
-                  onClick={() => onEdit(visit.id)}
+                  onClick={handleStartEditing}
                   title="編集"
                 >
                   <Edit className="w-5 h-5" />

@@ -265,7 +265,15 @@ export function UnifiedSchedulePage() {
     // This function is intentionally empty - reassignment is handled via onUpdate
   };
 
-  const handleVisitUpdate = async (visitId: number, data: { staff_id: number | null; scheduled_at?: string; status?: string; lock_version?: number }) => {
+  const handleVisitUpdate = async (visitId: number, data: { 
+    staff_id?: number | null; 
+    scheduled_at?: string; 
+    status?: string; 
+    lock_version?: number;
+    duration?: number;
+    notes?: string;
+    planning_lane_id?: number | null;
+  }) => {
     try {
       await updateVisit(visitId, data);
       await loadScheduleData();
