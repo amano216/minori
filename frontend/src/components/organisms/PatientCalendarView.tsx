@@ -403,27 +403,28 @@ const EditLanePanel: React.FC<EditLanePanelProps> = ({ lane, onClose, onSave, on
         </div>
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4">
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">レーン名</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="例: 訪問ルートA"
-              required
-              autoFocus
-            />
-          </div>
-          <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">パターン画面での表示名</label>
             <input
               type="text"
               value={patternName}
               onChange={(e) => setPatternName(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="例: 看護チームA（空欄の場合はレーン名を使用）"
+              placeholder={`現在の表示: ${lane?.name || '未設定'}`}
             />
-            <p className="mt-1 text-xs text-gray-500">パターン画面でのみ使用される表示名です。空欄の場合はレーン名が表示されます。</p>
+            <p className="mt-1 text-xs text-gray-500">パターン画面でのみ使用される表示名です。空欄の場合はスケジュール画面での表示名「{lane?.name}」が表示されます。</p>
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">スケジュール画面での表示名</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="例: 山田太郎"
+              required
+              autoFocus
+            />
+            <p className="mt-1 text-xs text-gray-500">スケジュール画面で表示される名前です。</p>
           </div>
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-1">担当チーム <span className="text-red-500">*</span></label>
@@ -571,7 +572,7 @@ const LaneRow: React.FC<LaneRowProps> = ({
   dataMode = 'actual'
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editLabel, setEditLabel] = useState(lane.name);
+  const [editLabel, setEditLabel] = useState(lane.label);
 
   const todaysVisits = useMemo(() => {
     return visits.filter(v => {
@@ -643,9 +644,9 @@ const LaneRow: React.FC<LaneRowProps> = ({
               <span 
                 className={`font-semibold text-xs sm:text-sm cursor-pointer hover:text-indigo-600 truncate ${lane.archived_at ? 'text-gray-500 italic' : 'text-gray-800'}`}
                 onClick={() => setIsEditing(true)}
-                title={lane.name}
+                title={lane.label}
               >
-                {lane.name}
+                {lane.label}
               </span>
             </div>
             <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -983,12 +984,15 @@ export default function PatientCalendarView({
   };
 
   const renameLane = async (laneId: number, newLabel: string) => {
+    console.log('[renameLane] called with:', { laneId, newLabel, dataMode });
     try {
       // dataMode に応じて name または pattern_name を更新
       if (dataMode === 'pattern') {
+        console.log('[renameLane] Updating pattern_name');
         await updatePlanningLanePatternName(laneId, newLabel);
         setLanes(lanes.map(l => l.id === laneId ? { ...l, pattern_name: newLabel, label: newLabel } : l));
       } else {
+        console.log('[renameLane] Updating name');
         const updated = await updatePlanningLane(laneId, newLabel);
         setLanes(lanes.map(l => l.id === laneId ? { ...l, name: updated.name, label: updated.name } : l));
       }
@@ -1121,16 +1125,19 @@ export default function PatientCalendarView({
         {/* Header - Mobile Responsive */}
         <div className="p-2 sm:p-4 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                console.log('Plus button clicked');
-                setIsCreateModalOpen(true);
-              }}
-              className="p-1.5 sm:p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors shadow-sm flex items-center justify-center"
-              title="レーン追加"
-            >
-              <PlusIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-            </button>
+            {/* レーン追加ボタン - パターンモードのみ表示 */}
+            {dataMode === 'pattern' && (
+              <button
+                onClick={() => {
+                  console.log('Plus button clicked');
+                  setIsCreateModalOpen(true);
+                }}
+                className="p-1.5 sm:p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors shadow-sm flex items-center justify-center"
+                title="レーン追加"
+              >
+                <PlusIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+            )}
             
             {/* Show Archived Toggle (only in actual mode when there are archived lanes) */}
             {dataMode === 'actual' && archivedCount > 0 && (
@@ -1236,7 +1243,9 @@ export default function PatientCalendarView({
             <div className="flex flex-col items-center justify-center h-48 sm:h-64 text-gray-400 min-w-[600px] sm:min-w-0">
               <ExclamationTriangleIcon className="w-8 h-8 sm:w-12 sm:h-12 mb-2 opacity-50" />
               <p className="text-xs sm:text-sm">選択されたグループのレーンがありません</p>
-              <p className="text-[10px] sm:text-xs mt-1">+ボタンで新規作成</p>
+              {dataMode === 'pattern' && (
+                <p className="text-[10px] sm:text-xs mt-1">+ボタンで新規作成</p>
+              )}
             </div>
           ) : (
             filteredLanes.map(lane => (
