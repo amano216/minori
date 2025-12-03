@@ -19,6 +19,7 @@ import {
   createPlanningLane, 
   updatePlanningLane, 
   updatePlanningLanePatternName,
+  updatePlanningLaneName,
   deletePlanningLane,
   archivePlanningLane,
   unarchivePlanningLane,
@@ -980,14 +981,28 @@ export default function PatientCalendarView({
 
   const handleEditLane = async (laneId: number, newName: string, newGroupId: number | null, newPatternName: string | null) => {
     try {
-      await updatePlanningLane(laneId, newName, newGroupId, newPatternName);
+      // dataModeに応じて適切なAPI関数を使用
+      // - pattern: pattern_nameのみ更新
+      // - actual: nameのみ更新
+      if (dataMode === 'pattern') {
+        await updatePlanningLanePatternName(laneId, newPatternName);
+      } else {
+        await updatePlanningLaneName(laneId, newName);
+      }
+      
+      // group_idの更新が必要な場合は別途更新
+      const currentLane = lanes.find(l => l.id === laneId);
+      if (currentLane && currentLane.group_id !== newGroupId) {
+        await updatePlanningLane(laneId, newName, newGroupId);
+      }
+      
       setLanes(lanes.map(l => 
         l.id === laneId 
           ? { 
               ...l, 
-              name: newName, 
-              pattern_name: newPatternName,
-              label: dataMode === 'pattern' ? (newPatternName || newName) : newName, 
+              name: dataMode === 'pattern' ? l.name : newName,
+              pattern_name: dataMode === 'pattern' ? newPatternName : l.pattern_name,
+              label: dataMode === 'pattern' ? (newPatternName || l.name) : newName, 
               group_id: newGroupId, 
               color: getGroupColor(newGroupId, groups) 
             } 
