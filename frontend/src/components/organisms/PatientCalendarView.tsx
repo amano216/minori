@@ -981,27 +981,43 @@ export default function PatientCalendarView({
 
   const handleEditLane = async (laneId: number, newName: string, newGroupId: number | null, newPatternName: string | null) => {
     try {
+      const currentLane = lanes.find(l => l.id === laneId);
+      if (!currentLane) return;
+      
       // dataModeに応じて適切なAPI関数を使用
       // - pattern: pattern_nameのみ更新
-      // - actual: nameのみ更新
+      // - actual: nameのみ更新（pattern_nameがnullで名前が変わる場合は旧名をpattern_nameに保存）
       if (dataMode === 'pattern') {
         await updatePlanningLanePatternName(laneId, newPatternName);
       } else {
-        await updatePlanningLaneName(laneId, newName);
+        // スケジュールモードでnameを変更する場合
+        // pattern_nameがnullで、nameが変わる場合は、旧nameをpattern_nameに設定
+        // これによりパターン画面の表示名が維持される
+        const shouldPreservePatternDisplay = !currentLane.pattern_name && currentLane.name !== newName;
+        if (shouldPreservePatternDisplay) {
+          // 旧nameをpattern_nameに、新nameをnameに設定
+          await updatePlanningLane(laneId, newName, undefined, currentLane.name);
+        } else {
+          await updatePlanningLaneName(laneId, newName);
+        }
       }
       
       // group_idの更新が必要な場合は別途更新
-      const currentLane = lanes.find(l => l.id === laneId);
-      if (currentLane && currentLane.group_id !== newGroupId) {
+      if (currentLane.group_id !== newGroupId) {
         await updatePlanningLane(laneId, newName, newGroupId);
       }
+      
+      // ローカルstateを更新
+      const preservedPatternName = dataMode === 'actual' && !currentLane.pattern_name && currentLane.name !== newName
+        ? currentLane.name  // 旧nameをpattern_nameとして保持
+        : (dataMode === 'pattern' ? newPatternName : currentLane.pattern_name);
       
       setLanes(lanes.map(l => 
         l.id === laneId 
           ? { 
               ...l, 
               name: dataMode === 'pattern' ? l.name : newName,
-              pattern_name: dataMode === 'pattern' ? newPatternName : l.pattern_name,
+              pattern_name: preservedPatternName,
               label: dataMode === 'pattern' ? (newPatternName || l.name) : newName, 
               group_id: newGroupId, 
               color: getGroupColor(newGroupId, groups) 
