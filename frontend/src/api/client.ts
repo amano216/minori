@@ -546,6 +546,7 @@ export interface PlanningLane {
   position: number;
   organization_id: number;
   group_id?: number | null;
+  archived_at?: string | null;
 }
 
 export async function fetchPlanningLanes(): Promise<PlanningLane[]> {
@@ -572,6 +573,14 @@ export async function updatePlanningLane(id: number, name: string, groupId?: num
 
 export async function deletePlanningLane(id: number): Promise<void> {
   return apiRequest(`/api/planning_lanes/${id}`, { method: 'DELETE' });
+}
+
+export async function archivePlanningLane(id: number): Promise<PlanningLane> {
+  return apiRequest(`/api/planning_lanes/${id}/archive`, { method: 'PATCH' });
+}
+
+export async function unarchivePlanningLane(id: number): Promise<PlanningLane> {
+  return apiRequest(`/api/planning_lanes/${id}/unarchive`, { method: 'PATCH' });
 }
 
 // Axios-like API client for organization API
