@@ -17,8 +17,8 @@ class Event < ApplicationRecord
   validates :scheduled_at, presence: true
   validates :duration, presence: true, numericality: { greater_than: 0 }
   validates :event_type, inclusion: { in: EVENT_TYPES }
-  validates :absence_reason, inclusion: { in: ABSENCE_REASONS }, if: -> { event_type == 'absence' }
-  validates :absence_reason, absence: true, unless: -> { event_type == 'absence' }
+  validates :absence_reason, inclusion: { in: ABSENCE_REASONS }, if: -> { event_type == "absence" }
+  validates :absence_reason, absence: true, unless: -> { event_type == "absence" }
 
   scope :for_organization, ->(org) { where(organization: org) }
   scope :on_date, ->(date) {
