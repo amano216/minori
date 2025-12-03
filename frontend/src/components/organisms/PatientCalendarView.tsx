@@ -8,13 +8,19 @@ import {
   CheckIcon, 
   ExclamationTriangleIcon,
   ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  ArchiveBoxIcon,
+  ArchiveBoxXMarkIcon
 } from '@heroicons/react/24/outline';
 import { 
   fetchPlanningLanes, 
   createPlanningLane, 
   updatePlanningLane, 
   deletePlanningLane,
+  archivePlanningLane,
+  unarchivePlanningLane,
   fetchVisitPatterns,
   type PlanningLane,
   type Visit,
@@ -296,13 +302,16 @@ interface EditLanePanelProps {
   lane: Lane | null;
   onClose: () => void;
   onSave: (laneId: number, newName: string, newGroupId: number | null) => Promise<void>;
+  onArchive: (laneId: number) => Promise<void>;
+  onUnarchive: (laneId: number) => Promise<void>;
   groups: Group[];
 }
 
-const EditLanePanel: React.FC<EditLanePanelProps> = ({ lane, onClose, onSave, groups = [] }) => {
+const EditLanePanel: React.FC<EditLanePanelProps> = ({ lane, onClose, onSave, onArchive, onUnarchive, groups = [] }) => {
   const [name, setName] = useState('');
   const [groupId, setGroupId] = useState<number | ''>('');
   const [saving, setSaving] = useState(false);
+  const [archiving, setArchiving] = useState(false);
 
   const labeledGroups = useMemo(() => {
     if (!groups?.length) return [];
@@ -413,23 +422,70 @@ const EditLanePanel: React.FC<EditLanePanelProps> = ({ lane, onClose, onSave, gr
             />
           </div>
         </form>
-        <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-            disabled={saving}
-          >
-            キャンセル
-          </button>
-          <button
-            type="submit"
-            onClick={handleSubmit}
-            className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-            disabled={saving}
-          >
-            保存
-          </button>
+        <div className="p-4 border-t border-gray-200 bg-gray-50">
+          {/* Archive/Unarchive button */}
+          <div className="mb-3">
+            {lane?.archived_at ? (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!lane) return;
+                  setArchiving(true);
+                  try {
+                    await onUnarchive(lane.id);
+                    onClose();
+                  } finally {
+                    setArchiving(false);
+                  }
+                }}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors border border-green-200"
+                disabled={archiving || saving}
+              >
+                <ArchiveBoxXMarkIcon className="w-5 h-5" />
+                <span>再表示する</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!lane) return;
+                  if (!confirm('このレーンを非表示にしますか？\n非表示にしたレーンは「非表示のレーンも表示」から復元できます。')) return;
+                  setArchiving(true);
+                  try {
+                    await onArchive(lane.id);
+                    onClose();
+                  } finally {
+                    setArchiving(false);
+                  }
+                }}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors border border-orange-200"
+                disabled={archiving || saving}
+              >
+                <ArchiveBoxIcon className="w-5 h-5" />
+                <span>このレーンを非表示にする</span>
+              </button>
+            )}
+          </div>
+          
+          {/* Save/Cancel buttons */}
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              disabled={saving || archiving}
+            >
+              キャンセル
+            </button>
+            <button
+              type="submit"
+              onClick={handleSubmit}
+              className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+              disabled={saving || archiving}
+            >
+              保存
+            </button>
+          </div>
         </div>
       </div>
     </>,
@@ -546,7 +602,7 @@ const LaneRow: React.FC<LaneRowProps> = ({
   return (
     <div className="flex border-b border-gray-200 min-w-[600px] sm:min-w-0">
       {/* Lane Label - Mobile Responsive */}
-      <div className={`w-28 sm:w-40 flex-shrink-0 px-2 py-2 sm:px-3 sm:py-3 border-r border-gray-200 flex items-center gap-1 sm:gap-2 ${lane.color}`}>
+      <div className={`w-28 sm:w-40 flex-shrink-0 px-2 py-2 sm:px-3 sm:py-3 border-r border-gray-200 flex items-center gap-1 sm:gap-2 ${lane.color} ${lane.archived_at ? 'opacity-60' : ''}`}>
         {isEditing ? (
           <div className="flex items-center gap-1 flex-1 min-w-0">
             <input
@@ -566,13 +622,18 @@ const LaneRow: React.FC<LaneRowProps> = ({
           </div>
         ) : (
           <>
-            <span 
-              className="font-semibold text-xs sm:text-sm text-gray-800 cursor-pointer hover:text-indigo-600 truncate flex-1 min-w-0"
-              onClick={() => setIsEditing(true)}
-              title={lane.name}
-            >
-              {lane.name}
-            </span>
+            <div className="flex items-center gap-1 flex-1 min-w-0">
+              {lane.archived_at && (
+                <EyeSlashIcon className="w-3 h-3 text-orange-500 flex-shrink-0" title="非表示" />
+              )}
+              <span 
+                className={`font-semibold text-xs sm:text-sm cursor-pointer hover:text-indigo-600 truncate ${lane.archived_at ? 'text-gray-500 italic' : 'text-gray-800'}`}
+                onClick={() => setIsEditing(true)}
+                title={lane.name}
+              >
+                {lane.name}
+              </span>
+            </div>
             <div className="flex items-center gap-0.5 flex-shrink-0">
               <button 
                 onClick={onEdit}
@@ -748,6 +809,8 @@ export default function PatientCalendarView({
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingLane, setEditingLane] = useState<Lane | null>(null);
   const [patterns, setPatterns] = useState<VisitPattern[]>([]);
+  const [showArchived, setShowArchived] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Get active drag item from parent DndContext
   const { active } = useDndContext();
@@ -828,9 +891,49 @@ export default function PatientCalendarView({
     try {
       await deletePlanningLane(laneId);
       setLanes(lanes.filter(l => l.id !== laneId));
-    } catch (err) {
+      setErrorMessage(null);
+    } catch (err: unknown) {
       console.error('Failed to remove lane:', err);
-      alert('レーンの削除に失敗しました');
+      // ApiErrorまたは一般的なエラーからメッセージを取得
+      let message = 'レーンの削除に失敗しました';
+      if (err && typeof err === 'object') {
+        if ('errors' in err && Array.isArray((err as { errors: string[] }).errors) && (err as { errors: string[] }).errors.length > 0) {
+          message = (err as { errors: string[] }).errors[0];
+        } else if ('message' in err && typeof (err as { message: string }).message === 'string') {
+          message = (err as { message: string }).message;
+        }
+      }
+      setErrorMessage(message);
+    }
+  };
+
+  const handleArchiveLane = async (laneId: number) => {
+    try {
+      const updated = await archivePlanningLane(laneId);
+      setLanes(lanes.map(l => 
+        l.id === laneId 
+          ? { ...l, archived_at: updated.archived_at } 
+          : l
+      ));
+      setErrorMessage(null);
+    } catch (err) {
+      console.error('Failed to archive lane:', err);
+      setErrorMessage('レーンの非表示に失敗しました');
+    }
+  };
+
+  const handleUnarchiveLane = async (laneId: number) => {
+    try {
+      const updated = await unarchivePlanningLane(laneId);
+      setLanes(lanes.map(l => 
+        l.id === laneId 
+          ? { ...l, archived_at: updated.archived_at } 
+          : l
+      ));
+      setErrorMessage(null);
+    } catch (err) {
+      console.error('Failed to unarchive lane:', err);
+      setErrorMessage('レーンの再表示に失敗しました');
     }
   };
 
@@ -859,10 +962,32 @@ export default function PatientCalendarView({
     }
   };
 
-  // Filter lanes by selected groups (from parent)
+  // Filter lanes by selected groups and archive status
   const filteredLanes = useMemo(() => {
-    if (!selectedGroupIds || selectedGroupIds.length === 0) return lanes;
-    return lanes.filter(lane => lane.group_id && selectedGroupIds.includes(lane.group_id));
+    let result = lanes;
+    
+    // グループでフィルタ
+    if (selectedGroupIds && selectedGroupIds.length > 0) {
+      result = result.filter(lane => lane.group_id && selectedGroupIds.includes(lane.group_id));
+    }
+    
+    // アーカイブ状態でフィルタ
+    // actualモードでshowArchivedがfalseの場合、アーカイブされたレーンを非表示
+    // patternモードでは編集のため常に全レーン表示
+    if (dataMode === 'actual' && !showArchived) {
+      result = result.filter(lane => !lane.archived_at);
+    }
+    
+    return result;
+  }, [lanes, selectedGroupIds, dataMode, showArchived]);
+
+  // アーカイブされたレーンの数を計算
+  const archivedCount = useMemo(() => {
+    let result = lanes.filter(lane => lane.archived_at);
+    if (selectedGroupIds && selectedGroupIds.length > 0) {
+      result = result.filter(lane => lane.group_id && selectedGroupIds.includes(lane.group_id));
+    }
+    return result.length;
   }, [lanes, selectedGroupIds]);
 
   const hours = Array.from({ length: TOTAL_HOURS }, (_, i) => START_HOUR + i);
@@ -941,6 +1066,22 @@ export default function PatientCalendarView({
 
   return (
       <div className="h-full flex flex-col bg-white">
+        {/* Error Message Banner */}
+        {errorMessage && (
+          <div className="px-4 py-3 bg-red-50 border-b border-red-200 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-red-700">
+              <ExclamationTriangleIcon className="w-5 h-5" />
+              <span className="text-sm">{errorMessage}</span>
+            </div>
+            <button
+              onClick={() => setErrorMessage(null)}
+              className="text-red-500 hover:text-red-700 p-1"
+            >
+              <span className="text-lg">✕</span>
+            </button>
+          </div>
+        )}
+        
         {/* Header - Mobile Responsive */}
         <div className="p-2 sm:p-4 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -954,6 +1095,33 @@ export default function PatientCalendarView({
             >
               <PlusIcon className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
+            
+            {/* Show Archived Toggle (only in actual mode when there are archived lanes) */}
+            {dataMode === 'actual' && archivedCount > 0 && (
+              <button
+                onClick={() => setShowArchived(!showArchived)}
+                className={`flex items-center gap-1.5 px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg text-xs sm:text-sm transition-colors ${
+                  showArchived 
+                    ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' 
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                title={showArchived ? '非表示のレーンを隠す' : '非表示のレーンも表示'}
+              >
+                {showArchived ? (
+                  <>
+                    <EyeSlashIcon className="w-4 h-4" />
+                    <span className="hidden sm:inline">非表示レーンを隠す</span>
+                    <span className="sm:hidden">{archivedCount}</span>
+                  </>
+                ) : (
+                  <>
+                    <EyeIcon className="w-4 h-4" />
+                    <span className="hidden sm:inline">非表示のレーンも表示</span>
+                    <span className="bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded-full text-xs">{archivedCount}</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
@@ -1066,6 +1234,8 @@ export default function PatientCalendarView({
           lane={editingLane}
           onClose={() => setEditingLane(null)}
           onSave={handleEditLane}
+          onArchive={handleArchiveLane}
+          onUnarchive={handleUnarchiveLane}
           groups={groups}
         />
 

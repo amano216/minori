@@ -55,7 +55,12 @@ Rails.application.routes.draw do
     resources :events
 
     # Planning Lane routes
-    resources :planning_lanes
+    resources :planning_lanes do
+      member do
+        patch :archive
+        patch :unarchive
+      end
+    end
 
     # Schedule routes
     get "schedules/daily", to: "schedules#daily"
