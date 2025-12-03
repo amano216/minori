@@ -274,6 +274,7 @@ export function UnifiedSchedulePage() {
     duration?: number;
     notes?: string;
     planning_lane_id?: number | null;
+    skip_patient_conflict_check?: boolean;
   }) => {
     try {
       await updateVisit(visitId, data);
@@ -284,7 +285,17 @@ export function UnifiedSchedulePage() {
       
       // 競合エラーのハンドリング
       if (err instanceof ApiError && err.isConflict()) {
-        if (err.isDoubleBooking()) {
+        // 患者重複警告の場合は確認ダイアログを表示
+        if (err.isPatientDoubleBookingWarning()) {
+          const confirmed = confirm(
+            `${err.message}\n\n学生同行や複数名訪問の場合は「OK」を押して登録してください。`
+          );
+          if (confirmed) {
+            // 強制登録を再実行
+            await handleVisitUpdate(visitId, { ...data, skip_patient_conflict_check: true });
+            return;
+          }
+        } else if (err.isDoubleBooking()) {
           alert(`予約の競合が発生しました: ${err.message}`);
         } else if (err.isStaleObject()) {
           const reload = confirm(`${err.message}\n\nデータを再読み込みしますか？`);

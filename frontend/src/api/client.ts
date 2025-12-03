@@ -64,6 +64,10 @@ export class ApiError extends Error {
     return this.errorType === 'double_booking';
   }
 
+  isPatientDoubleBookingWarning(): boolean {
+    return this.errorType === 'patient_double_booking_warning';
+  }
+
   isStaleObject(): boolean {
     return this.errorType === 'stale_object';
   }
@@ -368,6 +372,7 @@ export interface VisitInput {
   notes?: string;
   planning_lane_id?: number | null;
   lock_version?: number;
+  skip_patient_conflict_check?: boolean;
 }
 
 export async function fetchVisits(params?: {

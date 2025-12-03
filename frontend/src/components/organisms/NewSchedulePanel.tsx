@@ -6,6 +6,7 @@ import {
   createEvent,
   fetchStaffs,
   fetchPatients,
+  ApiError,
   type VisitInput,
   type Staff,
   type Patient,
@@ -154,7 +155,7 @@ export function NewSchedulePanel({
     setTimeout(onClose, 200);
   };
 
-  const handleSubmitVisit = async (e: FormEvent) => {
+  const handleSubmitVisit = async (e: FormEvent, skipPatientConflictCheck = false) => {
     e.preventDefault();
     if (!patientId) {
       setError('患者を選択してください');
@@ -174,6 +175,7 @@ export function NewSchedulePanel({
         duration,
         notes: notes || undefined,
         planning_lane_id: planningLaneId || undefined,
+        skip_patient_conflict_check: skipPatientConflictCheck,
       };
 
       await createVisit(visitData);
@@ -181,7 +183,18 @@ export function NewSchedulePanel({
       handleClose();
     } catch (err: unknown) {
       console.error('Failed to create visit:', err);
-      setError('訪問の作成に失敗しました');
+      // 患者重複警告の場合は確認ダイアログを表示
+      if (err instanceof ApiError && err.isPatientDoubleBookingWarning()) {
+        const confirmed = window.confirm(
+          `${err.message}\n\n学生同行や複数名訪問の場合は「OK」を押して登録してください。`
+        );
+        if (confirmed) {
+          // 強制登録を再実行
+          handleSubmitVisit(e, true);
+          return;
+        }
+      }
+      setError(err instanceof ApiError ? err.message : '訪問の作成に失敗しました');
     } finally {
       setSubmitting(false);
     }

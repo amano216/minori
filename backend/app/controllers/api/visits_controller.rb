@@ -32,11 +32,21 @@ module Api
 
         # ダブルブッキング防止: 悲観的ロックで競合をチェック
         check_user_conflicts!(@visit) if @visit.user_id.present?
-        check_patient_conflicts!(@visit) if @visit.patient_id.present?
+        # 患者の重複は警告のみ（skip_patient_conflict_checkで回避可能）
+        check_patient_conflicts!(@visit) if @visit.patient_id.present? && !skip_patient_conflict_check?
 
         @visit.save!
         render json: visit_json(@visit), status: :created
       end
+    rescue PatientDoubleBookingError => e
+      # 患者の重複は警告として返す（確認後に強制登録可能）
+      render json: {
+        errors: [ e.message ],
+        error_type: "patient_double_booking_warning",
+        conflict_type: e.conflict_type,
+        resource_id: e.resource_id,
+        warning: true
+      }, status: :conflict
     rescue DoubleBookingError => e
       render json: {
         errors: [ e.message ],
@@ -53,17 +63,18 @@ module Api
         # 楽観的ロック: lock_versionをチェック
         check_lock_version!
 
-        # スタッフまたは患者が変更される場合は競合チェック
+        # スタッフが変更される場合は競合チェック
         if visit_params[:user_id].present? && visit_params[:user_id].to_i != @visit.user_id
           temp_visit = @visit.dup
           temp_visit.assign_attributes(visit_params)
           check_user_conflicts!(temp_visit)
         end
 
-        if visit_params[:patient_id].present? && visit_params[:patient_id].to_i != @visit.patient_id
+        # 患者の重複チェック（skip_patient_conflict_checkで回避可能）
+        unless skip_patient_conflict_check?
           temp_visit = @visit.dup
           temp_visit.assign_attributes(visit_params)
-          check_patient_conflicts!(temp_visit)
+          check_patient_conflicts!(temp_visit) if temp_visit.patient_id.present?
         end
 
         @visit.update!(visit_params_without_lock_version)
@@ -75,6 +86,15 @@ module Api
         errors: [ e.is_a?(ConcurrentModificationError) ? e.message : stale_message ],
         error_type: "stale_object",
         current_version: @visit.reload.lock_version
+      }, status: :conflict
+    rescue PatientDoubleBookingError => e
+      # 患者の重複は警告として返す（確認後に強制登録可能）
+      render json: {
+        errors: [ e.message ],
+        error_type: "patient_double_booking_warning",
+        conflict_type: e.conflict_type,
+        resource_id: e.resource_id,
+        warning: true
       }, status: :conflict
     rescue DoubleBookingError => e
       render json: {
@@ -192,6 +212,11 @@ module Api
                          .exists?
 
       raise PatientDoubleBookingError.new(patient_id: visit.patient_id) if conflicting
+    end
+
+    def skip_patient_conflict_check?
+      params.dig(:visit, :skip_patient_conflict_check) == true ||
+        params.dig(:visit, :skip_patient_conflict_check) == "true"
     end
   end
 end
