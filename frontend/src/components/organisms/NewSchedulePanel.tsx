@@ -437,7 +437,7 @@ export function NewSchedulePanel({
                     </label>
                     <select
                       value={eventType}
-                      onChange={(e) => setEventType(e.target.value as EventType)}
+                      onChange={(e) => setEventType(e.target.value as Exclude<EventType, 'absence'>)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                     >
                       {Object.entries(EVENT_TYPE_LABELS).map(([key, label]) => (

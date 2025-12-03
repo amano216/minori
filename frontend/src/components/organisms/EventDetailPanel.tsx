@@ -20,6 +20,7 @@ const EVENT_TYPE_LABELS: Record<EventType, string> = {
   facility: '施設訪問',
   training: '研修',
   other: 'その他',
+  absence: '不在',
 };
 
 const EVENT_TYPE_COLORS: Record<EventType, string> = {
@@ -27,6 +28,7 @@ const EVENT_TYPE_COLORS: Record<EventType, string> = {
   facility: 'bg-blue-100 text-blue-800',
   training: 'bg-green-100 text-green-800',
   other: 'bg-gray-100 text-gray-800',
+  absence: 'bg-gray-200 text-gray-700',
 };
 
 export function EventDetailPanel({ event, onClose, onUpdate, onDelete }: EventDetailPanelProps) {
