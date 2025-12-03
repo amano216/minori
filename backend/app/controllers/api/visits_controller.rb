@@ -29,6 +29,7 @@ module Api
     def create
       Visit.transaction do
         @visit = Visit.new(visit_params_with_organization)
+        @visit.skip_patient_conflict_check = skip_patient_conflict_check?
 
         # ダブルブッキング防止: 悲観的ロックで競合をチェック
         check_user_conflicts!(@visit) if @visit.user_id.present?
@@ -77,6 +78,7 @@ module Api
           check_patient_conflicts!(temp_visit) if temp_visit.patient_id.present?
         end
 
+        @visit.skip_patient_conflict_check = skip_patient_conflict_check?
         @visit.update!(visit_params_without_lock_version)
         render json: visit_json(@visit)
       end
@@ -215,8 +217,8 @@ module Api
     end
 
     def skip_patient_conflict_check?
-      params.dig(:visit, :skip_patient_conflict_check) == true ||
-        params.dig(:visit, :skip_patient_conflict_check) == "true"
+      value = params.dig(:visit, :skip_patient_conflict_check)
+      value == true || value == "true" || value == 1 || value == "1"
     end
   end
 end

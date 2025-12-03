@@ -6,6 +6,9 @@ class Visit < ApplicationRecord
 
   STATUSES = %w[scheduled in_progress completed cancelled unassigned].freeze
 
+  # 患者重複チェックをスキップするためのフラグ（学生同行・複数名訪問用）
+  attr_accessor :skip_patient_conflict_check
+
   belongs_to :user, optional: true
   belongs_to :patient
   belongs_to :planning_lane, optional: true
@@ -16,7 +19,7 @@ class Visit < ApplicationRecord
   validates :duration, presence: true, numericality: { greater_than: 0 }
   validates :status, inclusion: { in: STATUSES }
   validate :user_availability, if: -> { user_id.present? && scheduled_at.present? }
-  validate :patient_availability, if: -> { patient_id.present? && scheduled_at.present? }
+  validate :patient_availability, if: -> { patient_id.present? && scheduled_at.present? && !skip_patient_conflict_check }
 
   # staff_id/user_idとstatusの整合性を自動で保証
   before_save :ensure_status_consistency
