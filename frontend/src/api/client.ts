@@ -730,7 +730,8 @@ export async function generateVisitsFromPatterns(
 }
 
 // Event API (ミーティング・施設訪問など)
-export type EventType = 'meeting' | 'facility' | 'training' | 'other';
+export type EventType = 'meeting' | 'facility' | 'training' | 'other' | 'absence';
+export type AbsenceReason = 'compensatory_leave' | 'paid_leave' | 'half_day_leave';
 export type ParticipantStatus = 'confirmed' | 'tentative' | 'declined';
 
 export interface EventParticipant {
@@ -743,6 +744,7 @@ export interface ScheduleEvent {
   id: number;
   title: string;
   event_type: EventType;
+  absence_reason: AbsenceReason | null;
   scheduled_at: string;
   duration: number;
   notes: string | null;
@@ -762,6 +764,7 @@ export interface EventInput {
   notes?: string;
   planning_lane_id?: number | null;
   participant_ids?: number[];
+  absence_reason?: AbsenceReason;
 }
 
 export async function fetchEvents(params?: {

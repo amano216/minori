@@ -183,6 +183,7 @@ export function VisitDetailPanel({
   groups = [],
   onClose,
   // onEdit is deprecated - inline editing is now used instead
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onEdit: _onEdit,
   onCancel,
   onComplete,

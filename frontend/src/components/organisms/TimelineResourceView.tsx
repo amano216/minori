@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useDroppable, useDndContext, DragOverlay } from '@dnd-kit/core';
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { ChevronLeftIcon, ChevronRightIcon, PlusIcon } from '@heroicons/react/24/outline';
 import type { Staff, Group, Visit, ScheduleEvent } from '../../api/client';
 import { DraggableVisitCard, VisitCard } from '../molecules/VisitCard';
 import { EventCard } from '../molecules/EventCard';
@@ -17,9 +17,17 @@ interface TimelineResourceViewProps {
   onTimeSlotClick?: (staffId: number, time: Date) => void;
 }
 
-const START_HOUR = 8;
-const END_HOUR = 20;
+const START_HOUR = 0;
+const END_HOUR = 24;
+const TOTAL_HOURS = END_HOUR - START_HOUR;
+const DEFAULT_START_HOUR = 9;
 
+// ズームレベル設定
+const ZOOM_LEVELS = {
+  '8h': { hours: 8, label: '8h' },
+  '24h': { hours: 24, label: '24h' },
+} as const;
+type ZoomLevel = keyof typeof ZOOM_LEVELS;
 
 interface TimelineStaffRowProps {
   staff: Staff;
@@ -35,20 +43,19 @@ interface TimelineStaffRowProps {
 
 interface DroppableTimeSlotProps {
   hour: number;
-  staff: Staff;
+  staffId: number;
   date: Date;
-  children: React.ReactNode;
   onClick: () => void;
 }
 
-const DroppableTimeSlot = ({ hour, staff, date, children, onClick }: DroppableTimeSlotProps) => {
+const DroppableTimeSlot = ({ hour, staffId, date, onClick }: DroppableTimeSlotProps) => {
   const slotDate = new Date(date);
   slotDate.setHours(hour, 0, 0, 0);
 
   const { setNodeRef, isOver } = useDroppable({
-    id: `slot-${staff.id}-${hour}`,
+    id: `slot-${staffId}-${hour}`,
     data: { 
-      staff,
+      staffId,
       date: slotDate
     },
   });
@@ -56,14 +63,48 @@ const DroppableTimeSlot = ({ hour, staff, date, children, onClick }: DroppableTi
   return (
     <div
       ref={setNodeRef}
-      className={`flex-1 min-w-[60px] sm:min-w-[100px] border-r border-gray-100 p-1 sm:p-2 cursor-pointer transition-colors ${isOver ? 'bg-indigo-100 ring-2 ring-inset ring-indigo-400' : 'hover:bg-indigo-50/50'}`}
-      style={{ minHeight: '60px' }}
+      className={`flex-1 min-w-[80px] border-r border-gray-100 cursor-pointer transition-colors group relative ${isOver ? 'bg-indigo-100 ring-2 ring-inset ring-indigo-400' : 'hover:bg-indigo-50/50'}`}
+      style={{ minHeight: '80px' }}
       onClick={onClick}
       title={`${String(hour).padStart(2, '0')}:00 - 予定を追加`}
     >
-      {children}
+      {/* Hover Plus Icon */}
+      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
+        <PlusIcon className="w-5 h-5 text-indigo-300" />
+      </div>
     </div>
   );
+};
+
+// カードの位置とサイズを計算する関数
+const calculateCardPosition = (
+  scheduledAt: string,
+  duration: number,
+  visibleHours: number[]
+): { leftPercent: number; widthPercent: number; isVisible: boolean } => {
+  const itemDate = new Date(scheduledAt);
+  const startHour = itemDate.getHours();
+  const startMinute = itemDate.getMinutes();
+  const durationMinutes = duration || 60;
+  
+  const visibleStartHour = visibleHours[0];
+  const visibleEndHour = visibleHours[visibleHours.length - 1] + 1;
+  const totalVisibleHours = visibleEndHour - visibleStartHour;
+  
+  const startTimeInHours = startHour + startMinute / 60;
+  const endTimeInHours = startTimeInHours + durationMinutes / 60;
+  
+  if (endTimeInHours <= visibleStartHour || startTimeInHours >= visibleEndHour) {
+    return { leftPercent: 0, widthPercent: 0, isVisible: false };
+  }
+  
+  const clippedStart = Math.max(startTimeInHours, visibleStartHour);
+  const clippedEnd = Math.min(endTimeInHours, visibleEndHour);
+  
+  const leftPercent = ((clippedStart - visibleStartHour) / totalVisibleHours) * 100;
+  const widthPercent = ((clippedEnd - clippedStart) / totalVisibleHours) * 100;
+  
+  return { leftPercent, widthPercent, isVisible: true };
 };
 
 function TimelineStaffRow({ staff, groupName, visits, events = [], visibleHours, date, onVisitClick, onEventClick, onTimeSlotClick }: TimelineStaffRowProps) {
@@ -72,22 +113,6 @@ function TimelineStaffRow({ staff, groupName, visits, events = [], visibleHours,
     data: { staff },
   });
 
-  const getVisitsForHour = (hour: number) => {
-    return visits.filter(v => {
-      const visitDate = new Date(v.scheduled_at);
-      const startHour = visitDate.getHours();
-      return startHour === hour;
-    });
-  };
-
-  const getEventsForHour = (hour: number) => {
-    return events.filter(e => {
-      const eventDate = new Date(e.scheduled_at);
-      const startHour = eventDate.getHours();
-      return startHour === hour;
-    });
-  };
-
   const handleHourClick = (hour: number) => {
     if (!onTimeSlotClick) return;
     const clickedTime = new Date(date);
@@ -95,17 +120,50 @@ function TimelineStaffRow({ staff, groupName, visits, events = [], visibleHours,
     onTimeSlotClick(staff.id, clickedTime);
   };
 
+  // 訪問カードの位置計算（重複対応）
+  const visitPositions = useMemo(() => {
+    const positions: { visit: Visit; leftPercent: number; widthPercent: number; verticalIndex: number }[] = [];
+    const sortedVisits = [...visits].sort((a, b) => 
+      new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
+    );
+    
+    sortedVisits.forEach(visit => {
+      const pos = calculateCardPosition(visit.scheduled_at, visit.duration || 60, visibleHours);
+      if (!pos.isVisible) return;
+      
+      let verticalIndex = 0;
+      const visitStart = new Date(visit.scheduled_at).getTime();
+      const visitEnd = visitStart + (visit.duration || 60) * 60000;
+      
+      positions.forEach(existing => {
+        const existingVisit = existing.visit;
+        const existingStart = new Date(existingVisit.scheduled_at).getTime();
+        const existingEnd = existingStart + (existingVisit.duration || 60) * 60000;
+        
+        if (visitStart < existingEnd && visitEnd > existingStart) {
+          if (existing.verticalIndex >= verticalIndex) {
+            verticalIndex = existing.verticalIndex + 1;
+          }
+        }
+      });
+      
+      positions.push({ visit, ...pos, verticalIndex });
+    });
+    
+    return positions;
+  }, [visits, visibleHours]);
+
   return (
     <div 
       ref={setNodeRef}
-      className={`flex border-b border-gray-200 min-w-max ${isOver ? 'bg-indigo-50 ring-2 ring-inset ring-indigo-300' : ''}`}
+      className={`flex border-b border-gray-200 min-w-[600px] sm:min-w-0 ${isOver ? 'bg-indigo-50 ring-2 ring-inset ring-indigo-300' : ''}`}
     >
-      {/* Staff Label - Sticky Left */}
-      <div className="sticky left-0 z-10 w-24 sm:w-48 flex-shrink-0 p-2 sm:p-3 border-r border-gray-200 flex items-center bg-white shadow-[1px_0_3px_rgba(0,0,0,0.05)]">
-        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold mr-2 sm:mr-3 flex-shrink-0">
+      {/* Staff Label */}
+      <div className="w-28 sm:w-40 flex-shrink-0 px-2 py-2 sm:px-3 sm:py-3 border-r border-gray-200 flex items-center gap-2 bg-white">
+        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
           {staff.name.slice(0, 1)}
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="text-xs sm:text-sm font-medium text-gray-900 truncate">{staff.name}</div>
           {groupName && (
             <div className="text-[10px] text-gray-500 truncate">
@@ -115,37 +173,63 @@ function TimelineStaffRow({ staff, groupName, visits, events = [], visibleHours,
         </div>
       </div>
 
-      {/* Timeline Grid */}
-      <div className="flex">
-        {visibleHours.map(hour => {
-          const hourVisits = getVisitsForHour(hour);
-          const hourEvents = getEventsForHour(hour);
-          
-          return (
-            <DroppableTimeSlot
-              key={hour}
-              hour={hour}
-              staff={staff}
-              date={date}
-              onClick={() => handleHourClick(hour)}
+      {/* Timeline Grid with absolute positioning */}
+      <div className="flex-1 flex relative">
+        {/* ドロップゾーン（グリッド） */}
+        {visibleHours.map(hour => (
+          <DroppableTimeSlot
+            key={hour}
+            hour={hour}
+            staffId={staff.id}
+            date={date}
+            onClick={() => handleHourClick(hour)}
+          />
+        ))}
+        
+        {/* 訪問カードオーバーレイ（絶対位置） */}
+        <div className="absolute inset-0 pointer-events-none">
+          {visitPositions.map(({ visit, leftPercent, widthPercent, verticalIndex }) => (
+            <div
+              key={visit.id}
+              className="absolute pointer-events-auto"
+              style={{
+                left: `${leftPercent}%`,
+                width: `${widthPercent}%`,
+                top: `${4 + verticalIndex * 40}px`,
+                minWidth: '60px',
+              }}
             >
-              {hourVisits.map(visit => (
-                <DraggableVisitCard
-                  key={visit.id}
-                  visit={visit}
-                  onClick={() => onVisitClick(visit)}
-                />
-              ))}
-              {hourEvents.map(event => (
+              <DraggableVisitCard
+                visit={visit}
+                onClick={() => onVisitClick(visit)}
+              />
+            </div>
+          ))}
+          
+          {/* イベントカード（絶対位置） */}
+          {events.map(event => {
+            const pos = calculateCardPosition(event.scheduled_at, event.duration || 60, visibleHours);
+            if (!pos.isVisible) return null;
+            
+            return (
+              <div
+                key={`event-${event.id}`}
+                className="absolute pointer-events-auto"
+                style={{
+                  left: `${pos.leftPercent}%`,
+                  width: `${pos.widthPercent}%`,
+                  bottom: '4px',
+                  minWidth: '60px',
+                }}
+              >
                 <EventCard
-                  key={`event-${event.id}`}
                   event={event}
                   onClick={() => onEventClick?.(event)}
                 />
-              ))}
-            </DroppableTimeSlot>
-          );
-        })}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -162,29 +246,30 @@ export function TimelineResourceView({
   onEventClick,
   onTimeSlotClick,
 }: TimelineResourceViewProps) {
-  // 表示する時間範囲の状態管理
-  const [startHour, setStartHour] = useState(START_HOUR);
-  const [endHour, setEndHour] = useState(END_HOUR);
+  // ズームレベルとスクロール位置の状態管理
+  const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('8h');
+  const [scrollOffset, setScrollOffset] = useState(DEFAULT_START_HOUR);
   
-  const visibleHours = useMemo(() => 
-    Array.from({ length: endHour - startHour }, (_, i) => startHour + i),
-    [startHour, endHour]
-  );
+  const visibleHours = useMemo(() => {
+    const hours = ZOOM_LEVELS[zoomLevel].hours;
+    if (zoomLevel === '24h') {
+      return Array.from({ length: TOTAL_HOURS }, (_, i) => i);
+    }
+    return Array.from({ length: hours }, (_, i) => scrollOffset + i);
+  }, [zoomLevel, scrollOffset]);
 
-  const canGoEarlier = startHour > 0;
-  const canGoLater = endHour < 24;
+  const canScrollEarlier = zoomLevel !== '24h' && scrollOffset > 0;
+  const canScrollLater = zoomLevel !== '24h' && scrollOffset + ZOOM_LEVELS[zoomLevel].hours < TOTAL_HOURS;
 
-  const handleEarlier = () => {
-    if (canGoEarlier) {
-      setStartHour(prev => Math.max(0, prev - 2));
-      setEndHour(prev => Math.max(2, prev - 2));
+  const scrollEarlier = () => {
+    if (canScrollEarlier) {
+      setScrollOffset(prev => Math.max(0, prev - 2));
     }
   };
 
-  const handleLater = () => {
-    if (canGoLater) {
-      setStartHour(prev => Math.min(22, prev + 2));
-      setEndHour(prev => Math.min(24, prev + 2));
+  const scrollLater = () => {
+    if (canScrollLater) {
+      setScrollOffset(prev => Math.min(TOTAL_HOURS - ZOOM_LEVELS[zoomLevel].hours, prev + 2));
     }
   };
 
@@ -194,13 +279,9 @@ export function TimelineResourceView({
   };
 
   const hierarchy = useMemo(() => {
-    // 1. Identify Offices (Roots) - those without parent_id
     const offices = groups.filter(g => !g.parent_id);
-    
-    // 2. Identify Teams (Children) - those with parent_id
     const teams = groups.filter(g => g.parent_id);
     
-    // 3. Map Teams to Offices
     const officeTeams = new Map<number, Group[]>();
     teams.forEach(team => {
       if (team.parent_id) {
@@ -210,7 +291,6 @@ export function TimelineResourceView({
       }
     });
 
-    // 4. Map Staffs to Groups (Office or Team)
     const groupStaffs = new Map<number, Staff[]>();
     const unassignedStaffs: Staff[] = [];
 
@@ -253,41 +333,68 @@ export function TimelineResourceView({
 
   return (
     <div className="flex flex-col h-full bg-white overflow-hidden">
-      {/* Time Range Control */}
-      <div className="flex items-center justify-center gap-2 py-2 border-b border-gray-200 bg-gray-50 flex-shrink-0">
-        <button
-          onClick={handleEarlier}
-          disabled={!canGoEarlier}
-          className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
-          title="前の時間帯"
-        >
-          <ChevronLeftIcon className="w-5 h-5 text-gray-600" />
-        </button>
-        <span className="text-sm text-gray-600 min-w-[100px] text-center">
-          {startHour}:00 - {endHour - 1}:59
-        </span>
-        <button
-          onClick={handleLater}
-          disabled={!canGoLater}
-          className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
-          title="後の時間帯"
-        >
-          <ChevronRightIcon className="w-5 h-5 text-gray-600" />
-        </button>
+      {/* Toolbar - 計画レーンビューと統一 */}
+      <div className="flex-none px-3 py-2 sm:px-4 sm:py-3 border-b border-gray-200 flex items-center justify-end gap-2 sm:gap-3 bg-white">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* ズームレベル切り替えボタン */}
+          <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+            {(Object.keys(ZOOM_LEVELS) as ZoomLevel[]).map((level) => (
+              <button
+                key={level}
+                onClick={() => {
+                  setZoomLevel(level);
+                  if (level === '8h' && scrollOffset > TOTAL_HOURS - ZOOM_LEVELS['8h'].hours) {
+                    setScrollOffset(DEFAULT_START_HOUR);
+                  }
+                }}
+                className={`px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm font-medium transition-colors min-w-[44px] sm:min-w-[52px]
+                  ${zoomLevel === level 
+                    ? 'bg-indigo-600 text-white' 
+                    : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                title={ZOOM_LEVELS[level].label}
+              >
+                {ZOOM_LEVELS[level].label}
+              </button>
+            ))}
+          </div>
+
+          {/* 時間スクロールコントロール（8時間表示時のみ） */}
+          {zoomLevel !== '24h' && (
+            <>
+              <button
+                onClick={scrollEarlier}
+                disabled={!canScrollEarlier}
+                className="p-1.5 sm:p-2 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed rounded-full transition-colors"
+                title="前の時間帯"
+              >
+                <ChevronLeftIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+
+              <button
+                onClick={scrollLater}
+                disabled={!canScrollLater}
+                className="p-1.5 sm:p-2 text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed rounded-full transition-colors"
+                title="次の時間帯"
+              >
+                <ChevronRightIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Unified Scroll Container */}
-      <div className="flex-1 overflow-auto relative">
-        {/* Header: Time Scale (Sticky Top) */}
-        <div className="sticky top-0 z-20 flex min-w-max border-b border-gray-200 bg-gray-50 shadow-sm">
-          <div className="sticky left-0 z-30 w-24 sm:w-48 flex-shrink-0 border-r border-gray-200 p-2 font-semibold text-gray-600 text-xs sm:text-sm flex items-center pl-2 sm:pl-4 bg-gray-50 shadow-[1px_0_3px_rgba(0,0,0,0.05)]">
-            スタッフ
+      {/* Timeline Content */}
+      <div className="flex-1 overflow-y-auto overflow-x-auto">
+        {/* Time Header */}
+        <div className="flex sticky top-0 bg-white z-10 border-b-2 border-gray-300 min-w-[600px] sm:min-w-0">
+          <div className="w-28 sm:w-40 flex-shrink-0 px-2 py-2 border-r border-gray-200 bg-gray-100 font-semibold text-xs text-gray-700 flex items-center gap-1">
+            <span className="truncate">スタッフ</span>
           </div>
-          <div className="flex">
-            {visibleHours.map((hour) => (
+          <div className="flex-1 flex">
+            {visibleHours.map(hour => (
               <div
                 key={hour}
-                className="flex-1 min-w-[60px] sm:min-w-[100px] border-r border-gray-100 text-xs text-gray-500 px-1 sm:px-2 py-2 text-center bg-gray-50"
+                className="flex-1 min-w-[80px] px-1 py-2 text-center border-r border-gray-200 bg-gray-100 text-[11px] font-medium text-gray-600"
               >
                 {String(hour).padStart(2, '0')}:00
               </div>
@@ -295,8 +402,8 @@ export function TimelineResourceView({
           </div>
         </div>
 
-        {/* Body: Staff Rows */}
-        <div className="min-w-max">
+        {/* Staff Rows */}
+        <div className="min-w-[600px] sm:min-w-0">
           {hierarchy.offices.map((office) => {
             const isOfficeSelected = !selectedGroupIds || selectedGroupIds.includes(office.id);
             const teams = hierarchy.officeTeams.get(office.id) || [];
@@ -305,8 +412,6 @@ export function TimelineResourceView({
             if (!isOfficeSelected && visibleTeams.length === 0) return null;
 
             const directStaffs = hierarchy.groupStaffs.get(office.id) || [];
-            
-            // Calculate total staff in this office (direct + teams)
             const visibleDirectStaffs = isOfficeSelected ? directStaffs : [];
             const totalStaffCount = visibleDirectStaffs.length + visibleTeams.reduce((acc, team) => acc + (hierarchy.groupStaffs.get(team.id)?.length || 0), 0);
 
@@ -314,17 +419,13 @@ export function TimelineResourceView({
 
             return (
               <div key={office.id}>
-                {/* Direct Staffs */}
                 {isOfficeSelected && renderStaffRows(directStaffs, office.name)}
-
-                {/* Teams */}
                 {visibleTeams.map(team => {
                   const teamStaffs = hierarchy.groupStaffs.get(team.id) || [];
                   if (teamStaffs.length === 0) return null;
-                  
                   return (
                     <div key={team.id}>
-                        {renderStaffRows(teamStaffs, team.name)}
+                      {renderStaffRows(teamStaffs, team.name)}
                     </div>
                   );
                 })}
@@ -332,7 +433,6 @@ export function TimelineResourceView({
             );
           })}
 
-          {/* Unassigned Staffs */}
           {hierarchy.unassignedStaffs.length > 0 && (
             <div>
               {renderStaffRows(hierarchy.unassignedStaffs, '未所属')}

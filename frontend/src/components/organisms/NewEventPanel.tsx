@@ -16,14 +16,14 @@ interface NewEventPanelProps {
   onCreate: () => void;
 }
 
-const EVENT_TYPE_LABELS: Record<EventType, string> = {
+const EVENT_TYPE_LABELS: Record<Exclude<EventType, 'absence'>, string> = {
   meeting: 'ミーティング',
   facility: '施設訪問',
   training: '研修',
   other: 'その他',
 };
 
-const EVENT_TYPE_COLORS: Record<EventType, string> = {
+const EVENT_TYPE_COLORS: Record<Exclude<EventType, 'absence'>, string> = {
   meeting: 'border-purple-400 bg-purple-50',
   facility: 'border-blue-400 bg-blue-50',
   training: 'border-green-400 bg-green-50',
@@ -32,7 +32,7 @@ const EVENT_TYPE_COLORS: Record<EventType, string> = {
 
 export function NewEventPanel({ initialDate, planningLaneId, onClose, onCreate }: NewEventPanelProps) {
   const [title, setTitle] = useState('');
-  const [eventType, setEventType] = useState<EventType>('meeting');
+  const [eventType, setEventType] = useState<Exclude<EventType, 'absence'>>('meeting');
   const [date, setDate] = useState(formatDateForInput(initialDate));
   const [time, setTime] = useState(formatTimeForInput(initialDate));
   const [duration, setDuration] = useState(60);
@@ -140,10 +140,10 @@ export function NewEventPanel({ initialDate, planningLaneId, onClose, onCreate }
                 <button
                   key={value}
                   type="button"
-                  onClick={() => setEventType(value as EventType)}
+                  onClick={() => setEventType(value as Exclude<EventType, 'absence'>)}
                   className={`px-3 py-2 text-sm rounded-lg border-2 transition-colors ${
                     eventType === value
-                      ? EVENT_TYPE_COLORS[value as EventType]
+                      ? EVENT_TYPE_COLORS[value as Exclude<EventType, 'absence'>]
                       : 'border-gray-200 bg-white hover:bg-gray-50'
                   }`}
                 >

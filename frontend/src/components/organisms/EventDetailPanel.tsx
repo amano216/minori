@@ -20,6 +20,7 @@ const EVENT_TYPE_LABELS: Record<EventType, string> = {
   facility: '施設訪問',
   training: '研修',
   other: 'その他',
+  absence: '不在',
 };
 
 const EVENT_TYPE_COLORS: Record<EventType, string> = {
@@ -27,12 +28,15 @@ const EVENT_TYPE_COLORS: Record<EventType, string> = {
   facility: 'bg-blue-100 text-blue-800',
   training: 'bg-green-100 text-green-800',
   other: 'bg-gray-100 text-gray-800',
+  absence: 'bg-gray-200 text-gray-700',
 };
 
 export function EventDetailPanel({ event, onClose, onUpdate, onDelete }: EventDetailPanelProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(event.title);
   const [eventType, setEventType] = useState<EventType>(event.event_type);
+  const [scheduledDate, setScheduledDate] = useState('');
+  const [scheduledTime, setScheduledTime] = useState('');
   const [duration, setDuration] = useState(event.duration);
   const [notes, setNotes] = useState(event.notes || '');
   const [participantIds, setParticipantIds] = useState<number[]>(event.participant_ids);
@@ -44,6 +48,9 @@ export function EventDetailPanel({ event, onClose, onUpdate, onDelete }: EventDe
     // Reset form when event changes
     setTitle(event.title);
     setEventType(event.event_type);
+    const eventDate = new Date(event.scheduled_at);
+    setScheduledDate(eventDate.toISOString().split('T')[0]);
+    setScheduledTime(eventDate.toTimeString().slice(0, 5));
     setDuration(event.duration);
     setNotes(event.notes || '');
     setParticipantIds(event.participant_ids);
@@ -69,9 +76,11 @@ export function EventDetailPanel({ event, onClose, onUpdate, onDelete }: EventDe
   const handleSave = async () => {
     setSaving(true);
     try {
+      const newScheduledAt = new Date(`${scheduledDate}T${scheduledTime}`);
       await updateEvent(event.id, {
         title,
         event_type: eventType,
+        scheduled_at: newScheduledAt.toISOString(),
         duration,
         notes: notes || undefined,
         participant_ids: participantIds,

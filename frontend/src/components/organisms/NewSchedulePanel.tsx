@@ -1,5 +1,5 @@
 import { useState, useEffect, type FormEvent } from 'react';
-import { X, User, Calendar, Clock, FileText, Save, Plus, Users } from 'lucide-react';
+import { X, User, Calendar, Clock, FileText, Save, Plus, Users, CalendarOff } from 'lucide-react';
 import { CalendarIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 import {
   createVisit,
@@ -10,12 +10,19 @@ import {
   type Staff,
   type Patient,
   type EventType,
+  type AbsenceReason,
 } from '../../api/client';
 import { Button } from '../atoms/Button';
 import { Spinner } from '../atoms/Spinner';
 import { SearchableSelect } from '../molecules/SearchableSelect';
 
-type TabType = 'visit' | 'event';
+type TabType = 'visit' | 'event' | 'absence';
+
+const ABSENCE_REASON_LABELS: Record<AbsenceReason, string> = {
+  compensatory_leave: '振休',
+  paid_leave: '有給',
+  half_day_leave: '半休',
+};
 
 interface NewSchedulePanelProps {
   isOpen: boolean;
@@ -27,7 +34,7 @@ interface NewSchedulePanelProps {
   initialTab?: TabType;
 }
 
-const EVENT_TYPE_LABELS: Record<EventType, string> = {
+const EVENT_TYPE_LABELS: Record<Exclude<EventType, 'absence'>, string> = {
   meeting: 'ミーティング',
   facility: '施設訪問',
   training: '研修',
@@ -59,8 +66,13 @@ export function NewSchedulePanel({
   
   // Event-specific State
   const [eventTitle, setEventTitle] = useState('');
-  const [eventType, setEventType] = useState<EventType>('meeting');
+  const [eventType, setEventType] = useState<Exclude<EventType, 'absence'>>('meeting');
   const [participantIds, setParticipantIds] = useState<number[]>([]);
+
+  // Absence-specific State
+  const [absenceReason, setAbsenceReason] = useState<AbsenceReason>('paid_leave');
+  const [absenceStaffId, setAbsenceStaffId] = useState<number | ''>('');
+  const [isAllDay, setIsAllDay] = useState(true);
 
   // Data State
   const [staffs, setStaffs] = useState<Staff[]>([]);
@@ -106,7 +118,12 @@ export function NewSchedulePanel({
       setEventTitle('');
       setEventType('meeting');
       setParticipantIds([]);
+      setAbsenceReason('paid_leave');
+      setAbsenceStaffId('');
+      setIsAllDay(true);
       setError('');
+      // Set appropriate duration based on tab
+      setDuration(initialTab === 'absence' ? 240 : 60);
     } else {
       setIsVisible(false);
     }
@@ -210,6 +227,63 @@ export function NewSchedulePanel({
     }
   };
 
+  const handleSubmitAbsence = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!absenceStaffId) {
+      setError('スタッフを選択してください');
+      return;
+    }
+
+    setSubmitting(true);
+    setError('');
+
+    try {
+      let scheduledAt: Date;
+      let absenceDuration: number;
+
+      if (isAllDay) {
+        // 終日の場合：9:00から8時間（480分）
+        scheduledAt = new Date(`${scheduledDate}T09:00`);
+        absenceDuration = 480;
+      } else {
+        // 時間指定の場合
+        scheduledAt = new Date(`${scheduledDate}T${scheduledTime}`);
+        absenceDuration = duration;
+      }
+
+      const selectedStaff = staffs.find(s => s.id === absenceStaffId);
+      const title = `${selectedStaff?.name || ''} - ${ABSENCE_REASON_LABELS[absenceReason]}`;
+      
+      await createEvent({
+        title,
+        event_type: 'absence',
+        scheduled_at: scheduledAt.toISOString(),
+        duration: absenceDuration,
+        notes: notes || undefined,
+        planning_lane_id: planningLaneId || undefined,
+        participant_ids: [absenceStaffId as number],
+        absence_reason: absenceReason,
+      });
+      onCreated();
+      handleClose();
+    } catch (err: unknown) {
+      console.error('Failed to create absence:', err);
+      setError('不在の作成に失敗しました');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleFormSubmit = (e: FormEvent) => {
+    if (activeTab === 'visit') {
+      handleSubmitVisit(e);
+    } else if (activeTab === 'event') {
+      handleSubmitEvent(e);
+    } else {
+      handleSubmitAbsence(e);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -240,7 +314,10 @@ export function NewSchedulePanel({
         <div className="flex-none px-4 pt-3 border-b border-gray-200 bg-gray-50">
           <div className="flex gap-1">
             <button
-              onClick={() => setActiveTab('visit')}
+              onClick={() => {
+                setActiveTab('visit');
+                setDuration(60);
+              }}
               className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
                 activeTab === 'visit'
                   ? 'bg-white text-indigo-600 border border-gray-200 border-b-white -mb-px'
@@ -251,7 +328,10 @@ export function NewSchedulePanel({
               新規訪問
             </button>
             <button
-              onClick={() => setActiveTab('event')}
+              onClick={() => {
+                setActiveTab('event');
+                setDuration(60);
+              }}
               className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
                 activeTab === 'event'
                   ? 'bg-white text-purple-600 border border-gray-200 border-b-white -mb-px'
@@ -260,6 +340,20 @@ export function NewSchedulePanel({
             >
               <UserGroupIcon className="w-4 h-4" />
               新規イベント
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('absence');
+                setDuration(240);
+              }}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+                activeTab === 'absence'
+                  ? 'bg-white text-gray-600 border border-gray-200 border-b-white -mb-px'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <CalendarOff className="w-4 h-4" />
+              不在
             </button>
           </div>
         </div>
@@ -271,7 +365,7 @@ export function NewSchedulePanel({
               <Spinner />
             </div>
           ) : (
-            <form onSubmit={activeTab === 'visit' ? handleSubmitVisit : handleSubmitEvent} className="space-y-4">
+            <form onSubmit={handleFormSubmit} className="space-y-4">
               {error && (
                 <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">
                   {error}
@@ -343,7 +437,7 @@ export function NewSchedulePanel({
                     </label>
                     <select
                       value={eventType}
-                      onChange={(e) => setEventType(e.target.value as EventType)}
+                      onChange={(e) => setEventType(e.target.value as Exclude<EventType, 'absence'>)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                     >
                       {Object.entries(EVENT_TYPE_LABELS).map(([key, label]) => (
@@ -378,9 +472,66 @@ export function NewSchedulePanel({
                 </>
               )}
 
+              {/* Absence-specific fields */}
+              {activeTab === 'absence' && (
+                <>
+                  {/* Staff */}
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                      <User className="w-4 h-4" />
+                      対象スタッフ
+                    </label>
+                    <select
+                      value={absenceStaffId}
+                      onChange={(e) => setAbsenceStaffId(e.target.value ? Number(e.target.value) : '')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
+                      required
+                    >
+                      <option value="">スタッフを選択...</option>
+                      {staffs.map((staff) => (
+                        <option key={staff.id} value={staff.id}>
+                          {staff.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Absence Reason */}
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                      <CalendarOff className="w-4 h-4" />
+                      不在理由
+                    </label>
+                    <select
+                      value={absenceReason}
+                      onChange={(e) => setAbsenceReason(e.target.value as AbsenceReason)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
+                    >
+                      {Object.entries(ABSENCE_REASON_LABELS).map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* All Day Toggle */}
+                  <div className="flex items-center gap-3">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isAllDay}
+                        onChange={(e) => setIsAllDay(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gray-600"></div>
+                      <span className="ml-3 text-sm font-medium text-gray-700">終日</span>
+                    </label>
+                  </div>
+                </>
+              )}
+
               {/* Common fields */}
               {/* Date & Time */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className={`grid ${activeTab === 'absence' && isAllDay ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
                 <div>
                   <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
                     <Calendar className="w-4 h-4" />
@@ -394,38 +545,51 @@ export function NewSchedulePanel({
                     required
                   />
                 </div>
+                {!(activeTab === 'absence' && isAllDay) && (
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                      <Clock className="w-4 h-4" />
+                      時刻
+                    </label>
+                    <input
+                      type="time"
+                      value={scheduledTime}
+                      onChange={(e) => setScheduledTime(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      required
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Duration - hide for all-day absence */}
+              {!(activeTab === 'absence' && isAllDay) && (
                 <div>
                   <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
                     <Clock className="w-4 h-4" />
-                    時刻
+                    時間
                   </label>
-                  <input
-                    type="time"
-                    value={scheduledTime}
-                    onChange={(e) => setScheduledTime(e.target.value)}
+                  <select
+                    value={duration}
+                    onChange={(e) => setDuration(Number(e.target.value))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    required
-                  />
+                  >
+                    {activeTab === 'absence' ? (
+                      <>
+                        <option value={240}>4時間（午前/午後）</option>
+                        <option value={480}>8時間（終日）</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value={30}>30分</option>
+                        <option value={60}>60分</option>
+                        <option value={90}>90分</option>
+                        <option value={120}>120分</option>
+                      </>
+                    )}
+                  </select>
                 </div>
-              </div>
-
-              {/* Duration */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
-                  <Clock className="w-4 h-4" />
-                  時間
-                </label>
-                <select
-                  value={duration}
-                  onChange={(e) => setDuration(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  <option value={30}>30分</option>
-                  <option value={60}>60分</option>
-                  <option value={90}>90分</option>
-                  <option value={120}>120分</option>
-                </select>
-              </div>
+              )}
 
               {/* Notes */}
               <div>
@@ -455,9 +619,9 @@ export function NewSchedulePanel({
             キャンセル
           </Button>
           <Button
-            onClick={activeTab === 'visit' ? handleSubmitVisit : handleSubmitEvent}
+            onClick={handleFormSubmit}
             disabled={submitting || loading}
-            className={activeTab === 'event' ? 'bg-purple-600 hover:bg-purple-700' : ''}
+            className={activeTab === 'event' ? 'bg-purple-600 hover:bg-purple-700' : activeTab === 'absence' ? 'bg-gray-600 hover:bg-gray-700' : ''}
           >
             {submitting ? (
               <Spinner className="w-4 h-4" />
