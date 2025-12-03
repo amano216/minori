@@ -588,6 +588,14 @@ export async function updatePlanningLanePatternName(id: number, patternName: str
   });
 }
 
+// Update only the name field
+export async function updatePlanningLaneName(id: number, name: string): Promise<PlanningLane> {
+  return apiRequest(`/api/planning_lanes/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ planning_lane: { name } }),
+  });
+}
+
 export async function deletePlanningLane(id: number): Promise<void> {
   return apiRequest(`/api/planning_lanes/${id}`, { method: 'DELETE' });
 }
