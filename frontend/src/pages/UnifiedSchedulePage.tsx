@@ -37,6 +37,7 @@ import { EditPatternPanel } from '../components/organisms/EditPatternPanel';
 import { PatternHistoryPanel } from '../components/organisms/PatternHistoryPanel';
 import { VisitDetailPanel } from '../components/organisms/VisitDetailPanel';
 import { EventDetailPanel } from '../components/organisms/EventDetailPanel';
+import { AbsenceDetailPanel } from '../components/organisms/AbsenceDetailPanel';
 import { NewSchedulePanel } from '../components/organisms/NewSchedulePanel';
 import { TimelineResourceView } from '../components/organisms/TimelineResourceView';
 import PatientCalendarView from '../components/organisms/PatientCalendarView';
@@ -759,8 +760,18 @@ export function UnifiedSchedulePage() {
           />
 
           {/* Event Detail Panel */}
-          {selectedEvent && (
+          {selectedEvent && selectedEvent.event_type !== 'absence' && (
             <EventDetailPanel
+              event={selectedEvent}
+              onClose={() => setSelectedEvent(null)}
+              onUpdate={loadScheduleData}
+              onDelete={handleEventDelete}
+            />
+          )}
+
+          {/* Absence Detail Panel */}
+          {selectedEvent && selectedEvent.event_type === 'absence' && (
+            <AbsenceDetailPanel
               event={selectedEvent}
               onClose={() => setSelectedEvent(null)}
               onUpdate={loadScheduleData}

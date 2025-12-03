@@ -4,7 +4,8 @@ class Event < ApplicationRecord
   # 3省2ガイドライン準拠の監査ログ（Phase 2）
   has_paper_trail
 
-  EVENT_TYPES = %w[meeting facility training other].freeze
+  EVENT_TYPES = %w[meeting facility training other absence].freeze
+  ABSENCE_REASONS = %w[compensatory_leave paid_leave half_day_leave].freeze
 
   belongs_to :organization
   belongs_to :planning_lane, optional: true
@@ -16,6 +17,8 @@ class Event < ApplicationRecord
   validates :scheduled_at, presence: true
   validates :duration, presence: true, numericality: { greater_than: 0 }
   validates :event_type, inclusion: { in: EVENT_TYPES }
+  validates :absence_reason, inclusion: { in: ABSENCE_REASONS }, if: -> { event_type == 'absence' }
+  validates :absence_reason, absence: true, unless: -> { event_type == 'absence' }
 
   scope :for_organization, ->(org) { where(organization: org) }
   scope :on_date, ->(date) {

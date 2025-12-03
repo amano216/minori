@@ -81,6 +81,7 @@ module Api
         :duration,
         :notes,
         :planning_lane_id,
+        :absence_reason,
         participant_ids: []
       )
     end
@@ -90,6 +91,7 @@ module Api
         id: event.id,
         title: event.title,
         event_type: event.event_type,
+        absence_reason: event.absence_reason,
         scheduled_at: event.scheduled_at.iso8601,
         duration: event.duration,
         notes: event.notes,

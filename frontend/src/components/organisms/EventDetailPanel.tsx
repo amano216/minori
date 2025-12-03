@@ -33,6 +33,8 @@ export function EventDetailPanel({ event, onClose, onUpdate, onDelete }: EventDe
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(event.title);
   const [eventType, setEventType] = useState<EventType>(event.event_type);
+  const [scheduledDate, setScheduledDate] = useState('');
+  const [scheduledTime, setScheduledTime] = useState('');
   const [duration, setDuration] = useState(event.duration);
   const [notes, setNotes] = useState(event.notes || '');
   const [participantIds, setParticipantIds] = useState<number[]>(event.participant_ids);
@@ -44,6 +46,9 @@ export function EventDetailPanel({ event, onClose, onUpdate, onDelete }: EventDe
     // Reset form when event changes
     setTitle(event.title);
     setEventType(event.event_type);
+    const eventDate = new Date(event.scheduled_at);
+    setScheduledDate(eventDate.toISOString().split('T')[0]);
+    setScheduledTime(eventDate.toTimeString().slice(0, 5));
     setDuration(event.duration);
     setNotes(event.notes || '');
     setParticipantIds(event.participant_ids);
@@ -69,9 +74,11 @@ export function EventDetailPanel({ event, onClose, onUpdate, onDelete }: EventDe
   const handleSave = async () => {
     setSaving(true);
     try {
+      const newScheduledAt = new Date(`${scheduledDate}T${scheduledTime}`);
       await updateEvent(event.id, {
         title,
         event_type: eventType,
+        scheduled_at: newScheduledAt.toISOString(),
         duration,
         notes: notes || undefined,
         participant_ids: participantIds,
