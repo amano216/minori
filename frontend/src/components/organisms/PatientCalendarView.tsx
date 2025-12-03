@@ -602,7 +602,7 @@ const LaneRow: React.FC<LaneRowProps> = ({
   return (
     <div className="flex border-b border-gray-200 min-w-[600px] sm:min-w-0">
       {/* Lane Label - Mobile Responsive */}
-      <div className={`w-28 sm:w-40 flex-shrink-0 px-2 py-2 sm:px-3 sm:py-3 border-r border-gray-200 flex items-center gap-1 sm:gap-2 ${lane.color} ${lane.archived_at ? 'opacity-60' : ''}`}>
+      <div className={`w-28 sm:w-40 flex-shrink-0 px-2 py-2 sm:px-3 sm:py-3 border-r border-gray-200 flex items-center gap-1 sm:gap-2 ${lane.color} ${dataMode === 'actual' && lane.archived_at ? 'opacity-60' : ''}`}>
         {isEditing ? (
           <div className="flex items-center gap-1 flex-1 min-w-0">
             <input
@@ -623,11 +623,11 @@ const LaneRow: React.FC<LaneRowProps> = ({
         ) : (
           <>
             <div className="flex items-center gap-1 flex-1 min-w-0">
-              {lane.archived_at && (
+              {dataMode === 'actual' && lane.archived_at && (
                 <EyeSlashIcon className="w-3 h-3 text-orange-500 flex-shrink-0" title="非表示" />
               )}
               <span 
-                className={`font-semibold text-xs sm:text-sm cursor-pointer hover:text-indigo-600 truncate ${lane.archived_at ? 'text-gray-500 italic' : 'text-gray-800'}`}
+                className={`font-semibold text-xs sm:text-sm cursor-pointer hover:text-indigo-600 truncate ${dataMode === 'actual' && lane.archived_at ? 'text-gray-500 italic' : 'text-gray-800'}`}
                 onClick={() => setIsEditing(true)}
                 title={lane.name}
               >
