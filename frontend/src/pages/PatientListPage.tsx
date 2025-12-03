@@ -55,6 +55,10 @@ const PHONE_LABEL_SUGGESTIONS = [
   '本人携帯', '本人自宅', '配偶者', '長男', '長女', '次男', '次女', 'ケアマネ', '緊急連絡先', 'FAX',
 ];
 
+const URL_LABEL_SUGGESTIONS = [
+  'カナミック', 'ケアプラン', '電子カルテ', '主治医', '薬局', 'その他',
+];
+
 const PATIENT_FIELD_LABELS: Record<string, string> = {
   name: '氏名',
   name_kana: 'フリガナ',
@@ -647,7 +651,12 @@ export function PatientListPage() {
                       <Label>外部URL</Label>
                       {formData.external_urls.map((eu, index) => (
                         <div key={index} className="flex items-center gap-2">
-                          <Input type="text" value={eu.label || ''} onChange={(e) => handleExternalUrlChange(index, 'label', e.target.value)} disabled={submitting} placeholder="ラベル" className="w-28" />
+                          <div className="relative w-28">
+                            <Input type="text" value={eu.label || ''} onChange={(e) => handleExternalUrlChange(index, 'label', e.target.value)} disabled={submitting} placeholder="備考" list={`url-label-${index}`} className="w-full text-sm" />
+                            <datalist id={`url-label-${index}`}>
+                              {URL_LABEL_SUGGESTIONS.map((s) => <option key={s} value={s} />)}
+                            </datalist>
+                          </div>
                           <Input type="url" value={eu.url} onChange={(e) => handleExternalUrlChange(index, 'url', e.target.value)} disabled={submitting} placeholder="https://..." className="flex-1" />
                           {formData.external_urls.length > 1 && (
                             <button type="button" onClick={() => removeExternalUrl(index)} disabled={submitting} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors">
