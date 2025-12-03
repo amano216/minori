@@ -18,6 +18,7 @@ import {
   fetchPlanningLanes, 
   createPlanningLane, 
   updatePlanningLane, 
+  updatePlanningLanePatternName,
   deletePlanningLane,
   archivePlanningLane,
   unarchivePlanningLane,
@@ -100,7 +101,7 @@ const getGroupColor = (groupId: number | null | undefined, groups: Group[]): str
 
 interface Lane extends PlanningLane {
   color: string;
-  label: string; // Alias for name
+  label: string; // Display name based on dataMode (pattern_name for pattern mode, name for actual mode)
 }
 
 
@@ -301,7 +302,7 @@ const CreateLaneModal: React.FC<CreateLaneModalProps> = ({ isOpen, onClose, onSu
 interface EditLanePanelProps {
   lane: Lane | null;
   onClose: () => void;
-  onSave: (laneId: number, newName: string, newGroupId: number | null) => Promise<void>;
+  onSave: (laneId: number, newName: string, newGroupId: number | null, newPatternName: string | null) => Promise<void>;
   onArchive: (laneId: number) => Promise<void>;
   onUnarchive: (laneId: number) => Promise<void>;
   groups: Group[];
@@ -309,6 +310,7 @@ interface EditLanePanelProps {
 
 const EditLanePanel: React.FC<EditLanePanelProps> = ({ lane, onClose, onSave, onArchive, onUnarchive, groups = [] }) => {
   const [name, setName] = useState('');
+  const [patternName, setPatternName] = useState('');
   const [groupId, setGroupId] = useState<number | ''>('');
   const [saving, setSaving] = useState(false);
   const [archiving, setArchiving] = useState(false);
@@ -343,6 +345,7 @@ const EditLanePanel: React.FC<EditLanePanelProps> = ({ lane, onClose, onSave, on
   useEffect(() => {
     if (lane) {
       setName(lane.name);
+      setPatternName(lane.pattern_name || '');
       setGroupId(lane.group_id || '');
     }
   }, [lane]);
@@ -353,7 +356,7 @@ const EditLanePanel: React.FC<EditLanePanelProps> = ({ lane, onClose, onSave, on
 
     setSaving(true);
     try {
-      await onSave(lane.id, name, groupId ? Number(groupId) : null);
+      await onSave(lane.id, name, groupId ? Number(groupId) : null, patternName.trim() || null);
       onClose();
     } catch (err) {
       console.error(err);
@@ -410,6 +413,17 @@ const EditLanePanel: React.FC<EditLanePanelProps> = ({ lane, onClose, onSave, on
               required
               autoFocus
             />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">パターン画面での表示名</label>
+            <input
+              type="text"
+              value={patternName}
+              onChange={(e) => setPatternName(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="例: 看護チームA（空欄の場合はレーン名を使用）"
+            />
+            <p className="mt-1 text-xs text-gray-500">パターン画面でのみ使用される表示名です。空欄の場合はレーン名が表示されます。</p>
           </div>
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-1">担当チーム <span className="text-red-500">*</span></label>
@@ -828,7 +842,8 @@ export default function PatientCalendarView({
       });
       const mappedLanes = sortedData.map((l) => ({
         ...l,
-        label: l.name,
+        // pattern_name があればパターンモードでそれを使用、なければ name を使用
+        label: dataMode === 'pattern' ? (l.pattern_name || l.name) : l.name,
         color: getGroupColor(l.group_id, groups)
       }));
       setLanes(mappedLanes);
@@ -847,7 +862,15 @@ export default function PatientCalendarView({
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groups]);
+  }, [groups, dataMode]);
+
+  // Update lane labels when dataMode changes
+  useEffect(() => {
+    setLanes(prevLanes => prevLanes.map(l => ({
+      ...l,
+      label: dataMode === 'pattern' ? (l.pattern_name || l.name) : l.name
+    })));
+  }, [dataMode]);
 
   // Load patterns when in pattern mode
   useEffect(() => {
@@ -937,12 +960,19 @@ export default function PatientCalendarView({
     }
   };
 
-  const handleEditLane = async (laneId: number, newName: string, newGroupId: number | null) => {
+  const handleEditLane = async (laneId: number, newName: string, newGroupId: number | null, newPatternName: string | null) => {
     try {
-      await updatePlanningLane(laneId, newName, newGroupId);
+      await updatePlanningLane(laneId, newName, newGroupId, newPatternName);
       setLanes(lanes.map(l => 
         l.id === laneId 
-          ? { ...l, name: newName, label: newName, group_id: newGroupId, color: getGroupColor(newGroupId, groups) } 
+          ? { 
+              ...l, 
+              name: newName, 
+              pattern_name: newPatternName,
+              label: dataMode === 'pattern' ? (newPatternName || newName) : newName, 
+              group_id: newGroupId, 
+              color: getGroupColor(newGroupId, groups) 
+            } 
           : l
       ));
     } catch (err) {
@@ -954,8 +984,14 @@ export default function PatientCalendarView({
 
   const renameLane = async (laneId: number, newLabel: string) => {
     try {
-      const updated = await updatePlanningLane(laneId, newLabel);
-      setLanes(lanes.map(l => l.id === laneId ? { ...l, name: updated.name, label: updated.name } : l));
+      // dataMode に応じて name または pattern_name を更新
+      if (dataMode === 'pattern') {
+        await updatePlanningLanePatternName(laneId, newLabel);
+        setLanes(lanes.map(l => l.id === laneId ? { ...l, pattern_name: newLabel, label: newLabel } : l));
+      } else {
+        const updated = await updatePlanningLane(laneId, newLabel);
+        setLanes(lanes.map(l => l.id === laneId ? { ...l, name: updated.name, label: updated.name } : l));
+      }
     } catch (err: unknown) {
       console.error('Failed to rename lane:', err);
       alert('レーンの名称変更に失敗しました');
