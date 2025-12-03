@@ -306,9 +306,10 @@ interface EditLanePanelProps {
   onArchive: (laneId: number) => Promise<void>;
   onUnarchive: (laneId: number) => Promise<void>;
   groups: Group[];
+  dataMode?: 'actual' | 'pattern';
 }
 
-const EditLanePanel: React.FC<EditLanePanelProps> = ({ lane, onClose, onSave, onArchive, onUnarchive, groups = [] }) => {
+const EditLanePanel: React.FC<EditLanePanelProps> = ({ lane, onClose, onSave, onArchive, onUnarchive, groups = [], dataMode = 'actual' }) => {
   const [name, setName] = useState('');
   const [patternName, setPatternName] = useState('');
   const [groupId, setGroupId] = useState<number | ''>('');
@@ -352,11 +353,20 @@ const EditLanePanel: React.FC<EditLanePanelProps> = ({ lane, onClose, onSave, on
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!lane || !name.trim() || !groupId) return;
+    if (!lane || !groupId) return;
+    
+    // dataModeに応じて編集対象のフィールドのみバリデーション
+    if (dataMode === 'actual' && !name.trim()) return;
 
     setSaving(true);
     try {
-      await onSave(lane.id, name, groupId ? Number(groupId) : null, patternName.trim() || null);
+      // dataModeに応じて更新するフィールドを決定
+      // - pattern: pattern_nameのみ更新、nameは既存値を維持
+      // - actual: nameのみ更新、pattern_nameは既存値を維持
+      const newName = dataMode === 'pattern' ? lane.name : name;
+      const newPatternName = dataMode === 'pattern' ? (patternName.trim() || null) : (lane.pattern_name || null);
+      
+      await onSave(lane.id, newName, groupId ? Number(groupId) : null, newPatternName);
       onClose();
     } catch (err) {
       console.error(err);
@@ -402,30 +412,37 @@ const EditLanePanel: React.FC<EditLanePanelProps> = ({ lane, onClose, onSave, on
           </button>
         </div>
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4">
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">パターン画面での表示名</label>
-            <input
-              type="text"
-              value={patternName}
-              onChange={(e) => setPatternName(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder={`現在の表示: ${lane?.name || '未設定'}`}
-            />
-            <p className="mt-1 text-xs text-gray-500">パターン画面でのみ使用される表示名です。空欄の場合はスケジュール画面での表示名「{lane?.name}」が表示されます。</p>
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">スケジュール画面での表示名</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="例: 山田太郎"
-              required
-              autoFocus
-            />
-            <p className="mt-1 text-xs text-gray-500">スケジュール画面で表示される名前です。</p>
-          </div>
+          {/* パターンモード: pattern_nameのみ編集 */}
+          {dataMode === 'pattern' && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">表示名</label>
+              <input
+                type="text"
+                value={patternName}
+                onChange={(e) => setPatternName(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder={lane?.name || '表示名を入力'}
+                autoFocus
+              />
+              <p className="mt-1 text-xs text-gray-500">パターン画面で表示される名前です。空欄の場合は「{lane?.name}」が表示されます。</p>
+            </div>
+          )}
+          {/* スケジュールモード: nameのみ編集 */}
+          {dataMode === 'actual' && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">表示名</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="例: 山田太郎"
+                required
+                autoFocus
+              />
+              <p className="mt-1 text-xs text-gray-500">スケジュール画面で表示される名前です。</p>
+            </div>
+          )}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-1">担当チーム <span className="text-red-500">*</span></label>
             <SearchableSelect
@@ -1282,6 +1299,7 @@ export default function PatientCalendarView({
           onArchive={handleArchiveLane}
           onUnarchive={handleUnarchiveLane}
           groups={groups}
+          dataMode={dataMode}
         />
 
         <DragOverlay>
