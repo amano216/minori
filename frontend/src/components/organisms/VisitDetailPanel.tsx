@@ -203,6 +203,7 @@ export function VisitDetailPanel({
   const [editedDuration, setEditedDuration] = useState(60);
   const [editedNotes, setEditedNotes] = useState('');
   const [editedPlanningLaneId, setEditedPlanningLaneId] = useState<number | null>(null);
+  const [editedStaffId, setEditedStaffId] = useState<number | null>(null);
   const [planningLanes, setPlanningLanes] = useState<PlanningLane[]>([]);
 
   // スタッフをグループ別にソート（「親 > チーム - スタッフ名」形式）
@@ -250,6 +251,7 @@ export function VisitDetailPanel({
       setEditedDuration(visit.duration);
       setEditedNotes(visit.notes || '');
       setEditedPlanningLaneId(visit.planning_lane_id || null);
+      setEditedStaffId(visit.staff_id || null);
     } else {
       setIsVisible(false);
     }
@@ -312,6 +314,7 @@ export function VisitDetailPanel({
     setEditedDuration(visit.duration);
     setEditedNotes(visit.notes || '');
     setEditedPlanningLaneId(visit.planning_lane_id || null);
+    setEditedStaffId(visit.staff_id || null);
     setIsEditing(false);
   };
 
@@ -325,6 +328,8 @@ export function VisitDetailPanel({
         duration?: number;
         notes?: string;
         planning_lane_id?: number | null;
+        staff_id?: number | null;
+        status?: string;
       } = {};
 
       // 変更があったフィールドのみ送信
@@ -340,6 +345,10 @@ export function VisitDetailPanel({
       }
       if (editedPlanningLaneId !== visit.planning_lane_id) {
         updateData.planning_lane_id = editedPlanningLaneId;
+      }
+      if (editedStaffId !== visit.staff_id) {
+        updateData.staff_id = editedStaffId;
+        updateData.status = editedStaffId ? 'scheduled' : 'unassigned';
       }
 
       // 変更がある場合のみAPI呼び出し
@@ -447,25 +456,30 @@ export function VisitDetailPanel({
                 <div className="font-medium text-gray-900 text-lg">{visit.patient.name}</div>
               </div>
 
-              {/* Staff（担当変更ボタンで別途変更可能） */}
+              {/* Staff（編集モードまたは担当変更ボタンで変更可能） */}
               <div className="flex items-center gap-4">
                 <User className="w-5 h-5 text-indigo-400" />
                 <div className="flex-1">
-                  {isReassigning ? (
-                    <div className="mt-1">
-                      <select
-                        value={selectedStaffId}
-                        onChange={(e) => setSelectedStaffId(e.target.value ? Number(e.target.value) : '')}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      >
-                        <option value="">未割当</option>
-                        {staffsWithGroupLabels.map((staff) => (
-                          <option key={staff.id} value={staff.id}>
-                            {staff.groupLabel} - {staff.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                  {isEditing || isReassigning ? (
+                    <select
+                      value={isEditing ? (editedStaffId || '') : selectedStaffId}
+                      onChange={(e) => {
+                        const value = e.target.value ? Number(e.target.value) : null;
+                        if (isEditing) {
+                          setEditedStaffId(value);
+                        } else {
+                          setSelectedStaffId(value || '');
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="">未割当</option>
+                      {staffsWithGroupLabels.map((staff) => (
+                        <option key={staff.id} value={staff.id}>
+                          {staff.groupLabel}
+                        </option>
+                      ))}
+                    </select>
                   ) : (
                     <div className="font-medium text-gray-900">
                       {visit.staff?.name || '未割当'}
