@@ -1032,16 +1032,14 @@ export default function PatientCalendarView({
   };
 
   const renameLane = async (laneId: number, newLabel: string) => {
-    console.log('[renameLane] called with:', { laneId, newLabel, dataMode });
     try {
       // dataMode に応じて name または pattern_name を更新
       if (dataMode === 'pattern') {
-        console.log('[renameLane] Updating pattern_name');
         await updatePlanningLanePatternName(laneId, newLabel);
         setLanes(lanes.map(l => l.id === laneId ? { ...l, pattern_name: newLabel, label: newLabel } : l));
       } else {
-        console.log('[renameLane] Updating name');
-        const updated = await updatePlanningLane(laneId, newLabel);
+        // nameのみを更新（pattern_nameには影響しない）
+        const updated = await updatePlanningLaneName(laneId, newLabel);
         setLanes(lanes.map(l => l.id === laneId ? { ...l, name: updated.name, label: updated.name } : l));
       }
     } catch (err: unknown) {
