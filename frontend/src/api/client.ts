@@ -543,6 +543,7 @@ export async function reassignVisit(id: number, staffId: number | null): Promise
 export interface PlanningLane {
   id: number;
   name: string;
+  pattern_name?: string | null;
   position: number;
   organization_id: number;
   group_id?: number | null;
@@ -560,14 +561,30 @@ export async function createPlanningLane(name: string, position: number, groupId
   });
 }
 
-export async function updatePlanningLane(id: number, name: string, groupId?: number | null): Promise<PlanningLane> {
-  const body: { name: string; group_id?: number | null } = { name };
+export async function updatePlanningLane(
+  id: number,
+  name: string,
+  groupId?: number | null,
+  patternName?: string | null
+): Promise<PlanningLane> {
+  const body: { name: string; group_id?: number | null; pattern_name?: string | null } = { name };
   if (groupId !== undefined) {
     body.group_id = groupId;
+  }
+  if (patternName !== undefined) {
+    body.pattern_name = patternName;
   }
   return apiRequest(`/api/planning_lanes/${id}`, {
     method: 'PUT',
     body: JSON.stringify({ planning_lane: body }),
+  });
+}
+
+// Update only the pattern_name field
+export async function updatePlanningLanePatternName(id: number, patternName: string | null): Promise<PlanningLane> {
+  return apiRequest(`/api/planning_lanes/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ planning_lane: { pattern_name: patternName } }),
   });
 }
 
