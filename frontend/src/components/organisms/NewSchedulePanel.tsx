@@ -6,6 +6,7 @@ import {
   createEvent,
   fetchStaffs,
   fetchPatients,
+  ApiError,
   type VisitInput,
   type Staff,
   type Patient,
@@ -154,6 +155,23 @@ export function NewSchedulePanel({
     setTimeout(onClose, 200);
   };
 
+  const submitVisit = async (skipPatientConflictCheck: boolean): Promise<boolean> => {
+    const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}`);
+    
+    const visitData: VisitInput = {
+      patient_id: patientId as number,
+      staff_id: staffId ? (staffId as number) : undefined,
+      scheduled_at: scheduledAt.toISOString(),
+      duration,
+      notes: notes || undefined,
+      planning_lane_id: planningLaneId || undefined,
+      skip_patient_conflict_check: skipPatientConflictCheck,
+    };
+
+    await createVisit(visitData);
+    return true;
+  };
+
   const handleSubmitVisit = async (e: FormEvent) => {
     e.preventDefault();
     if (!patientId) {
@@ -165,23 +183,32 @@ export function NewSchedulePanel({
     setError('');
 
     try {
-      const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}`);
-      
-      const visitData: VisitInput = {
-        patient_id: patientId as number,
-        staff_id: staffId ? (staffId as number) : undefined,
-        scheduled_at: scheduledAt.toISOString(),
-        duration,
-        notes: notes || undefined,
-        planning_lane_id: planningLaneId || undefined,
-      };
-
-      await createVisit(visitData);
+      await submitVisit(false);
       onCreated();
       handleClose();
     } catch (err: unknown) {
       console.error('Failed to create visit:', err);
-      setError('訪問の作成に失敗しました');
+      // 患者重複警告の場合は確認ダイアログを表示
+      if (err instanceof ApiError && err.isPatientDoubleBookingWarning()) {
+        const confirmed = window.confirm(
+          `${err.message}\n\n学生同行や複数名訪問の場合は「OK」を押して登録してください。`
+        );
+        if (confirmed) {
+          // 強制登録を再実行
+          try {
+            await submitVisit(true);
+            onCreated();
+            handleClose();
+            return;
+          } catch (retryErr) {
+            console.error('Failed to force create visit:', retryErr);
+            setError(retryErr instanceof ApiError ? retryErr.message : '訪問の作成に失敗しました');
+          }
+        }
+        setSubmitting(false);
+        return;
+      }
+      setError(err instanceof ApiError ? err.message : '訪問の作成に失敗しました');
     } finally {
       setSubmitting(false);
     }
