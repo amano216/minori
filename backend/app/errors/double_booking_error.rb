@@ -9,23 +9,3 @@ class DoubleBookingError < StandardError
     super("Double booking detected for #{conflict_type}")
   end
 end
-
-class StaffDoubleBookingError < DoubleBookingError
-  def initialize(staff_id:)
-    super(conflict_type: "staff", resource_id: staff_id)
-  end
-
-  def message
-    "スタッフは既に別の訪問が予定されています"
-  end
-end
-
-class PatientDoubleBookingError < DoubleBookingError
-  def initialize(patient_id:)
-    super(conflict_type: "patient", resource_id: patient_id)
-  end
-
-  def message
-    "患者は既に別の訪問が予定されています"
-  end
-end
