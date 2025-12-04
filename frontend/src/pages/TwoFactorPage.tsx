@@ -8,11 +8,13 @@ import { Label } from '../components/atoms/Label';
 import { Card } from '../components/molecules/Card';
 import { useToast } from '../contexts/ToastContext';
 import { getFullApiUrl } from '../api/client';
+import { useAuth } from '../contexts/AuthContext';
 
 export function TwoFactorPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { showToast } = useToast();
+  const { loginWithToken } = useAuth();
   
   const [otpCode, setOtpCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -52,8 +54,8 @@ export function TwoFactorPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Save token and login
-        localStorage.setItem('minori_auth_token', data.token);
+        // Set token and user state directly without page reload
+        loginWithToken(data.token, data.user);
         showToast('success', 'ログインしました');
         navigate('/schedule');
       } else {
