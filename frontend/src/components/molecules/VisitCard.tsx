@@ -17,9 +17,10 @@ interface VisitCardProps {
   isOverlay?: boolean;
   className?: string;
   patternFrequency?: PatternFrequency; // パターンモード用
+  compact?: boolean; // コンパクト表示（重複カード用）
 }
 
-export const VisitCard: React.FC<VisitCardProps> = ({ visit, isOverlay, className = '', patternFrequency }) => {
+export const VisitCard: React.FC<VisitCardProps> = ({ visit, isOverlay, className = '', patternFrequency, compact = false }) => {
   const visitDate = new Date(visit.scheduled_at);
   const durationMinutes = visit.duration || 60;
   const endDate = new Date(visitDate.getTime() + durationMinutes * 60000);
@@ -55,7 +56,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({ visit, isOverlay, classNam
       className={`
         ${bgColor} 
         border-l-[3px] 
-        px-1.5 py-1 
+        ${compact ? 'px-1 py-0.5' : 'px-1.5 py-1'} 
         text-[11px] 
         cursor-pointer 
         hover:shadow-md 
@@ -67,23 +68,23 @@ export const VisitCard: React.FC<VisitCardProps> = ({ visit, isOverlay, classNam
         ${className}
       `}
     >
-      <div className="font-semibold text-gray-800 leading-tight truncate">
+      <div className={`font-semibold text-gray-800 leading-tight truncate ${compact ? 'text-[10px]' : ''}`}>
         {visit.patient.name}
       </div>
-      {townName && (
+      {!compact && townName && (
         <div className="text-gray-400 text-[9px] leading-tight truncate">
           {townName}
         </div>
       )}
-      <div className="text-gray-500 text-[10px] leading-tight flex items-center gap-1">
+      <div className={`text-gray-500 leading-tight flex items-center gap-1 ${compact ? 'text-[9px]' : 'text-[10px]'}`}>
         <span>{formatTime(visitDate)}-{formatTime(endDate)}</span>
       </div>
-      {visit.staff && (
+      {!compact && visit.staff && (
         <div className="text-gray-400 text-[9px] leading-tight truncate mt-0.5">
           {visit.staff.name}
         </div>
       )}
-      {patternFrequency && (
+      {!compact && patternFrequency && (
         <div className={`text-[9px] leading-tight truncate mt-0.5 ${isNonWeeklyPattern ? 'text-rose-600 font-medium' : 'text-amber-600'}`}>
           {FREQUENCY_LABELS[patternFrequency]}
         </div>
@@ -97,11 +98,13 @@ export const DraggableVisitCard = ({
   onClick, 
   disabled = false,
   patternFrequency,
+  compact = false,
 }: { 
   visit: Visit; 
   onClick: () => void; 
   disabled?: boolean;
   patternFrequency?: PatternFrequency;
+  compact?: boolean;
 }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `visit-${visit.id}`,
@@ -157,7 +160,7 @@ export const DraggableVisitCard = ({
       onPointerMove={handlePointerMove}
       onClick={handleClick}
     >
-      <VisitCard visit={visit} onClick={() => {}} patternFrequency={patternFrequency} />
+      <VisitCard visit={visit} onClick={() => {}} patternFrequency={patternFrequency} compact={compact} />
     </div>
   );
 };

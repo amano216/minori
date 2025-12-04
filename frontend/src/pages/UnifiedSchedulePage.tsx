@@ -287,8 +287,9 @@ export function UnifiedSchedulePage() {
       if (err instanceof ApiError && err.isConflict()) {
         // 患者重複警告の場合は確認ダイアログを表示
         if (err.isPatientDoubleBookingWarning()) {
-          const confirmed = confirm(
-            `${err.message}\n\n学生同行や複数名訪問の場合は「OK」を押して登録してください。`
+          const confirmed = window.confirm(
+            `⚠️ ${err.message}\n\n` +
+            `操作に誤りがない場合は「OK」を押してください。`
           );
           if (confirmed) {
             // 強制登録を再実行
@@ -298,7 +299,7 @@ export function UnifiedSchedulePage() {
         } else if (err.isDoubleBooking()) {
           alert(`予約の競合が発生しました: ${err.message}`);
         } else if (err.isStaleObject()) {
-          const reload = confirm(`${err.message}\n\nデータを再読み込みしますか？`);
+          const reload = window.confirm(`${err.message}\n\nデータを再読み込みしますか？`);
           if (reload) {
             await loadScheduleData();
           }
@@ -422,17 +423,18 @@ export function UnifiedSchedulePage() {
     const hour = over.data.current?.hour as number | undefined;
 
     if (visit) {
-      try {
-        const updateData: {
-          lock_version?: number;
-          staff_id?: number | null;
-          status?: string;
-          scheduled_at?: string;
-          planning_lane_id?: number;
-        } = {
-          lock_version: visit.lock_version,
-        };
+      const updateData: {
+        lock_version?: number;
+        staff_id?: number | null;
+        status?: string;
+        scheduled_at?: string;
+        planning_lane_id?: number;
+        skip_patient_conflict_check?: boolean;
+      } = {
+        lock_version: visit.lock_version,
+      };
 
+      try {
         if (staff) {
           updateData.staff_id = staff.id;
           updateData.status = 'scheduled';
@@ -465,10 +467,26 @@ export function UnifiedSchedulePage() {
         
         // 競合エラーのハンドリング
         if (err instanceof ApiError && err.isConflict()) {
-          if (err.isDoubleBooking()) {
+          console.log('Conflict error details:', { errorType: err.errorType, isPatientWarning: err.isPatientDoubleBookingWarning() });
+          if (err.isPatientDoubleBookingWarning()) {
+            // 患者重複警告の場合は確認ダイアログを表示
+            const confirmed = window.confirm(
+              `⚠️ ${err.message}\n\n` +
+              `操作に誤りがない場合は「OK」を押してください。`
+            );
+            if (confirmed) {
+              try {
+                await updateVisit(visit.id, { ...updateData, skip_patient_conflict_check: true });
+                await loadScheduleData();
+              } catch (retryErr) {
+                console.error('Failed to force update visit:', retryErr);
+                alert(retryErr instanceof ApiError ? retryErr.message : '訪問の更新に失敗しました');
+              }
+            }
+          } else if (err.isDoubleBooking()) {
             alert(`予約の競合が発生しました: ${err.message}`);
           } else if (err.isStaleObject()) {
-            const reload = confirm(`${err.message}\n\nデータを再読み込みしますか？`);
+            const reload = window.confirm(`${err.message}\n\nデータを再読み込みしますか？`);
             if (reload) {
               await loadScheduleData();
             }

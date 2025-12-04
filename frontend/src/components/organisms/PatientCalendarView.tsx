@@ -112,14 +112,16 @@ const DroppableTimeSlot = ({
   children, 
   onClick, 
   hasConflict,
-  laneColor 
+  laneColor,
+  minHeight = 70
 }: { 
   hour: number, 
   laneId: number, 
   children: React.ReactNode, 
   onClick: () => void, 
   hasConflict: boolean,
-  laneColor: string 
+  laneColor: string,
+  minHeight?: number
 }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: `slot-${laneId}-${hour}`,
@@ -139,7 +141,7 @@ const DroppableTimeSlot = ({
       className={`flex-1 min-w-[80px] border-r border-gray-100 p-1 cursor-pointer transition-colors relative group 
         ${bgColor} 
         ${isOver ? 'ring-2 ring-inset ring-indigo-400' : 'hover:bg-indigo-50/50'}`}
-      style={{ minHeight: '70px' }}
+      style={{ minHeight: `${minHeight}px` }}
       onClick={onClick}
       title={`${String(hour).padStart(2, '0')}:00 - 予定を追加`}
     >
@@ -609,6 +611,39 @@ const LaneRow: React.FC<LaneRowProps> = ({
     });
   }, [events, date, lane.id]);
 
+  // 重複カードの最大数を計算してレーン高さを決定
+  const maxOverlapCount = useMemo(() => {
+    if (todaysVisits.length <= 1) return 1;
+    
+    const sortedVisits = [...todaysVisits].sort((a, b) => 
+      new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
+    );
+    
+    let maxCount = 1;
+    const positions: { start: number; end: number; index: number }[] = [];
+    
+    sortedVisits.forEach(visit => {
+      const visitStart = new Date(visit.scheduled_at).getTime();
+      const visitEnd = visitStart + (visit.duration || 60) * 60000;
+      
+      let verticalIndex = 0;
+      positions.forEach(existing => {
+        if (visitStart < existing.end && visitEnd > existing.start) {
+          if (existing.index >= verticalIndex) {
+            verticalIndex = existing.index + 1;
+          }
+        }
+      });
+      
+      positions.push({ start: visitStart, end: visitEnd, index: verticalIndex });
+      maxCount = Math.max(maxCount, verticalIndex + 1);
+    });
+    
+    return maxCount;
+  }, [todaysVisits]);
+
+  const laneHeight = Math.max(70, 2 + maxOverlapCount * 36 + 2); // padding + カード高さ * 数 + padding
+
   const getVisitsForHour = (hour: number) => {
     return todaysVisits.filter(v => {
       const visitDate = new Date(v.scheduled_at);
@@ -702,6 +737,7 @@ const LaneRow: React.FC<LaneRowProps> = ({
               laneId={lane.id}
               hasConflict={hasConflict}
               laneColor={lane.color}
+              minHeight={laneHeight}
               onClick={() => {
                 console.log('Time slot clicked:', hour, lane.id);
                 onTimeSlotClick?.(hour, String(lane.id));
@@ -762,7 +798,7 @@ const LaneRow: React.FC<LaneRowProps> = ({
                 style={{
                   left: `${leftPercent}%`,
                   width: `${widthPercent}%`,
-                  top: `${4 + verticalIndex * 72}px`, // 4px padding + カード高さ約68px
+                  top: `${2 + verticalIndex * 36}px`, // 2px padding + カード高さ約34px
                   minWidth: '60px', // 最小幅を確保
                 }}
               >
@@ -771,6 +807,7 @@ const LaneRow: React.FC<LaneRowProps> = ({
                   onClick={() => onVisitClick(visit)}
                   disabled={dataMode === 'pattern'}
                   patternFrequency={(visit as PatternVisit).__pattern?.frequency}
+                  compact
                 />
               </div>
             ));
