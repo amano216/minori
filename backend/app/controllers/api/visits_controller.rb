@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../../errors/double_booking_error"
-require_relative "../../errors/concurrent_modification_error"
-
 module Api
   class VisitsController < ApplicationController
     before_action :set_visit, only: [ :show, :update, :destroy, :cancel, :complete ]
@@ -42,7 +39,7 @@ module Api
         @visit.save!
         render json: visit_json(@visit), status: :created
       end
-    rescue PatientDoubleBookingError => e
+    rescue ::PatientDoubleBookingError => e
       # 患者の重複は警告として返す（確認後に強制登録可能）
       render json: {
         errors: [ e.message ],
@@ -51,7 +48,7 @@ module Api
         resource_id: e.resource_id,
         warning: true
       }, status: :conflict
-    rescue DoubleBookingError => e
+    rescue ::DoubleBookingError => e
       render json: {
         errors: [ e.message ],
         error_type: "double_booking",
@@ -85,14 +82,14 @@ module Api
         @visit.update!(visit_params_without_lock_version)
         render json: visit_json(@visit)
       end
-    rescue ConcurrentModificationError, ActiveRecord::StaleObjectError => e
+    rescue ::ConcurrentModificationError, ActiveRecord::StaleObjectError => e
       stale_message = "この訪問予定は他のユーザーによって更新されました。ページを再読み込みしてください。"
       render json: {
         errors: [ e.is_a?(ConcurrentModificationError) ? e.message : stale_message ],
         error_type: "stale_object",
         current_version: @visit.reload.lock_version
       }, status: :conflict
-    rescue PatientDoubleBookingError => e
+    rescue ::PatientDoubleBookingError => e
       # 患者の重複は警告として返す（確認後に強制登録可能）
       render json: {
         errors: [ e.message ],
@@ -101,7 +98,7 @@ module Api
         resource_id: e.resource_id,
         warning: true
       }, status: :conflict
-    rescue DoubleBookingError => e
+    rescue ::DoubleBookingError => e
       render json: {
         errors: [ e.message ],
         error_type: "double_booking",
@@ -170,7 +167,7 @@ module Api
 
       @visit.reload
       if @visit.lock_version != client_version
-        raise ConcurrentModificationError
+        raise ::ConcurrentModificationError
       end
     end
 
@@ -202,7 +199,7 @@ module Api
                          .lock
                          .exists?
 
-      raise StaffDoubleBookingError.new(staff_id: visit.user_id) if conflicting
+      raise ::StaffDoubleBookingError.new(staff_id: visit.user_id) if conflicting
     end
 
     def check_patient_conflicts!(visit)
@@ -216,7 +213,7 @@ module Api
                          .lock
                          .exists?
 
-      raise PatientDoubleBookingError.new(patient_id: visit.patient_id) if conflicting
+      raise ::PatientDoubleBookingError.new(patient_id: visit.patient_id) if conflicting
     end
 
     def skip_patient_conflict_check?
