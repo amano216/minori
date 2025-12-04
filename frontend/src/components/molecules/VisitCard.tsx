@@ -24,7 +24,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({ visit, isOverlay, classNam
   const visitDate = new Date(visit.scheduled_at);
   const durationMinutes = visit.duration || 60;
   const endDate = new Date(visitDate.getTime() + durationMinutes * 60000);
-  const townName = extractTownName(visit.patient.address);
+  const townName = extractTownName(visit.patient?.address);
 
   const formatTime = (d: Date) => 
     `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -71,8 +71,8 @@ export const VisitCard: React.FC<VisitCardProps> = ({ visit, isOverlay, classNam
       <div className={`font-semibold text-gray-800 leading-tight truncate ${compact ? 'text-[10px]' : ''}`}>
         {visit.patient.name}
       </div>
-      {!compact && townName && (
-        <div className="text-gray-400 text-[9px] leading-tight truncate">
+      {townName && (
+        <div className={`text-gray-400 leading-tight truncate ${compact ? 'text-[8px]' : 'text-[9px]'}`}>
           {townName}
         </div>
       )}
