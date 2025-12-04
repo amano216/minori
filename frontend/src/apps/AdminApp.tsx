@@ -4,6 +4,7 @@ import { APPS, ADMIN_ROUTES } from "../types/apps";
 import { OrganizationPage } from "../pages/OrganizationPage";
 import { UsersPage } from "../pages/UsersPage";
 import { GroupsPage } from "../pages/GroupsPage";
+import { AccountSettingsPage } from "../pages/AccountSettingsPage";
 
 const adminApp = APPS.find((app) => app.id === "admin")!;
 
@@ -15,6 +16,7 @@ export function AdminApp() {
         <Route path="/organization" element={<OrganizationPage />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/groups" element={<GroupsPage />} />
+        <Route path="/account" element={<AccountSettingsPage />} />
       </Routes>
     </AppContainerLayout>
   );
