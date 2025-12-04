@@ -1,5 +1,5 @@
 class UserMailer < ApplicationMailer
-  default from: "noreply@minori.app"
+  default from: -> { ENV.fetch("SMTP_FROM_ADDRESS", "noreply@minori.app") }
 
   def confirmation_email(user)
     @user = user
