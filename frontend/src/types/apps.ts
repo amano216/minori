@@ -54,4 +54,5 @@ export const ADMIN_ROUTES: AppRoute[] = [
   { path: "/admin/organization", label: "組織設定", icon: "Building" },
   { path: "/admin/users", label: "ユーザー管理", icon: "Users" },
   { path: "/admin/groups", label: "グループ管理", icon: "FolderTree" },
+  { path: "/admin/account", label: "アカウント設定", icon: "UserCog" },
 ];

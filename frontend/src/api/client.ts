@@ -128,6 +128,7 @@ export interface User {
   id: number;
   email: string;
   role: string;
+  otp_enabled?: boolean;
 }
 
 export interface LoginResponse {
@@ -161,6 +162,18 @@ export async function forgotPassword(email: string): Promise<void> {
   await apiRequest('/api/auth/forgot-password', {
     method: 'POST',
     body: JSON.stringify({ email }),
+  });
+}
+
+// 2FA toggle
+export interface Toggle2FAResponse {
+  otp_enabled: boolean;
+  message: string;
+}
+
+export async function toggle2FA(): Promise<Toggle2FAResponse> {
+  return apiRequest('/api/auth/toggle-2fa', {
+    method: 'POST',
   });
 }
 
