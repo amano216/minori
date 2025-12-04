@@ -889,14 +889,8 @@ export default function PatientCalendarView({
   const loadLanes = async () => {
     try {
       const data = await fetchPlanningLanes();
-      // Sort lanes by group_id for visual grouping
-      const sortedData = [...data].sort((a, b) => {
-        if (!a.group_id && !b.group_id) return 0;
-        if (!a.group_id) return 1;
-        if (!b.group_id) return -1;
-        return a.group_id - b.group_id;
-      });
-      const mappedLanes = sortedData.map((l) => ({
+      // バックエンドでグループID順→position順にソート済み
+      const mappedLanes = data.map((l) => ({
         ...l,
         // pattern_name があればパターンモードでそれを使用、なければ name を使用
         label: dataMode === 'pattern' ? (l.pattern_name || l.name) : l.name,
