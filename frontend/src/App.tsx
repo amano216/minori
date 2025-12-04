@@ -2,6 +2,7 @@ import './App.css'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ToastProvider } from './contexts/ToastContext'
+import { ConfirmDialogProvider } from './contexts/ConfirmDialogContext'
 import { ToastContainer } from './components/molecules/ToastContainer'
 import { PrivateRoute } from './components/PrivateRoute'
 import { ScheduleApp } from './apps/ScheduleApp'
@@ -30,7 +31,8 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <ToastProvider>
-          <Routes>
+          <ConfirmDialogProvider>
+            <Routes>
             {/* Public Routes */}
             <Route path="/" element={<RootRedirect />} />
             <Route path="/login" element={<LoginPage />} />
@@ -65,6 +67,7 @@ function App() {
             <Route path="*" element={<Navigate to="/schedule" replace />} />
           </Routes>
           <ToastContainer />
+          </ConfirmDialogProvider>
         </ToastProvider>
       </AuthProvider>
     </BrowserRouter>
