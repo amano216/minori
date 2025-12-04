@@ -1,13 +1,14 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { User } from '../api/client';
-import { login as apiLogin, logout as apiLogout, fetchCurrentUser, getToken, removeToken } from '../api/client';
+import { login as apiLogin, logout as apiLogout, fetchCurrentUser, getToken, removeToken, setToken } from '../api/client';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithToken: (token: string, user: User) => void;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -51,6 +52,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(response.user);
   };
 
+  // OTP認証後など、トークンとユーザー情報を直接セットする場合に使用
+  const loginWithToken = (token: string, userData: User) => {
+    setToken(token);
+    setUser(userData);
+  };
+
   const logout = async () => {
     await apiLogout();
     setUser(null);
@@ -72,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         isAuthenticated: !!user,
         login,
+        loginWithToken,
         logout,
         refreshUser,
       }}

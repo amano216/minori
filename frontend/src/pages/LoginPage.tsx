@@ -7,9 +7,11 @@ import { Label } from '../components/atoms/Label';
 import { Card } from '../components/molecules/Card';
 import { Sparkles, Mail, Lock, ArrowRight } from 'lucide-react';
 import { getFullApiUrl } from '../api/client';
+import { useAuth } from '../contexts/AuthContext';
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const { loginWithToken } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -47,12 +49,9 @@ export function LoginPage() {
         return;
       }
 
-      // Normal login - save token and redirect
-      console.log('Login success, token:', data.token);
-      localStorage.setItem('minori_auth_token', data.token);
-      console.log('Navigating to /schedule');
-      // Force page reload to trigger AuthContext to fetch user
-      window.location.href = '/schedule';
+      // Normal login - set token and user state directly without page reload
+      loginWithToken(data.token, data.user);
+      navigate('/schedule');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'ログインに失敗しました');
     } finally {
