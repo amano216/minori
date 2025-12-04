@@ -36,6 +36,13 @@ export const APPS: AppMetadata[] = [
     icon: "Settings",
     requiredRoles: ["organization_admin", "super_admin"],
   },
+  {
+    id: "account",
+    name: "アカウント",
+    description: "アカウント設定",
+    path: "/account",
+    icon: "UserCog",
+  },
 ];
 
 // Schedule App Routes
@@ -54,5 +61,9 @@ export const ADMIN_ROUTES: AppRoute[] = [
   { path: "/admin/organization", label: "組織設定", icon: "Building" },
   { path: "/admin/users", label: "ユーザー管理", icon: "Users" },
   { path: "/admin/groups", label: "グループ管理", icon: "FolderTree" },
-  { path: "/admin/account", label: "アカウント設定", icon: "UserCog" },
+];
+
+// Account App Routes - 全ユーザー向け
+export const ACCOUNT_ROUTES: AppRoute[] = [
+  { path: "/account/settings", label: "アカウント設定", icon: "UserCog" },
 ];

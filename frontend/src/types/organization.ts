@@ -19,6 +19,8 @@ export interface User {
   available_hours?: Record<string, { start: string; end: string }>;
   staff_status?: 'active' | 'inactive' | 'on_leave';
   group_id?: number | null;
+  // 2FAステータス（管理者のみ閲覧可能）
+  otp_enabled?: boolean;
   created_at: string;
   updated_at: string;
 }

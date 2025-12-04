@@ -5,9 +5,11 @@ import { ToastProvider } from './contexts/ToastContext'
 import { ConfirmDialogProvider } from './contexts/ConfirmDialogContext'
 import { ToastContainer } from './components/molecules/ToastContainer'
 import { PrivateRoute } from './components/PrivateRoute'
+import { AdminGuard } from './components/RoleGuard'
 import { ScheduleApp } from './apps/ScheduleApp'
 import { PatientsApp } from './apps/PatientsApp'
 import { AdminApp } from './apps/AdminApp'
+import { AccountApp } from './apps/AccountApp'
 import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
 import { SignupPage } from './pages/SignupPage'
@@ -57,10 +59,22 @@ function App() {
               element={<PrivateRoute><PatientsApp /></PrivateRoute>}
             />
 
-            {/* Admin App */}
+            {/* Admin App - 管理者のみアクセス可能 */}
             <Route
               path="/admin/*"
-              element={<PrivateRoute><AdminApp /></PrivateRoute>}
+              element={
+                <PrivateRoute>
+                  <AdminGuard>
+                    <AdminApp />
+                  </AdminGuard>
+                </PrivateRoute>
+              }
+            />
+
+            {/* Account App - 全認証済みユーザー向け */}
+            <Route
+              path="/account/*"
+              element={<PrivateRoute><AccountApp /></PrivateRoute>}
             />
 
             {/* Fallback to Schedule */}

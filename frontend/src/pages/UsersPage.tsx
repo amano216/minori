@@ -7,6 +7,7 @@ import { Icon } from '../components/atoms/Icon';
 import { SearchableSelect } from '../components/molecules/SearchableSelect';
 import { HistoryItem } from '../components/molecules/HistoryItem';
 import { Spinner } from '../components/atoms/Spinner';
+import { Shield, ShieldOff } from 'lucide-react';
 
 const QUALIFICATION_OPTIONS = [
   { value: 'nurse', label: '看護師' },
@@ -333,6 +334,7 @@ export function UsersPage() {
                 <th className="px-3 sm:px-4 py-3 text-left text-xs sm:text-sm font-medium text-text-primary whitespace-nowrap min-w-[150px]">メールアドレス</th>
                 <th className="px-3 sm:px-4 py-3 text-left text-xs sm:text-sm font-medium text-text-primary whitespace-nowrap min-w-[70px]">ロール</th>
                 <th className="px-3 sm:px-4 py-3 text-left text-xs sm:text-sm font-medium text-text-primary whitespace-nowrap min-w-[80px]">ステータス</th>
+                <th className="px-3 sm:px-4 py-3 text-center text-xs sm:text-sm font-medium text-text-primary whitespace-nowrap min-w-[50px]">2FA</th>
                 <th className="px-3 sm:px-4 py-3 text-left text-xs sm:text-sm font-medium text-text-primary whitespace-nowrap min-w-[100px] hidden sm:table-cell">資格</th>
                 <th className="px-3 sm:px-4 py-3 text-left text-xs sm:text-sm font-medium text-text-primary whitespace-nowrap min-w-[100px] hidden sm:table-cell">グループ</th>
                 <th className="px-3 sm:px-4 py-3 text-right text-xs sm:text-sm font-medium text-text-primary whitespace-nowrap min-w-[80px]">操作</th>
@@ -352,6 +354,13 @@ export function UsersPage() {
                     <span className={`px-2 py-1 rounded text-xs whitespace-nowrap ${STATUS_COLORS[user.staff_status || 'active']}`}>
                       {STATUS_OPTIONS.find(s => s.value === (user.staff_status || 'active'))?.label}
                     </span>
+                  </td>
+                  <td className="px-3 sm:px-4 py-3 sm:py-4 text-center">
+                    {user.otp_enabled ? (
+                      <Shield className="w-4 h-4 text-green-600 mx-auto" />
+                    ) : (
+                      <ShieldOff className="w-4 h-4 text-gray-300 mx-auto" />
+                    )}
                   </td>
                   <td className="px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm text-text-grey hidden sm:table-cell">
                     {getQualificationLabels(user.qualifications)}

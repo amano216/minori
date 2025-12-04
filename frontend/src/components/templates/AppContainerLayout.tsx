@@ -1,6 +1,6 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, LogOut, ChevronRight } from "lucide-react";
+import { Menu, X, LogOut, ChevronRight, UserCog } from "lucide-react";
 import { Icon } from "../atoms/Icon";
 import { useAuth } from "../../contexts/AuthContext";
 import { APPS, type AppMetadata, type AppRoute } from "../../types/apps";
@@ -19,6 +19,21 @@ export function AppContainerLayout({ app, routes, children }: AppContainerLayout
   // Desktop: Sub Sidebar open state (default: open for better UX)
   // Mobile: Drawer open state (for sub-menu)
   const [isMenuOpen, setIsMenuOpen] = useState(true);
+  
+  // User menu dropdown state
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -26,7 +41,12 @@ export function AppContainerLayout({ app, routes, children }: AppContainerLayout
   };
 
   const availableApps = APPS.filter((a) => {
-    if (!a.requiredRoles) return true;
+    // accountアプリはナビゲーションから除外（ユーザーメニューからアクセス）
+    if (a.id === "account") return false;
+    // ロール制限がある場合はチェック
+    if (a.requiredRoles && user) {
+      return a.requiredRoles.includes(user.role);
+    }
     return true;
   });
 
@@ -87,18 +107,51 @@ export function AppContainerLayout({ app, routes, children }: AppContainerLayout
           })}
         </nav>
 
-        {/* Bottom Actions */}
-        <div className="flex flex-col gap-4 px-2 w-full items-center mb-2">
-          <button
-            onClick={handleLogout}
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-400 hover:bg-red-500/10 hover:text-red-400 transition-colors"
-            title="ログアウト"
-          >
-            <LogOut size={18} />
-          </button>
-          
-          <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs font-medium border-2 border-gray-800 cursor-default">
-            {user?.email?.charAt(0).toUpperCase() || "U"}
+        {/* Bottom Actions - User Menu */}
+        <div className="relative px-2 w-full flex justify-center mb-4" ref={userMenuRef}>
+          <div className="group relative flex items-center justify-center">
+            <button
+              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-200 ${
+                isUserMenuOpen 
+                  ? "bg-main text-white ring-2 ring-main/30 scale-110" 
+                  : "bg-gray-700 text-gray-200 hover:bg-gray-600 hover:scale-105 border-2 border-gray-600"
+              }`}
+            >
+              {user?.email?.charAt(0).toUpperCase() || "U"}
+            </button>
+            
+            {/* User Dropdown Menu - 右側に表示 */}
+            {isUserMenuOpen && (
+              <div className="absolute left-full ml-4 bottom-0 w-52 bg-gray-800 rounded-xl shadow-xl border border-gray-700 overflow-hidden z-50">
+                <div className="px-4 py-3 border-b border-gray-700 bg-gray-800/80">
+                  <p className="text-xs text-gray-400 mb-0.5">ログイン中</p>
+                  <p className="text-sm text-white font-medium truncate">{user?.email}</p>
+                </div>
+                <div className="py-1">
+                  <Link
+                    to="/account/settings"
+                    onClick={() => setIsUserMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+                  >
+                    <UserCog size={16} />
+                    アカウント設定
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      handleLogout();
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
+                  >
+                    <LogOut size={16} />
+                    ログアウト
+                  </button>
+                </div>
+                {/* Arrow pointing to user icon */}
+                <div className="absolute bottom-3 right-full border-8 border-transparent border-r-gray-800" />
+              </div>
+            )}
           </div>
         </div>
       </aside>
@@ -260,13 +313,23 @@ export function AppContainerLayout({ app, routes, children }: AppContainerLayout
                 <p className="text-xs text-gray-500">ログイン中</p>
               </div>
             </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-bold text-red-600 bg-white border border-red-100 rounded-xl hover:bg-red-50 shadow-sm transition-colors"
-            >
-              <LogOut size={18} />
-              ログアウト
-            </button>
+            <div className="space-y-2">
+              <Link
+                to="/account/settings"
+                onClick={() => setIsMenuOpen(false)}
+                className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 shadow-sm transition-colors"
+              >
+                <UserCog size={18} />
+                アカウント設定
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-bold text-red-600 bg-white border border-red-100 rounded-xl hover:bg-red-50 shadow-sm transition-colors"
+              >
+                <LogOut size={18} />
+                ログアウト
+              </button>
+            </div>
           </div>
         </div>
       </div>
