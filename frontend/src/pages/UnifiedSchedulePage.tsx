@@ -289,11 +289,14 @@ export function UnifiedSchedulePage() {
       if (err instanceof ApiError && err.isConflict()) {
         // 患者重複警告の場合は確認ダイアログを表示
         if (err.isPatientDoubleBookingWarning()) {
-          const confirmed = window.confirm(
-            `⚠️ ${err.message}\n\n` +
-            `操作に誤りがない場合は「OK」を押してください。`
-          );
-          if (confirmed) {
+          const patientConfirmed = await confirm({
+            title: '患者の訪問が重複しています',
+            message: `${err.message}\n\n操作に誤りがない場合は「続行」を押してください。`,
+            variant: 'warning',
+            confirmLabel: '続行',
+            cancelLabel: 'キャンセル',
+          });
+          if (patientConfirmed) {
             // 強制登録を再実行
             await handleVisitUpdate(visitId, { ...data, skip_patient_conflict_check: true });
             return;
@@ -301,7 +304,13 @@ export function UnifiedSchedulePage() {
         } else if (err.isDoubleBooking()) {
           alert(`予約の競合が発生しました: ${err.message}`);
         } else if (err.isStaleObject()) {
-          const reload = window.confirm(`${err.message}\n\nデータを再読み込みしますか？`);
+          const reload = await confirm({
+            title: 'データが更新されています',
+            message: `${err.message}\n\nデータを再読み込みしますか？`,
+            variant: 'info',
+            confirmLabel: '再読み込み',
+            cancelLabel: 'キャンセル',
+          });
           if (reload) {
             await loadScheduleData();
           }

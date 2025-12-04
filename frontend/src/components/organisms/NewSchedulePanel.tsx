@@ -16,6 +16,7 @@ import {
 import { Button } from '../atoms/Button';
 import { Spinner } from '../atoms/Spinner';
 import { SearchableSelect } from '../molecules/SearchableSelect';
+import { useConfirmDialog } from '../../contexts/ConfirmDialogContext';
 
 type TabType = 'visit' | 'event' | 'absence';
 
@@ -51,6 +52,7 @@ export function NewSchedulePanel({
   initialPlanningLaneId,
   initialTab = 'visit',
 }: NewSchedulePanelProps) {
+  const { confirm } = useConfirmDialog();
   const [isVisible, setIsVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   
@@ -190,10 +192,13 @@ export function NewSchedulePanel({
       console.error('Failed to create visit:', err);
       // 患者重複警告の場合は確認ダイアログを表示
       if (err instanceof ApiError && err.isPatientDoubleBookingWarning()) {
-        const confirmed = window.confirm(
-          `⚠️ ${err.message}\n\n` +
-          `操作に誤りがない場合は「OK」を押してください。`
-        );
+        const confirmed = await confirm({
+          title: '患者の訪問が重複しています',
+          message: `${err.message}\n\n操作に誤りがない場合は「続行」を押してください。`,
+          variant: 'warning',
+          confirmLabel: '続行',
+          cancelLabel: 'キャンセル',
+        });
         if (confirmed) {
           // 強制登録を再実行
           try {
