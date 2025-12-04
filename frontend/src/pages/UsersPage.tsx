@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { organizationApi } from '../api/organizationApi';
 import { forgotPassword } from '../api/client';
 import { fetchVersions, type AuditVersion } from '../api/versionsApi';
@@ -7,7 +7,7 @@ import { Icon } from '../components/atoms/Icon';
 import { SearchableSelect } from '../components/molecules/SearchableSelect';
 import { HistoryItem } from '../components/molecules/HistoryItem';
 import { Spinner } from '../components/atoms/Spinner';
-import { Shield, ShieldOff } from 'lucide-react';
+import { Shield, ShieldOff, Search } from 'lucide-react';
 
 const QUALIFICATION_OPTIONS = [
   { value: 'nurse', label: '看護師' },
@@ -120,6 +120,9 @@ export function UsersPage() {
   const [modalTab, setModalTab] = useState<'edit' | 'history'>('edit');
   const [versions, setVersions] = useState<AuditVersion[]>([]);
   const [versionsLoading, setVersionsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -297,6 +300,34 @@ export function UsersPage() {
     return group ? getGroupHierarchyLabel(group, groups) : '-';
   };
 
+  // フィルタリングされたユーザーリスト
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => {
+      // 検索クエリでフィルタ
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesName = user.name?.toLowerCase().includes(query);
+        const matchesEmail = user.email?.toLowerCase().includes(query);
+        const matchesQualifications = user.qualifications?.some(q => {
+          const label = QUALIFICATION_OPTIONS.find(opt => opt.value === q)?.label || q;
+          return label.toLowerCase().includes(query);
+        });
+        if (!matchesName && !matchesEmail && !matchesQualifications) {
+          return false;
+        }
+      }
+      // ステータスでフィルタ
+      if (statusFilter && (user.staff_status || 'active') !== statusFilter) {
+        return false;
+      }
+      // ロールでフィルタ
+      if (roleFilter && user.role !== roleFilter) {
+        return false;
+      }
+      return true;
+    });
+  }, [users, searchQuery, statusFilter, roleFilter]);
+
   if (loading && users.length === 0) {
     return (
       <div className="p-6">
@@ -308,7 +339,12 @@ export function UsersPage() {
   return (
     <div className="p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-text-primary">ユーザー管理</h1>
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-text-primary">ユーザー管理</h1>
+          <p className="text-sm text-text-grey mt-1">
+            {filteredUsers.length}件のユーザー{searchQuery || statusFilter || roleFilter ? '（フィルタ結果）' : ''}
+          </p>
+        </div>
         <button
           onClick={() => handleOpenModal()}
           className="px-3 sm:px-4 py-2 bg-main text-white rounded hover:bg-main-dark transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
@@ -316,6 +352,40 @@ export function UsersPage() {
           <Icon name="Plus" size={18} />
           <span>新規ユーザー</span>
         </button>
+      </div>
+
+      {/* 検索・フィルターバー */}
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4">
+        <div className="relative flex-1 min-w-0">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="名前、メールアドレス、資格で検索..."
+            className="w-full pl-9 pr-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
+          />
+        </div>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main sm:w-auto"
+        >
+          <option value="">すべてのステータス</option>
+          {STATUS_OPTIONS.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+        <select
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+          className="px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-main focus:border-main sm:w-auto"
+        >
+          <option value="">すべてのロール</option>
+          {ROLE_OPTIONS.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
       </div>
 
       {error && (
@@ -341,7 +411,7 @@ export function UsersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {users.map((user) => (
+              {filteredUsers.map((user) => (
                 <tr key={user.id} className="hover:bg-bg-base transition-colors">
                   <td className="px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm text-text-primary font-medium whitespace-nowrap">{user.name || '-'}</td>
                   <td className="px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm text-text-primary">{user.email}</td>
@@ -388,9 +458,11 @@ export function UsersPage() {
           </table>
         </div>
 
-        {users.length === 0 && (
+        {filteredUsers.length === 0 && (
           <div className="p-8 text-center text-text-grey">
-            ユーザーが登録されていません
+            {searchQuery || statusFilter || roleFilter 
+              ? '検索条件に一致するユーザーがいません' 
+              : 'ユーザーが登録されていません'}
           </div>
         )}
       </div>
