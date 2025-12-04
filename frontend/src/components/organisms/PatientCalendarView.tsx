@@ -805,7 +805,7 @@ const LaneRow: React.FC<LaneRowProps> = ({
                 <DraggableVisitCard
                   visit={visit}
                   onClick={() => onVisitClick(visit)}
-                  disabled={dataMode === 'pattern'}
+                  disabled={false}
                   patternFrequency={(visit as PatternVisit).__pattern?.frequency}
                   compact
                 />

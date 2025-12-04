@@ -22,6 +22,7 @@ import {
   deleteVisit,
   deleteEvent,
   generateVisitsFromPatterns,
+  updateVisitPattern,
   ApiError,
   type Staff,
   type Group,
@@ -31,6 +32,7 @@ import {
   type VisitPattern,
   type ScheduleEvent,
 } from '../api/client';
+import { type PatternVisit } from '../components/organisms/PatientCalendarView';
 import { Spinner } from '../components/atoms/Spinner';
 import { NewPatternPanel } from '../components/organisms/NewPatternPanel';
 import { EditPatternPanel } from '../components/organisms/EditPatternPanel';
@@ -432,6 +434,50 @@ export function UnifiedSchedulePage() {
     // Handle drop on Lane (PatientCalendarView)
     const laneId = over.data.current?.laneId as number | undefined;
     const hour = over.data.current?.hour as number | undefined;
+
+    // パターンモードの場合はパターン更新処理
+    const patternVisit = visit as PatternVisit;
+    if (patternVisit?.__isPattern && patternVisit.__pattern && laneId !== undefined && hour !== undefined) {
+      const pattern = patternVisit.__pattern;
+      const newStartTime = `${String(hour).padStart(2, '0')}:00`;
+      
+      // 移動先の情報を組み立て
+      let destinationInfo = `時刻: ${hour}:00`;
+      if (laneId !== pattern.planning_lane_id) {
+        destinationInfo += '\nレーン変更あり';
+      }
+      
+      // 移動前の確認ダイアログを表示
+      const moveConfirmed = await confirm({
+        title: 'パターンの移動',
+        message: `「${patternVisit.patient.name}」のパターンを移動しますか？\n\n${destinationInfo}`,
+        variant: 'info',
+        confirmLabel: '移動',
+        cancelLabel: 'キャンセル',
+      });
+
+      if (!moveConfirmed) {
+        return;
+      }
+
+      try {
+        await updateVisitPattern(pattern.id, {
+          planning_lane_id: laneId,
+          start_time: newStartTime,
+        });
+        
+        // パターンデータを再読み込み
+        setPatternVersion(v => v + 1);
+      } catch (err: unknown) {
+        console.error('Failed to update pattern:', err);
+        if (err instanceof ApiError) {
+          alert(`パターンの更新に失敗しました: ${err.message}`);
+        } else {
+          alert('パターンの更新に失敗しました');
+        }
+      }
+      return;
+    }
 
     if (visit) {
       const updateData: {
