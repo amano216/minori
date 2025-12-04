@@ -45,6 +45,7 @@ import { UserGroupIcon } from '@heroicons/react/24/outline';
 import { MonthlyCalendarView } from '../components/organisms/MonthlyCalendarView';
 import { GenerateVisitsPanel } from '../components/organisms/GenerateVisitsPanel';
 import { MultiGroupSelector } from '../components/organisms/MultiGroupSelector';
+import { useConfirmDialog } from '../contexts/ConfirmDialogContext';
 
 function convertScheduleVisitToVisit(sv: ScheduleVisit): Visit {
   return {
@@ -65,6 +66,7 @@ function convertScheduleVisitToVisit(sv: ScheduleVisit): Visit {
 
 export function UnifiedSchedulePage() {
   const navigate = useNavigate();
+  const { confirm } = useConfirmDialog();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [mainTab, setMainTab] = useState<'schedule' | 'pattern'>('schedule');
   const [scheduleViewMode, setScheduleViewMode] = useState<'lane' | 'staff'>('lane');
@@ -434,10 +436,14 @@ export function UnifiedSchedulePage() {
         lock_version: visit.lock_version,
       };
 
+      // 移動先の情報を組み立て
+      let destinationInfo = '';
+      
       try {
         if (staff) {
           updateData.staff_id = staff.id;
           updateData.status = 'scheduled';
+          destinationInfo = `担当: ${staff.name}`;
 
           // If dropped on a specific date (Weekly View), update the date
           if (date) {
@@ -445,6 +451,7 @@ export function UnifiedSchedulePage() {
             const originalTime = new Date(visit.scheduled_at);
             newDate.setHours(originalTime.getHours(), originalTime.getMinutes());
             updateData.scheduled_at = newDate.toISOString();
+            destinationInfo += `\n日付: ${newDate.toLocaleDateString('ja-JP')}`;
           }
         } else if (laneId !== undefined && hour !== undefined) {
           // Lane drop
@@ -454,8 +461,22 @@ export function UnifiedSchedulePage() {
           const newDate = new Date(currentDate);
           newDate.setHours(hour, 0, 0, 0);
           updateData.scheduled_at = newDate.toISOString();
+          destinationInfo = `時刻: ${hour}:00`;
         } else {
           return;
+        }
+
+        // 移動前の確認ダイアログを表示
+        const moveConfirmed = await confirm({
+          title: '訪問の移動',
+          message: `「${visit.patient.name}」の訪問を移動しますか？\n\n${destinationInfo}`,
+          variant: 'info',
+          confirmLabel: '移動',
+          cancelLabel: 'キャンセル',
+        });
+
+        if (!moveConfirmed) {
+          return; // キャンセルされた場合は何もしない
         }
 
         await updateVisit(visit.id, updateData);
@@ -470,11 +491,14 @@ export function UnifiedSchedulePage() {
           console.log('Conflict error details:', { errorType: err.errorType, isPatientWarning: err.isPatientDoubleBookingWarning() });
           if (err.isPatientDoubleBookingWarning()) {
             // 患者重複警告の場合は確認ダイアログを表示
-            const confirmed = window.confirm(
-              `⚠️ ${err.message}\n\n` +
-              `操作に誤りがない場合は「OK」を押してください。`
-            );
-            if (confirmed) {
+            const patientConfirmed = await confirm({
+              title: '患者の訪問が重複しています',
+              message: `${err.message}\n\n操作に誤りがない場合は「続行」を押してください。`,
+              variant: 'warning',
+              confirmLabel: '続行',
+              cancelLabel: 'キャンセル',
+            });
+            if (patientConfirmed) {
               try {
                 await updateVisit(visit.id, { ...updateData, skip_patient_conflict_check: true });
                 await loadScheduleData();
@@ -486,7 +510,13 @@ export function UnifiedSchedulePage() {
           } else if (err.isDoubleBooking()) {
             alert(`予約の競合が発生しました: ${err.message}`);
           } else if (err.isStaleObject()) {
-            const reload = window.confirm(`${err.message}\n\nデータを再読み込みしますか？`);
+            const reload = await confirm({
+              title: 'データが更新されています',
+              message: `${err.message}\n\nデータを再読み込みしますか？`,
+              variant: 'info',
+              confirmLabel: '再読み込み',
+              cancelLabel: 'キャンセル',
+            });
             if (reload) {
               await loadScheduleData();
             }
