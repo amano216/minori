@@ -4,7 +4,7 @@ module Api
 
     def index
       # グループID順（NULL末尾）→ position順でソートし、同じチームのレーンをまとめて表示
-      render json: Current.organization.planning_lanes.order(Arel.sql('group_id IS NULL, group_id, position'))
+      render json: Current.organization.planning_lanes.order(Arel.sql("group_id IS NULL, group_id, position"))
     end
 
     def create
