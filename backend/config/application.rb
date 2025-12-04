@@ -28,6 +28,10 @@ module Backend
     # Common ones are `templates`, `generators`, or `middleware`, for example.
     config.autoload_lib(ignore: %w[assets tasks])
 
+    # Autoload app/errors directory
+    config.autoload_paths += %W[#{config.root}/app/errors]
+    config.eager_load_paths += %W[#{config.root}/app/errors]
+
     # Autoload Concepts
     # config.autoload_paths += %W[
     #   #{config.root}/app/concepts

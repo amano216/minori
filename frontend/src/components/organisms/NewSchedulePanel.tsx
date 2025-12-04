@@ -191,7 +191,8 @@ export function NewSchedulePanel({
       // 患者重複警告の場合は確認ダイアログを表示
       if (err instanceof ApiError && err.isPatientDoubleBookingWarning()) {
         const confirmed = window.confirm(
-          `${err.message}\n\n学生同行や複数名訪問の場合は「OK」を押して登録してください。`
+          `⚠️ ${err.message}\n\n` +
+          `操作に誤りがない場合は「OK」を押してください。`
         );
         if (confirmed) {
           // 強制登録を再実行

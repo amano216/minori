@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require_relative "../../errors/double_booking_error"
+require_relative "../../errors/concurrent_modification_error"
+
 module Api
   class VisitsController < ApplicationController
     before_action :set_visit, only: [ :show, :update, :destroy, :cancel, :complete ]
