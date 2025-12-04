@@ -8,11 +8,14 @@ module Api
         @users = current_user.organization.users
                              .includes(:groups)
                              .order(created_at: :desc)
-        render json: @users, include: [ :groups ]
+        render json: @users.map { |user| user_with_2fa_status(user) }
       end
 
       def show
-        render json: @user, include: [ :groups, :organization ]
+        render json: user_with_2fa_status(@user).merge(
+          groups: @user.groups,
+          organization: @user.organization
+        )
       end
 
       def create
@@ -84,6 +87,14 @@ module Api
         unless current_user.admin?
           render json: { error: "Unauthorized" }, status: :forbidden
         end
+      end
+
+      def user_with_2fa_status(user)
+        user.as_json(
+          only: [ :id, :email, :name, :role, :qualifications, :available_hours, :staff_status, :group_id, :created_at, :updated_at ]
+        ).merge(
+          otp_enabled: user.otp_enabled
+        )
       end
     end
   end
