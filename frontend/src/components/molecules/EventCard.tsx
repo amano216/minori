@@ -26,6 +26,7 @@ const ABSENCE_REASON_LABELS: Record<AbsenceReason, string> = {
   compensatory_leave: '振休',
   paid_leave: '有給',
   half_day_leave: '半休',
+  other: 'その他',
 };
 
 export function EventCard({ event, onClick, compact = false }: EventCardProps) {

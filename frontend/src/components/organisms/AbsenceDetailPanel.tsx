@@ -19,12 +19,14 @@ const ABSENCE_REASON_LABELS: Record<AbsenceReason, string> = {
   compensatory_leave: '振休',
   paid_leave: '有給',
   half_day_leave: '半休',
+  other: 'その他',
 };
 
 const ABSENCE_REASON_COLORS: Record<AbsenceReason, string> = {
   compensatory_leave: 'bg-orange-100 text-orange-800',
   paid_leave: 'bg-green-100 text-green-800',
   half_day_leave: 'bg-blue-100 text-blue-800',
+  other: 'bg-gray-100 text-gray-800',
 };
 
 export function AbsenceDetailPanel({ event, onClose, onUpdate, onDelete }: AbsenceDetailPanelProps) {
