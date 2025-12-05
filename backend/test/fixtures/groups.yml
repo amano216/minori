@@ -1,0 +1,20 @@
+nagareyama:
+  name: "流山"
+  organization_id: <%= ActiveRecord::FixtureSet.identify(:default, :organizations) %>
+  status: "active"
+  group_type: "team"
+  position: 1
+
+shinmatsudo:
+  name: "新松戸"
+  organization_id: <%= ActiveRecord::FixtureSet.identify(:default, :organizations) %>
+  status: "active"
+  group_type: "team"
+  position: 2
+
+kashiwa:
+  name: "柏"
+  organization_id: <%= ActiveRecord::FixtureSet.identify(:default, :organizations) %>
+  status: "active"
+  group_type: "team"
+  position: 3

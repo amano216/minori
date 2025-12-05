@@ -265,6 +265,13 @@ export async function fetchGroups(params?: { status?: string }): Promise<Group[]
   return apiRequest(`/api/groups${queryString ? `?${queryString}` : ''}`);
 }
 
+export async function reorderGroups(groupIds: number[]): Promise<{ success: boolean }> {
+  return apiRequest('/api/groups/reorder', {
+    method: 'PATCH',
+    body: JSON.stringify({ group_ids: groupIds }),
+  });
+}
+
 // Admin Group API (full permissions)
 export async function fetchAdminGroups(params?: { status?: string }): Promise<Group[]> {
   const query = new URLSearchParams();
