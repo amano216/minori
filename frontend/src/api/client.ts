@@ -368,6 +368,7 @@ export async function deletePatient(id: number): Promise<void> {
 
 // Visit API
 export type PatientStatus = 'active' | 'hospitalized' | 'inactive';
+export type VisitType = 'planned' | 'emergency';
 
 export interface Visit {
   id: number;
@@ -378,6 +379,7 @@ export interface Visit {
   staff: { id: number; name: string } | null;
   patient: { id: number; name: string; address?: string; external_urls?: ExternalUrl[]; status?: PatientStatus };
   status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'unassigned';
+  visit_type?: VisitType;
   notes: string;
   created_at: string;
   updated_at: string;
@@ -391,6 +393,7 @@ export interface VisitInput {
   staff_id?: number | null;
   patient_id: number;
   status?: string;
+  visit_type?: VisitType;
   notes?: string;
   planning_lane_id?: number | null;
   lock_version?: number;

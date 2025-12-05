@@ -15,6 +15,7 @@ module Api
 
       render json: @visits.as_json(
         methods: [ :staff_id ],
+        only: [ :id, :scheduled_at, :duration, :status, :visit_type, :notes, :user_id, :patient_id, :planning_lane_id, :lock_version ],
         include: {
           user: { only: [ :id, :name ], methods: [] },
           patient: { only: [ :id, :name, :address, :external_urls, :status ] }
@@ -152,7 +153,7 @@ module Api
 
     def visit_params
       # staff_id を user_id にマッピング（後方互換性）
-      permitted = params.require(:visit).permit(:scheduled_at, :duration, :staff_id, :user_id, :patient_id, :status, :notes, :planning_lane_id, :lock_version)
+      permitted = params.require(:visit).permit(:scheduled_at, :duration, :staff_id, :user_id, :patient_id, :status, :notes, :planning_lane_id, :lock_version, :visit_type)
       permitted[:user_id] = permitted.delete(:staff_id) if permitted[:staff_id].present? && permitted[:user_id].blank?
       permitted
     end
@@ -177,6 +178,7 @@ module Api
         scheduled_at: visit.scheduled_at,
         duration: visit.duration,
         status: visit.status,
+        visit_type: visit.visit_type,
         notes: visit.notes,
         staff_id: visit.user_id,
         user_id: visit.user_id,

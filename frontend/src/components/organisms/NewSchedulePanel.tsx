@@ -8,6 +8,7 @@ import {
   fetchPatients,
   ApiError,
   type VisitInput,
+  type VisitType,
   type Staff,
   type Patient,
   type EventType,
@@ -66,6 +67,7 @@ export function NewSchedulePanel({
   // Visit-specific State
   const [staffId, setStaffId] = useState<number | ''>('');
   const [patientId, setPatientId] = useState<number | ''>('');
+  const [visitType, setVisitType] = useState<VisitType>('planned');
   
   // Event-specific State
   const [eventTitle, setEventTitle] = useState('');
@@ -117,6 +119,7 @@ export function NewSchedulePanel({
       
       // Reset form
       setPatientId('');
+      setVisitType('planned');
       setNotes('');
       setEventTitle('');
       setEventType('meeting');
@@ -165,6 +168,7 @@ export function NewSchedulePanel({
       staff_id: staffId ? (staffId as number) : undefined,
       scheduled_at: scheduledAt.toISOString(),
       duration,
+      visit_type: visitType,
       notes: notes || undefined,
       planning_lane_id: planningLaneId || undefined,
       skip_patient_conflict_check: skipPatientConflictCheck,
@@ -420,6 +424,38 @@ export function NewSchedulePanel({
                       onChange={(val) => setPatientId(val as number)}
                       placeholder="患者を選択..."
                     />
+                  </div>
+
+                  {/* Visit Type */}
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                      <Calendar className="w-4 h-4" />
+                      訪問種別
+                    </label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setVisitType('planned')}
+                        className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                          visitType === 'planned'
+                            ? 'bg-blue-100 border-blue-500 text-blue-700'
+                            : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        計画
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setVisitType('emergency')}
+                        className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                          visitType === 'emergency'
+                            ? 'bg-red-100 border-red-500 text-red-700'
+                            : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        緊急
+                      </button>
+                    </div>
                   </div>
 
                   {/* Staff */}

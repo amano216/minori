@@ -56,7 +56,8 @@ class VisitPattern < ApplicationRecord
       visit_pattern: self,
       scheduled_at: Time.zone.local(target_date.year, target_date.month, target_date.day, h, m, 0),
       duration: duration,
-      status: default_staff ? "scheduled" : "unassigned"
+      status: default_staff ? "scheduled" : "unassigned",
+      visit_type: "planned" # パターンからの生成は常に計画訪問
     )
   end
 
