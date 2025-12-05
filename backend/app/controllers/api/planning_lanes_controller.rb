@@ -3,8 +3,12 @@ module Api
     before_action :set_planning_lane, only: [ :update, :destroy, :archive, :unarchive ]
 
     def index
-      # グループID順（NULL末尾）→ position順でソートし、同じチームのレーンをまとめて表示
-      render json: Current.organization.planning_lanes.order(Arel.sql("group_id IS NULL, group_id, position"))
+      # グループのposition順 → レーンのposition順でソートし、同じチームのレーンをまとめて表示
+      # groups.position が NULL のグループは末尾に配置
+      lanes = Current.organization.planning_lanes
+                .left_joins(:group)
+                .order(Arel.sql("groups.position IS NULL, groups.position, planning_lanes.position"))
+      render json: lanes
     end
 
     def create
