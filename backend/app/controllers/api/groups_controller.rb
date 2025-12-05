@@ -3,16 +3,19 @@
 module Api
   class GroupsController < ApplicationController
     # 一般ユーザー向けのグループ一覧取得（患者編集などで使用）
+    # 子を持たないグループ（leaf nodes）のみを返す
     def index
       @groups = if current_user.organization
-                  current_user.organization.groups.order(:position, :name)
+                  # 子グループを持たないグループのみを取得
+                  parent_ids = current_user.organization.groups.where.not(parent_id: nil).select(:parent_id).distinct
+                  current_user.organization.groups.where.not(id: parent_ids).order(:position, :name)
       else
                   Group.none
       end
 
       render json: @groups.as_json(
         only: %i[id name group_type parent_id position],
-        methods: [:parent_name]
+        methods: [ :parent_name ]
       )
     end
 
