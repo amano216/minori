@@ -119,9 +119,9 @@ export function NewVisitPanel({
       const staffGroup = staff.group_id ? groupMap.get(staff.group_id) : null;
 
       if (staffGroup) {
-        const parent = staffGroup.parent_id ? groupMap.get(staffGroup.parent_id) : null;
-        const groupName = parent
-          ? `${parent.name} > ${staffGroup.name}`
+        // APIから返される parent_name を使用
+        const groupName = staffGroup.parent_name
+          ? `${staffGroup.parent_name} > ${staffGroup.name}`
           : staffGroup.name;
         return { ...staff, groupLabel: `${groupName} - ${staff.name}`, sortKey: groupName };
       }

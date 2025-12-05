@@ -164,29 +164,14 @@ const CreateLaneModal: React.FC<CreateLaneModalProps> = ({ isOpen, onClose, onSu
   const [submitting, setSubmitting] = useState(false);
   const labeledGroups = useMemo(() => {
     if (!groups?.length) return [];
-    const map = new Map<number, Group>();
-    groups.forEach(group => map.set(group.id, group));
 
-    const buildLabel = (group: Group) => {
-      const chain: string[] = [];
-      let current: Group | undefined = group;
-      const seen = new Set<number>();
-
-      while (current) {
-        chain.unshift(current.name);
-        if (!current.parent_id) break;
-        if (seen.has(current.parent_id)) break; // guard against cycles
-        seen.add(current.parent_id);
-        current = map.get(current.parent_id);
-      }
-
-      return chain.join(' > ');
-    };
-
-    // Filter to show only teams (child groups with parent_id)
+    // APIから返される parent_name を使用して表示名を構築
     return groups
       .filter(group => group.parent_id !== null)
-      .map(group => ({ ...group, displayName: buildLabel(group) }));
+      .map(group => ({
+        ...group,
+        displayName: group.parent_name ? `${group.parent_name} > ${group.name}` : group.name
+      }));
   }, [groups]);
 
   useEffect(() => {
@@ -321,29 +306,14 @@ const EditLanePanel: React.FC<EditLanePanelProps> = ({ lane, onClose, onSave, on
 
   const labeledGroups = useMemo(() => {
     if (!groups?.length) return [];
-    const map = new Map<number, Group>();
-    groups.forEach(group => map.set(group.id, group));
 
-    const buildLabel = (group: Group) => {
-      const chain: string[] = [];
-      let current: Group | undefined = group;
-      const seen = new Set<number>();
-
-      while (current) {
-        chain.unshift(current.name);
-        if (!current.parent_id) break;
-        if (seen.has(current.parent_id)) break;
-        seen.add(current.parent_id);
-        current = map.get(current.parent_id);
-      }
-
-      return chain.join(' > ');
-    };
-
-    // Filter to show only teams (child groups with parent_id)
+    // APIから返される parent_name を使用して表示名を構築
     return groups
       .filter(group => group.parent_id !== null)
-      .map(group => ({ ...group, displayName: buildLabel(group) }));
+      .map(group => ({
+        ...group,
+        displayName: group.parent_name ? `${group.parent_name} > ${group.name}` : group.name
+      }));
   }, [groups]);
 
   useEffect(() => {
