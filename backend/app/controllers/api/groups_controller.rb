@@ -10,7 +10,10 @@ module Api
                   Group.none
       end
 
-      render json: @groups.as_json(only: %i[id name group_type parent_id position])
+      render json: @groups.as_json(
+        only: %i[id name group_type parent_id position],
+        methods: [:parent_name]
+      )
     end
 
     # グループの並び順を更新

@@ -59,7 +59,9 @@ function SortableGroupItem({ group }: SortableGroupItemProps) {
       </button>
       <div className="flex items-center gap-2 flex-1">
         <Users className="w-4 h-4 text-gray-400" />
-        <span className="font-medium text-text-primary">{group.name}</span>
+        <span className="font-medium text-text-primary">
+          {group.parent_name ? `${group.parent_name} > ${group.name}` : group.name}
+        </span>
       </div>
       {group.position != null && (
         <span className="text-xs text-gray-400">#{group.position}</span>

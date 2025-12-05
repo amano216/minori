@@ -18,6 +18,16 @@ class Group < ApplicationRecord
   scope :offices, -> { where(group_type: :office) }
   scope :teams, -> { where(group_type: :team) }
 
+  # 親グループの名前を返す（階層表示用）
+  def parent_name
+    parent&.name
+  end
+
+  # 階層を含めた表示名（例: "流山 > 看護"）
+  def display_name
+    parent_name ? "#{parent_name} > #{name}" : name
+  end
+
   # Get all users in this group and its descendant groups (recursive)
   def all_users_including_descendants
     # Get direct users

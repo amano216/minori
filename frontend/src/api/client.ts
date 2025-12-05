@@ -255,6 +255,7 @@ export interface Group {
   updated_at: string;
   users?: User[];
   parent_id?: number | null;
+  parent_name?: string | null;
   group_type?: 'office' | 'team';
   children?: Group[];
 }
