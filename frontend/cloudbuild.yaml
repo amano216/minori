@@ -8,10 +8,10 @@ steps:
       - '-t'
       - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/minori/frontend:latest'
       - '-f'
-      - 'frontend/Dockerfile.prod'
+      - 'Dockerfile.prod'
       - '--build-arg'
       - 'VITE_API_URL=${_VITE_API_URL}'
-      - 'frontend'
+      - '.'
 
   # Push the container image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
