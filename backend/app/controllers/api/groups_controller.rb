@@ -15,7 +15,7 @@ module Api
 
       render json: @groups.as_json(
         only: %i[id name group_type parent_id position],
-        methods: [:parent_name]
+        methods: [ :parent_name ]
       )
     end
 
