@@ -15,16 +15,13 @@ export function MultiGroupSelector({ groups, selectedGroupIds, onChange, compact
 
   // チームのみを抽出し、「親 > チーム」形式のラベルを作成
   const teamsWithLabels = useMemo(() => {
-    const groupMap = new Map<number, Group>();
-    groups.forEach(g => groupMap.set(g.id, g));
-
     // チーム（parent_idがあるもの）のみ抽出
     const teams = groups.filter(g => g.parent_id !== null && g.parent_id !== undefined);
 
     return teams.map(team => {
-      const parent = team.parent_id ? groupMap.get(team.parent_id) : null;
-      const label = parent ? `${parent.name} > ${team.name}` : team.name;
-      return { ...team, label, parentName: parent?.name || '' };
+      // APIから返される parent_name を使用
+      const label = team.parent_name ? `${team.parent_name} > ${team.name}` : team.name;
+      return { ...team, label, parentName: team.parent_name || '' };
     }).sort((a, b) => {
       // 親名でソート、同じ親内ではチーム名でソート
       if (a.parentName !== b.parentName) {

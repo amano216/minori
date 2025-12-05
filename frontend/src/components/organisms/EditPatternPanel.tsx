@@ -164,8 +164,8 @@ export function EditPatternPanel({
       if (staff.group_id) {
         const group = groupMap.get(staff.group_id);
         if (group) {
-          const parent = group.parent_id ? groupMap.get(group.parent_id) : null;
-          groupName = parent ? `${parent.name} > ${group.name}` : group.name;
+          // APIから返される parent_name を使用
+          groupName = group.parent_name ? `${group.parent_name} > ${group.name}` : group.name;
         }
       }
       return { ...staff, groupLabel: groupName };
