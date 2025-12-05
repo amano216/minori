@@ -5,7 +5,7 @@ class Event < ApplicationRecord
   has_paper_trail
 
   EVENT_TYPES = %w[meeting facility training other absence].freeze
-  ABSENCE_REASONS = %w[compensatory_leave paid_leave half_day_leave].freeze
+  ABSENCE_REASONS = %w[compensatory_leave paid_leave half_day_leave other].freeze
 
   belongs_to :organization
   belongs_to :planning_lane, optional: true

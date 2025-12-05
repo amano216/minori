@@ -25,6 +25,7 @@ const ABSENCE_REASON_LABELS: Record<AbsenceReason, string> = {
   compensatory_leave: '振休',
   paid_leave: '有給',
   half_day_leave: '半休',
+  other: 'その他',
 };
 
 interface NewSchedulePanelProps {
@@ -645,7 +646,13 @@ export function NewSchedulePanel({
                   >
                     {activeTab === 'absence' ? (
                       <>
+                        <option value={60}>1時間</option>
+                        <option value={120}>2時間</option>
+                        <option value={180}>3時間</option>
                         <option value={240}>4時間（午前/午後）</option>
+                        <option value={300}>5時間</option>
+                        <option value={360}>6時間</option>
+                        <option value={420}>7時間</option>
                         <option value={480}>8時間（終日）</option>
                       </>
                     ) : (

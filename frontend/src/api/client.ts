@@ -761,7 +761,7 @@ export async function generateVisitsFromPatterns(
 
 // Event API (ミーティング・施設訪問など)
 export type EventType = 'meeting' | 'facility' | 'training' | 'other' | 'absence';
-export type AbsenceReason = 'compensatory_leave' | 'paid_leave' | 'half_day_leave';
+export type AbsenceReason = 'compensatory_leave' | 'paid_leave' | 'half_day_leave' | 'other';
 export type ParticipantStatus = 'confirmed' | 'tentative' | 'declined';
 
 export interface EventParticipant {
