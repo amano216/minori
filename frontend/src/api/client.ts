@@ -250,6 +250,7 @@ export interface Group {
   id: number;
   name: string;
   status: string;
+  position?: number | null;
   created_at: string;
   updated_at: string;
   users?: User[];

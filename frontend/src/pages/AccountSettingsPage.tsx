@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Shield, Mail, AlertCircle, CheckCircle } from 'lucide-react';
+import { Shield, Mail, AlertCircle, CheckCircle, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { toggle2FA } from '../api/client';
+import { GroupReorderSection } from '../components/organisms/GroupReorderSection';
 
 export function AccountSettingsPage() {
   const { user, refreshUser } = useAuth();
@@ -111,6 +112,15 @@ export function AccountSettingsPage() {
         >
           {isLoading ? '処理中...' : user?.otp_enabled ? '2FAを無効にする' : '2FAを有効にする'}
         </button>
+      </div>
+
+      {/* グループ並び替え */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+        <h2 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
+          <Users className="w-5 h-5 text-gray-500" />
+          チーム表示順
+        </h2>
+        <GroupReorderSection />
       </div>
     </div>
   );
