@@ -278,18 +278,11 @@ export function TimelineResourceView({
     return events.filter(e => e.participant_ids.includes(staffId));
   };
 
+  // チーム（子グループ）ベースの階層構造を構築
+  // APIが子グループのみを返すため、親グループに依存しない構造に変更
   const hierarchy = useMemo(() => {
-    const offices = groups.filter(g => !g.parent_id);
-    const teams = groups.filter(g => g.parent_id);
-    
-    const officeTeams = new Map<number, Group[]>();
-    teams.forEach(team => {
-      if (team.parent_id) {
-        const list = officeTeams.get(team.parent_id) || [];
-        list.push(team);
-        officeTeams.set(team.parent_id, list);
-      }
-    });
+    // 全てのグループをチームとして扱う（親グループはAPIから返されない）
+    const teams = groups;
 
     const groupStaffs = new Map<number, Staff[]>();
     const unassignedStaffs: Staff[] = [];
@@ -304,7 +297,7 @@ export function TimelineResourceView({
       }
     });
 
-    return { offices, officeTeams, groupStaffs, unassignedStaffs };
+    return { teams, groupStaffs, unassignedStaffs };
   }, [staffs, groups]);
 
   const renderStaffRows = (staffList: Staff[], groupName?: string) => {
@@ -404,31 +397,20 @@ export function TimelineResourceView({
 
         {/* Staff Rows */}
         <div className="min-w-[600px] sm:min-w-0">
-          {hierarchy.offices.map((office) => {
-            const isOfficeSelected = !selectedGroupIds || selectedGroupIds.includes(office.id);
-            const teams = hierarchy.officeTeams.get(office.id) || [];
-            const visibleTeams = teams.filter(t => !selectedGroupIds || selectedGroupIds.includes(t.id));
+          {/* チーム単位でスタッフを表示 */}
+          {hierarchy.teams.map((team) => {
+            // selectedGroupIdsでフィルタ
+            if (selectedGroupIds && !selectedGroupIds.includes(team.id)) return null;
             
-            if (!isOfficeSelected && visibleTeams.length === 0) return null;
-
-            const directStaffs = hierarchy.groupStaffs.get(office.id) || [];
-            const visibleDirectStaffs = isOfficeSelected ? directStaffs : [];
-            const totalStaffCount = visibleDirectStaffs.length + visibleTeams.reduce((acc, team) => acc + (hierarchy.groupStaffs.get(team.id)?.length || 0), 0);
-
-            if (totalStaffCount === 0 && visibleTeams.length === 0) return null;
-
+            const teamStaffs = hierarchy.groupStaffs.get(team.id) || [];
+            if (teamStaffs.length === 0) return null;
+            
+            // parent_nameがあれば「親 > チーム」形式で表示
+            const groupLabel = team.parent_name ? `${team.parent_name} > ${team.name}` : team.name;
+            
             return (
-              <div key={office.id}>
-                {isOfficeSelected && renderStaffRows(directStaffs, office.name)}
-                {visibleTeams.map(team => {
-                  const teamStaffs = hierarchy.groupStaffs.get(team.id) || [];
-                  if (teamStaffs.length === 0) return null;
-                  return (
-                    <div key={team.id}>
-                      {renderStaffRows(teamStaffs, team.name)}
-                    </div>
-                  );
-                })}
+              <div key={team.id}>
+                {renderStaffRows(teamStaffs, groupLabel)}
               </div>
             );
           })}
