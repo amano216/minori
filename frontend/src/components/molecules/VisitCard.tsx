@@ -32,11 +32,15 @@ export const VisitCard: React.FC<VisitCardProps> = ({ visit, isOverlay, classNam
   // 入院中の患者は灰色、それ以外は従来のロジック
   const isHospitalized = visit.patient?.status === 'hospitalized';
   const isNonWeeklyPattern = patternFrequency && patternFrequency !== 'weekly';
+  const isEmergency = visit.visit_type === 'emergency';
   
   let bgColor: string;
   if (isHospitalized) {
     // 入院中患者: 灰色（最優先）
     bgColor = 'bg-gray-200 border-l-gray-400';
+  } else if (isEmergency) {
+    // 緊急/臨時訪問: 赤系
+    bgColor = 'bg-red-100 border-l-red-500';
   } else if (isNonWeeklyPattern) {
     // 隔週/月2回パターン: ピンク
     bgColor = 'bg-rose-100 border-l-rose-500';

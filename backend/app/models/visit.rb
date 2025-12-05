@@ -5,6 +5,7 @@ class Visit < ApplicationRecord
   has_paper_trail
 
   STATUSES = %w[scheduled in_progress completed cancelled unassigned].freeze
+  VISIT_TYPES = %w[planned emergency].freeze
 
   # 患者重複チェックをスキップするためのフラグ（学生同行・複数名訪問用）
   attr_accessor :skip_patient_conflict_check
@@ -18,6 +19,7 @@ class Visit < ApplicationRecord
   validates :scheduled_at, presence: true
   validates :duration, presence: true, numericality: { greater_than: 0 }
   validates :status, inclusion: { in: STATUSES }
+  validates :visit_type, inclusion: { in: VISIT_TYPES }
   validate :user_availability, if: -> { user_id.present? && scheduled_at.present? }
   validate :patient_availability, if: -> { patient_id.present? && scheduled_at.present? && !skip_patient_conflict_check }
 
@@ -39,6 +41,8 @@ class Visit < ApplicationRecord
   scope :completed, -> { where(status: "completed") }
   scope :cancelled, -> { where(status: "cancelled") }
   scope :unassigned, -> { where(status: "unassigned") }
+  scope :planned, -> { where(visit_type: "planned") }
+  scope :emergency, -> { where(visit_type: "emergency") }
   scope :for_user, ->(user_id) { where(user_id: user_id) }
   scope :for_staff, ->(user_id) { where(user_id: user_id) } # エイリアス（後方互換性）
   scope :for_patient, ->(patient_id) { where(patient_id: patient_id) }

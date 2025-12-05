@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_12_05_001055) do
+ActiveRecord::Schema[8.1].define(version: 2025_12_05_214615) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -202,6 +202,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_05_001055) do
     t.datetime "updated_at", null: false
     t.bigint "user_id"
     t.bigint "visit_pattern_id"
+    t.string "visit_type", default: "planned", null: false
     t.index ["organization_id"], name: "index_visits_on_organization_id"
     t.index ["patient_id"], name: "index_visits_on_patient_id"
     t.index ["planning_lane_id"], name: "index_visits_on_planning_lane_id"
@@ -210,6 +211,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_05_001055) do
     t.index ["user_id", "scheduled_at"], name: "index_visits_on_user_id_and_scheduled_at"
     t.index ["user_id"], name: "index_visits_on_user_id"
     t.index ["visit_pattern_id"], name: "index_visits_on_visit_pattern_id"
+    t.index ["visit_type"], name: "index_visits_on_visit_type"
   end
 
   add_foreign_key "event_participants", "events"

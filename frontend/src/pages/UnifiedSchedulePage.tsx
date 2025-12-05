@@ -59,6 +59,7 @@ function convertScheduleVisitToVisit(sv: ScheduleVisit): Visit {
     scheduled_at: sv.scheduled_at,
     duration: sv.duration,
     status: sv.status,
+    visit_type: sv.visit_type,
     notes: sv.notes,
     created_at: sv.created_at,
     updated_at: sv.updated_at,
