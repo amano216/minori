@@ -509,14 +509,24 @@ export function UnifiedSchedulePage() {
             destinationInfo += `\n日付: ${newDate.toLocaleDateString('ja-JP')}`;
           }
         } else if (laneId !== undefined && hour !== undefined) {
-          // Lane drop
+          // Lane drop - preserve original time, only change lane
           updateData.planning_lane_id = laneId;
           
-          // Calculate new time
-          const newDate = new Date(currentDate);
-          newDate.setHours(hour, 0, 0, 0);
-          updateData.scheduled_at = newDate.toISOString();
-          destinationInfo = `時刻: ${hour}:00`;
+          // 元の時刻を保持（レーン移動だけの場合は scheduled_at の更新は不要）
+          // ただし、時間帯が大きく異なる場合のみ時刻を変更
+          const originalTime = new Date(visit.scheduled_at);
+          const originalHour = originalTime.getHours();
+          
+          // 移動先の時間帯が元の時間帯と異なる場合のみ時刻を更新
+          if (Math.abs(originalHour - hour) > 1) {
+            const newDate = new Date(currentDate);
+            newDate.setHours(hour, originalTime.getMinutes(), 0, 0);
+            updateData.scheduled_at = newDate.toISOString();
+            destinationInfo = `時刻: ${hour}:${String(originalTime.getMinutes()).padStart(2, '0')}`;
+          } else {
+            // 同じ時間帯内での移動の場合、レーンのみ変更
+            destinationInfo = '（レーンのみ変更）';
+          }
         } else {
           return;
         }

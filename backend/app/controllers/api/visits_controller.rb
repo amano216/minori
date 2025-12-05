@@ -68,14 +68,14 @@ module Api
         if visit_params[:user_id].present? && visit_params[:user_id].to_i != @visit.user_id
           temp_visit = @visit.dup
           temp_visit.assign_attributes(visit_params)
-          check_user_conflicts!(temp_visit)
+          check_user_conflicts!(temp_visit, original_id: @visit.id)
         end
 
         # 患者の重複チェック（skip_patient_conflict_checkで回避可能）
         unless skip_patient_conflict_check?
           temp_visit = @visit.dup
           temp_visit.assign_attributes(visit_params)
-          check_patient_conflicts!(temp_visit) if temp_visit.patient_id.present?
+          check_patient_conflicts!(temp_visit, original_id: @visit.id) if temp_visit.patient_id.present?
         end
 
         @visit.skip_patient_conflict_check = skip_patient_conflict_check?
@@ -188,11 +188,12 @@ module Api
       }
     end
 
-    def check_user_conflicts!(visit)
+    def check_user_conflicts!(visit, original_id: nil)
       end_time = visit.scheduled_at + visit.duration.minutes
+      exclude_id = original_id || visit.id
 
       conflicting = scoped_visits.where(user_id: visit.user_id)
-                         .where.not(id: visit.id)
+                         .where.not(id: exclude_id)
                          .where.not(status: %w[cancelled completed])
                          .where("scheduled_at < ? AND scheduled_at + (duration * interval '1 minute') > ?",
                                 end_time, visit.scheduled_at)
@@ -202,11 +203,12 @@ module Api
       raise ::StaffDoubleBookingError.new(staff_id: visit.user_id) if conflicting
     end
 
-    def check_patient_conflicts!(visit)
+    def check_patient_conflicts!(visit, original_id: nil)
       end_time = visit.scheduled_at + visit.duration.minutes
+      exclude_id = original_id || visit.id
 
       conflicting = scoped_visits.where(patient_id: visit.patient_id)
-                         .where.not(id: visit.id)
+                         .where.not(id: exclude_id)
                          .where.not(status: %w[cancelled completed])
                          .where("scheduled_at < ? AND scheduled_at + (duration * interval '1 minute') > ?",
                                 end_time, visit.scheduled_at)
