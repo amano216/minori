@@ -90,11 +90,12 @@ export function UnifiedSchedulePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // DnD センサー設定：8px以上動かしてからドラッグ開始（クリックと区別）
+  // DnD センサー設定：200ms長押しでドラッグ開始（Googleカレンダー風）
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        delay: 200,
+        tolerance: 5,
       },
     })
   );
