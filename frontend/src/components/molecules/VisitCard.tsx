@@ -42,8 +42,8 @@ export const VisitCard: React.FC<VisitCardProps> = ({ visit, isOverlay, classNam
     // 緊急/臨時訪問: 赤系
     bgColor = 'bg-red-100 border-l-red-500';
   } else if (isNonWeeklyPattern) {
-    // 隔週/月2回パターン: ピンク
-    bgColor = 'bg-rose-100 border-l-rose-500';
+    // 隔週/月2回パターン: 紫
+    bgColor = 'bg-purple-100 border-l-purple-500';
   } else if (patternFrequency) {
     // 毎週パターン: 黄色（未割当と同じ）
     bgColor = 'bg-amber-100 border-l-amber-500';
@@ -89,7 +89,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({ visit, isOverlay, classNam
         </div>
       )}
       {!compact && patternFrequency && (
-        <div className={`text-[9px] leading-tight truncate mt-0.5 ${isNonWeeklyPattern ? 'text-rose-600 font-medium' : 'text-amber-600'}`}>
+        <div className={`text-[9px] leading-tight truncate mt-0.5 ${isNonWeeklyPattern ? 'text-purple-600 font-medium' : 'text-amber-600'}`}>
           {FREQUENCY_LABELS[patternFrequency]}
         </div>
       )}
