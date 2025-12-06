@@ -2,17 +2,17 @@
 
 module Api
   class PatientTasksController < ApplicationController
-    before_action :authenticate_user!
     before_action :set_patient_task, only: %i[show update destroy mark_read complete]
 
     # GET /api/patient_tasks
     # GET /api/patients/:patient_id/tasks
     def index
-      tasks = current_organization.patient_tasks
+      tasks = current_user.organization.patient_tasks
         .includes(:patient, :created_by, :completed_by, :patient_task_reads, patient: :group)
 
       # フィルタ
       tasks = tasks.where(patient_id: params[:patient_id]) if params[:patient_id].present?
+      tasks = tasks.where(category: params[:category]) if params[:category].present?
       tasks = filter_by_status(tasks)
       tasks = filter_by_unread(tasks) if params[:unread_only] == "true"
       tasks = tasks.where(task_type: params[:task_type]) if params[:task_type].present?
@@ -37,9 +37,9 @@ module Api
 
     # POST /api/patients/:patient_id/tasks
     def create
-      patient = current_organization.patients.find(params[:patient_id])
+      patient = current_user.organization.patients.find(params[:patient_id])
       task = patient.patient_tasks.build(task_params)
-      task.organization = current_organization
+      task.organization = current_user.organization
       task.created_by = current_user
 
       if task.save
@@ -79,11 +79,11 @@ module Api
     private
 
     def set_patient_task
-      @patient_task = current_organization.patient_tasks.find(params[:id])
+      @patient_task = current_user.organization.patient_tasks.find(params[:id])
     end
 
     def task_params
-      params.require(:patient_task).permit(:title, :content, :task_type, :due_date, :status)
+      params.require(:patient_task).permit(:title, :content, :task_type, :due_date, :status, :category)
     end
 
     def filter_by_status(tasks)
@@ -129,10 +129,11 @@ module Api
     end
 
     def task_json(task)
-      total_staff = current_organization.users.where(staff_status: "active").count
+      total_staff = current_user.organization.users.where(staff_status: "active").count
 
       {
         id: task.id,
+        category: task.category,
         title: task.title,
         content: task.content,
         task_type: task.task_type,

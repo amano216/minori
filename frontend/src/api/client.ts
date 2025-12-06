@@ -837,14 +837,16 @@ export async function deleteEvent(id: number): Promise<void> {
 }
 
 // Patient Task API (患者案件・申し送り)
+export type TaskCategory = 'board' | 'task';
 export type TaskType = 'directive_change' | 'medication' | 'care_plan' | 'handover' | 'other';
 export type TaskStatus = 'open' | 'done';
 
 export interface PatientTask {
   id: number;
-  title: string;
+  category: TaskCategory;
+  title: string | null;
   content: string | null;
-  task_type: TaskType;
+  task_type: TaskType | null;
   status: TaskStatus;
   due_date: string | null;
   created_at: string;
@@ -871,15 +873,17 @@ export interface PatientTasksResponse {
 }
 
 export interface PatientTaskInput {
-  title: string;
+  category: TaskCategory;
+  title?: string | null;
   content?: string;
-  task_type: TaskType;
+  task_type?: TaskType | null;
   due_date?: string | null;
   status?: TaskStatus;
 }
 
 export async function fetchPatientTasks(params?: {
   patient_id?: number;
+  category?: TaskCategory;
   status?: TaskStatus;
   unread_only?: boolean;
   task_type?: TaskType;
@@ -888,6 +892,7 @@ export async function fetchPatientTasks(params?: {
 }): Promise<PatientTasksResponse> {
   const query = new URLSearchParams();
   if (params?.patient_id) query.append('patient_id', String(params.patient_id));
+  if (params?.category) query.append('category', params.category);
   if (params?.status) query.append('status', params.status);
   if (params?.unread_only) query.append('unread_only', 'true');
   if (params?.task_type) query.append('task_type', params.task_type);
