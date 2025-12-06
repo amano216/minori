@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_12_05_214615) do
+ActiveRecord::Schema[8.1].define(version: 2025_12_06_053512) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -86,6 +86,39 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_05_214615) do
     t.string "subdomain", null: false
     t.datetime "updated_at", null: false
     t.index ["subdomain"], name: "index_organizations_on_subdomain", unique: true
+  end
+
+  create_table "patient_task_reads", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "patient_task_id", null: false
+    t.datetime "read_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["patient_task_id", "user_id"], name: "index_patient_task_reads_on_patient_task_id_and_user_id", unique: true
+    t.index ["patient_task_id"], name: "index_patient_task_reads_on_patient_task_id"
+    t.index ["user_id"], name: "index_patient_task_reads_on_user_id"
+  end
+
+  create_table "patient_tasks", force: :cascade do |t|
+    t.datetime "completed_at"
+    t.bigint "completed_by_id"
+    t.text "content"
+    t.datetime "created_at", null: false
+    t.bigint "created_by_id", null: false
+    t.date "due_date"
+    t.bigint "organization_id", null: false
+    t.bigint "patient_id", null: false
+    t.string "status", default: "open", null: false
+    t.string "task_type", default: "handover", null: false
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.index ["completed_by_id"], name: "index_patient_tasks_on_completed_by_id"
+    t.index ["created_by_id"], name: "index_patient_tasks_on_created_by_id"
+    t.index ["organization_id", "status"], name: "index_patient_tasks_on_organization_id_and_status"
+    t.index ["organization_id"], name: "index_patient_tasks_on_organization_id"
+    t.index ["patient_id"], name: "index_patient_tasks_on_patient_id"
+    t.index ["status"], name: "index_patient_tasks_on_status"
+    t.index ["task_type"], name: "index_patient_tasks_on_task_type"
   end
 
   create_table "patients", force: :cascade do |t|
@@ -224,6 +257,12 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_05_214615) do
   add_foreign_key "groups", "organizations"
   add_foreign_key "organization_memberships", "organizations"
   add_foreign_key "organization_memberships", "users"
+  add_foreign_key "patient_task_reads", "patient_tasks"
+  add_foreign_key "patient_task_reads", "users"
+  add_foreign_key "patient_tasks", "organizations"
+  add_foreign_key "patient_tasks", "patients"
+  add_foreign_key "patient_tasks", "users", column: "completed_by_id"
+  add_foreign_key "patient_tasks", "users", column: "created_by_id"
   add_foreign_key "patients", "groups"
   add_foreign_key "patients", "organizations"
   add_foreign_key "planning_lanes", "groups"

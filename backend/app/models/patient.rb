@@ -18,6 +18,8 @@ class Patient < ApplicationRecord
   belongs_to :organization, optional: true
   belongs_to :group, optional: true
   has_many :visits, dependent: :destroy
+  has_many :patient_tasks, dependent: :destroy
+  has_many :visit_patterns, dependent: :destroy
 
   validates :name, presence: true
   validates :status, inclusion: { in: STATUSES }
@@ -47,6 +49,13 @@ class Patient < ApplicationRecord
       result["group"] = group.as_json(only: %i[id name group_type])
     end
     result
+  end
+
+  # 指定ユーザーにとっての未読タスク数を返す
+  def unread_task_count(user)
+    patient_tasks.open_tasks
+      .where.not(id: PatientTaskRead.where(user_id: user.id).select(:patient_task_id))
+      .count
   end
 
   private
