@@ -377,7 +377,7 @@ export interface Visit {
   staff_id: number | null;
   patient_id: number;
   staff: { id: number; name: string } | null;
-  patient: { id: number; name: string; address?: string; external_urls?: ExternalUrl[]; status?: PatientStatus };
+  patient: { id: number; name: string; address?: string; external_urls?: ExternalUrl[]; status?: PatientStatus; unread_task_count?: number };
   status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'unassigned';
   visit_type?: VisitType;
   notes: string;
@@ -447,7 +447,7 @@ export async function completeVisit(id: number): Promise<Visit> {
 
 // Schedule API
 export interface ScheduleVisit extends Visit {
-  patient: { id: number; name: string; address?: string; status?: PatientStatus; group?: { id: number; name: string } };
+  patient: { id: number; name: string; address?: string; status?: PatientStatus; group?: { id: number; name: string }; unread_task_count?: number };
 }
 
 export interface DailySchedule {

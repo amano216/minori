@@ -11,6 +11,17 @@ const FREQUENCY_LABELS: Record<PatternFrequency, string> = {
   monthly_2_4: '第2・4週',
 };
 
+// 未読タスクバッジコンポーネント
+const UnreadTaskBadge: React.FC<{ count: number }> = ({ count }) => {
+  if (count <= 0) return null;
+  
+  return (
+    <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
+      {count > 99 ? '99+' : count}
+    </span>
+  );
+};
+
 interface VisitCardProps {
   visit: Visit;
   onClick?: () => void;
@@ -25,6 +36,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({ visit, isOverlay, classNam
   const durationMinutes = visit.duration || 60;
   const endDate = new Date(visitDate.getTime() + durationMinutes * 60000);
   const townName = extractTownName(visit.patient?.address);
+  const unreadTaskCount = visit.patient?.unread_task_count ?? 0;
 
   const formatTime = (d: Date) => 
     `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -58,6 +70,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({ visit, isOverlay, classNam
   return (
     <div
       className={`
+        relative
         ${bgColor} 
         border-l-[3px] 
         ${compact ? 'px-1 py-0.5' : 'px-1.5 py-1'} 
@@ -72,6 +85,9 @@ export const VisitCard: React.FC<VisitCardProps> = ({ visit, isOverlay, classNam
         ${className}
       `}
     >
+      {/* 未読タスクバッジ */}
+      {!compact && <UnreadTaskBadge count={unreadTaskCount} />}
+      
       <div className={`font-semibold text-gray-800 leading-tight truncate ${compact ? 'text-[10px]' : ''}`}>
         {visit.patient.name}
       </div>
