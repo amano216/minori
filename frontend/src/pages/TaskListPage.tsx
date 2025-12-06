@@ -13,7 +13,8 @@ import {
   ChevronDown,
   ChevronRight,
   Search,
-  RefreshCw
+  RefreshCw,
+  Plus
 } from 'lucide-react';
 import { 
   fetchPatientTasks, 
@@ -24,6 +25,7 @@ import {
   type TaskType,
   type Group 
 } from '../api/client';
+import { TaskCreatePanel } from '../components/organisms/TaskCreatePanel';
 
 // タスクタイプのラベルとアイコン
 const TASK_TYPE_CONFIG: Record<TaskType, { label: string; icon: React.ReactNode; color: string }> = {
@@ -62,6 +64,7 @@ export function TaskListPage() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showCreatePanel, setShowCreatePanel] = useState(false);
   
   // フィルター
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('open');
@@ -231,14 +234,23 @@ export function TaskListPage() {
               {totalOpen}件の未対応案件 {totalUnread > 0 && `（${totalUnread}件未読）`}
             </p>
           </div>
-          <button
-            onClick={() => loadData(true)}
-            disabled={refreshing}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-            更新
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowCreatePanel(true)}
+              className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors font-medium"
+            >
+              <Plus className="w-4 h-4" />
+              新規作成
+            </button>
+            <button
+              onClick={() => loadData(true)}
+              disabled={refreshing}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              更新
+            </button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -374,6 +386,13 @@ export function TaskListPage() {
           ))}
         </div>
       )}
+
+      {/* Task Create Panel */}
+      <TaskCreatePanel
+        isOpen={showCreatePanel}
+        onClose={() => setShowCreatePanel(false)}
+        onCreated={() => loadData(true)}
+      />
     </div>
   );
 }
