@@ -835,3 +835,100 @@ export async function updateEvent(id: number, event: Partial<EventInput>): Promi
 export async function deleteEvent(id: number): Promise<void> {
   return apiRequest(`/api/events/${id}`, { method: 'DELETE' });
 }
+
+// Patient Task API (患者案件・申し送り)
+export type TaskType = 'directive_change' | 'medication' | 'care_plan' | 'handover' | 'other';
+export type TaskStatus = 'open' | 'done';
+
+export interface PatientTask {
+  id: number;
+  title: string;
+  content: string | null;
+  task_type: TaskType;
+  status: TaskStatus;
+  due_date: string | null;
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;
+  created_by: { id: number; name: string } | null;
+  completed_by: { id: number; name: string } | null;
+  patient: {
+    id: number;
+    name: string;
+    group?: { id: number; name: string } | null;
+  };
+  read_by_current_user: boolean;
+  read_count: number;
+  total_staff_count: number;
+}
+
+export interface PatientTasksResponse {
+  tasks: PatientTask[];
+  meta: {
+    total: number;
+    unread_count: number;
+  };
+}
+
+export interface PatientTaskInput {
+  title: string;
+  content?: string;
+  task_type: TaskType;
+  due_date?: string | null;
+  status?: TaskStatus;
+}
+
+export async function fetchPatientTasks(params?: {
+  patient_id?: number;
+  status?: TaskStatus;
+  unread_only?: boolean;
+  task_type?: TaskType;
+  sort?: 'created_at' | 'due_date';
+  sort_dir?: 'asc' | 'desc';
+}): Promise<PatientTasksResponse> {
+  const query = new URLSearchParams();
+  if (params?.patient_id) query.append('patient_id', String(params.patient_id));
+  if (params?.status) query.append('status', params.status);
+  if (params?.unread_only) query.append('unread_only', 'true');
+  if (params?.task_type) query.append('task_type', params.task_type);
+  if (params?.sort) query.append('sort', params.sort);
+  if (params?.sort_dir) query.append('sort_dir', params.sort_dir);
+  const queryString = query.toString();
+  return apiRequest(`/api/patient_tasks${queryString ? `?${queryString}` : ''}`);
+}
+
+export async function fetchPatientTask(id: number): Promise<PatientTask> {
+  return apiRequest(`/api/patient_tasks/${id}`);
+}
+
+export async function createPatientTask(patientId: number, task: PatientTaskInput): Promise<PatientTask> {
+  return apiRequest(`/api/patients/${patientId}/tasks`, {
+    method: 'POST',
+    body: JSON.stringify({ patient_task: task }),
+  });
+}
+
+export async function updatePatientTask(id: number, task: Partial<PatientTaskInput>): Promise<PatientTask> {
+  return apiRequest(`/api/patient_tasks/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ patient_task: task }),
+  });
+}
+
+export async function deletePatientTask(id: number): Promise<void> {
+  return apiRequest(`/api/patient_tasks/${id}`, { method: 'DELETE' });
+}
+
+export async function markPatientTaskRead(id: number): Promise<PatientTask> {
+  return apiRequest(`/api/patient_tasks/${id}/mark_read`, { method: 'POST' });
+}
+
+export async function completePatientTask(id: number): Promise<PatientTask> {
+  return apiRequest(`/api/patient_tasks/${id}/complete`, { method: 'POST' });
+}
+
+// 患者の未読案件数を取得するヘルパー
+export async function fetchPatientUnreadTaskCount(patientId: number): Promise<number> {
+  const response = await fetchPatientTasks({ patient_id: patientId, unread_only: true });
+  return response.meta.unread_count;
+}
