@@ -8,13 +8,13 @@ import {
   Pill, 
   ClipboardList, 
   MoreHorizontal,
-  Users,
   Building2,
   ChevronDown,
   ChevronRight,
-  Search,
   RefreshCw,
-  Plus
+  Plus,
+  Megaphone,
+  Pencil,
 } from 'lucide-react';
 import { 
   fetchPatientTasks, 
@@ -57,7 +57,6 @@ const TASK_TYPE_CONFIG: Record<TaskType, { label: string; icon: React.ReactNode;
 };
 
 type GroupBy = 'none' | 'patient' | 'team' | 'task_type';
-type StatusFilter = 'all' | 'open' | 'done';
 
 export function TaskListPage() {
   const [tasks, setTasks] = useState<PatientTask[]>([]);
@@ -65,15 +64,10 @@ export function TaskListPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showCreatePanel, setShowCreatePanel] = useState(false);
+  const [editingTask, setEditingTask] = useState<PatientTask | null>(null);
   
-  // フィルター
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('open');
-  const [taskTypeFilter, setTaskTypeFilter] = useState<TaskType | 'all'>('all');
-  const [unreadOnly, setUnreadOnly] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  // グルーピング
-  const [groupBy, setGroupBy] = useState<GroupBy>('team');
+  // グルーピング（チーム別固定）
+  const groupBy: GroupBy = 'team';
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   const loadData = async (showRefreshing = false) => {
@@ -82,11 +76,7 @@ export function TaskListPage() {
     
     try {
       const [tasksResponse, groupsData] = await Promise.all([
-        fetchPatientTasks({
-          status: statusFilter === 'all' ? undefined : statusFilter,
-          task_type: taskTypeFilter === 'all' ? undefined : taskTypeFilter,
-          unread_only: unreadOnly,
-        }),
+        fetchPatientTasks({ status: 'open' }),
         fetchGroups({ status: 'active' }),
       ]);
       setTasks(tasksResponse.tasks);
@@ -111,7 +101,7 @@ export function TaskListPage() {
 
   useEffect(() => {
     loadData();
-  }, [statusFilter, taskTypeFilter, unreadOnly]);
+  }, []);
 
   const getGroupKey = (task: PatientTask, by: GroupBy): string => {
     switch (by) {
@@ -122,7 +112,7 @@ export function TaskListPage() {
         if (!groupId) return 'team-none';
         return `team-${groupId}`;
       case 'task_type':
-        return `type-${task.task_type}`;
+        return `type-${task.task_type || 'none'}`;
       default:
         return 'all';
     }
@@ -131,6 +121,7 @@ export function TaskListPage() {
   const getGroupLabel = (key: string, groupList: Group[]): string => {
     if (key === 'all') return 'すべて';
     if (key === 'team-none') return '未所属';
+    if (key === 'type-none') return '掲示板';
     
     const [type, id] = key.split('-');
     
@@ -148,24 +139,12 @@ export function TaskListPage() {
     return key;
   };
 
-  // フィルタリングとグルーピング
+  // グルーピング
   const filteredAndGroupedTasks = useMemo(() => {
-    let filtered = tasks;
-
-    // 検索フィルタ
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(task => 
-        task.title.toLowerCase().includes(query) ||
-        task.content?.toLowerCase().includes(query) ||
-        task.patient.name.toLowerCase().includes(query)
-      );
-    }
-
     // グルーピング
     const grouped = new Map<string, PatientTask[]>();
     
-    filtered.forEach(task => {
+    tasks.forEach(task => {
       const key = getGroupKey(task, groupBy);
       if (!grouped.has(key)) {
         grouped.set(key, []);
@@ -182,7 +161,7 @@ export function TaskListPage() {
     });
 
     return sortedEntries;
-  }, [tasks, searchQuery, groupBy, groups]);
+  }, [tasks, groupBy, groups]);
 
   const toggleGroup = (key: string) => {
     const newExpanded = new Set(expandedGroups);
@@ -212,6 +191,16 @@ export function TaskListPage() {
     }
   };
 
+  const handleEdit = (task: PatientTask) => {
+    setEditingTask(task);
+    setShowCreatePanel(true);
+  };
+
+  const handleClosePanel = () => {
+    setShowCreatePanel(false);
+    setEditingTask(null);
+  };
+
   const totalUnread = tasks.filter(t => !t.read_by_current_user && t.status === 'open').length;
   const totalOpen = tasks.filter(t => t.status === 'open').length;
 
@@ -227,11 +216,11 @@ export function TaskListPage() {
     <div className="p-4 max-w-5xl mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">案件一覧</h1>
             <p className="text-sm text-gray-500 mt-1">
-              {totalOpen}件の未対応案件 {totalUnread > 0 && `（${totalUnread}件未読）`}
+              {totalOpen}件の未対応 {totalUnread > 0 && `（${totalUnread}件未読）`}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -248,76 +237,7 @@ export function TaskListPage() {
               className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              更新
             </button>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="flex flex-wrap gap-3 items-center">
-          {/* Search */}
-          <div className="relative flex-1 min-w-[200px] max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="タイトル、内容、患者名で検索..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-
-          {/* Status Filter */}
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="all">すべて</option>
-            <option value="open">未対応</option>
-            <option value="done">完了</option>
-          </select>
-
-          {/* Task Type Filter */}
-          <select
-            value={taskTypeFilter}
-            onChange={(e) => setTaskTypeFilter(e.target.value as TaskType | 'all')}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="all">全種別</option>
-            {Object.entries(TASK_TYPE_CONFIG).map(([key, config]) => (
-              <option key={key} value={key}>{config.label}</option>
-            ))}
-          </select>
-
-          {/* Unread Only */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={unreadOnly}
-              onChange={(e) => setUnreadOnly(e.target.checked)}
-              className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-            />
-            <span className="text-sm text-gray-600">未読のみ</span>
-          </label>
-
-          {/* Group By */}
-          <div className="flex items-center gap-2 ml-auto">
-            <span className="text-sm text-gray-500">グループ:</span>
-            <select
-              value={groupBy}
-              onChange={(e) => {
-                setGroupBy(e.target.value as GroupBy);
-                // グループ変更時は全展開
-                setExpandedGroups(new Set(filteredAndGroupedTasks.map(([key]) => key)));
-              }}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="none">なし</option>
-              <option value="team">チーム別</option>
-              <option value="patient">患者別</option>
-              <option value="task_type">種別</option>
-            </select>
           </div>
         </div>
       </div>
@@ -326,59 +246,61 @@ export function TaskListPage() {
       {filteredAndGroupedTasks.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
-          <p className="text-lg">条件に一致する案件はありません</p>
+          <p className="text-lg">案件はありません</p>
         </div>
       ) : (
         <div className="space-y-4">
           {filteredAndGroupedTasks.map(([groupKey, groupTasks]) => (
             <div key={groupKey} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               {/* Group Header */}
-              {groupBy !== 'none' && (
-                <button
-                  onClick={() => toggleGroup(groupKey)}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    {expandedGroups.has(groupKey) ? (
-                      <ChevronDown className="w-5 h-5 text-gray-400" />
-                    ) : (
-                      <ChevronRight className="w-5 h-5 text-gray-400" />
-                    )}
-                    {groupBy === 'team' && <Building2 className="w-5 h-5 text-gray-400" />}
-                    {groupBy === 'patient' && <Users className="w-5 h-5 text-gray-400" />}
-                    {groupBy === 'task_type' && (
-                      <span className={TASK_TYPE_CONFIG[groupKey.split('-')[1] as TaskType]?.color}>
-                        {TASK_TYPE_CONFIG[groupKey.split('-')[1] as TaskType]?.icon}
-                      </span>
-                    )}
-                    <span className="font-medium text-gray-900">
-                      {getGroupLabel(groupKey, groups)}
+              <button
+                onClick={() => toggleGroup(groupKey)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  {expandedGroups.has(groupKey) ? (
+                    <ChevronDown className="w-5 h-5 text-gray-400" />
+                  ) : (
+                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                  )}
+                  <Building2 className="w-5 h-5 text-gray-400" />
+                  <span className="font-medium text-gray-900">
+                    {getGroupLabel(groupKey, groups)}
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    ({groupTasks.length}件)
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {groupTasks.filter(t => !t.read_by_current_user && t.status === 'open').length > 0 && (
+                    <span className="px-2 py-0.5 text-xs bg-red-100 text-red-600 rounded-full font-medium">
+                      {groupTasks.filter(t => !t.read_by_current_user && t.status === 'open').length}件未読
                     </span>
-                    <span className="text-sm text-gray-500">
-                      ({groupTasks.length}件)
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {groupTasks.filter(t => !t.read_by_current_user && t.status === 'open').length > 0 && (
-                      <span className="px-2 py-0.5 text-xs bg-red-100 text-red-600 rounded-full font-medium">
-                        {groupTasks.filter(t => !t.read_by_current_user && t.status === 'open').length}件未読
-                      </span>
-                    )}
-                  </div>
-                </button>
-              )}
+                  )}
+                </div>
+              </button>
 
               {/* Group Tasks */}
-              {(groupBy === 'none' || expandedGroups.has(groupKey)) && (
+              {expandedGroups.has(groupKey) && (
                 <div className="divide-y divide-gray-100">
                   {groupTasks.map((task) => (
-                    <TaskRow 
-                      key={task.id} 
-                      task={task}
-                      showPatient={groupBy !== 'patient'}
-                      onMarkRead={handleMarkRead}
-                      onComplete={handleComplete}
-                    />
+                    task.category === 'board' ? (
+                      <BoardRow 
+                        key={task.id} 
+                        task={task}
+                        showPatient={true}
+                        onMarkRead={handleMarkRead}
+                        onEdit={() => handleEdit(task)}
+                      />
+                    ) : (
+                      <TaskRow 
+                        key={task.id} 
+                        task={task}
+                        showPatient={true}
+                        onMarkRead={handleMarkRead}
+                        onComplete={handleComplete}
+                      />
+                    )
                   ))}
                 </div>
               )}
@@ -387,17 +309,91 @@ export function TaskListPage() {
         </div>
       )}
 
-      {/* Task Create Panel */}
+      {/* Create/Edit Panel */}
       <TaskCreatePanel
         isOpen={showCreatePanel}
-        onClose={() => setShowCreatePanel(false)}
-        onCreated={() => loadData(true)}
+        onClose={handleClosePanel}
+        onCreated={() => {
+          handleClosePanel();
+          loadData(true);
+        }}
+        editingTask={editingTask}
       />
     </div>
   );
 }
 
-// 個別のタスク行
+// 掲示板行
+function BoardRow({ 
+  task, 
+  showPatient,
+  onMarkRead,
+  onEdit,
+}: { 
+  task: PatientTask; 
+  showPatient: boolean;
+  onMarkRead: (id: number) => void;
+  onEdit: () => void;
+}) {
+  const isUnread = !task.read_by_current_user;
+
+  const handleClick = () => {
+    if (isUnread) {
+      onMarkRead(task.id);
+    }
+  };
+
+  return (
+    <div 
+      className={`px-4 py-3 cursor-pointer hover:bg-amber-50/50 transition-colors ${
+        isUnread ? 'border-l-4 border-l-amber-500 bg-amber-50/30' : ''
+      }`}
+      onClick={handleClick}
+    >
+      <div className="flex items-start gap-4">
+        {/* Icon */}
+        <div className="p-2 rounded-lg bg-amber-100 flex-shrink-0">
+          <Megaphone className="w-4 h-4 text-amber-600" />
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            {showPatient && (
+              <span className="font-medium text-gray-900">{task.patient.name}</span>
+            )}
+            {isUnread && (
+              <span className="px-1.5 py-0.5 text-[10px] bg-amber-100 text-amber-700 rounded font-medium">
+                NEW
+              </span>
+            )}
+          </div>
+          <div className="text-sm text-gray-700 whitespace-pre-wrap line-clamp-3">
+            {task.content}
+          </div>
+          <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+            <span>{task.created_by?.name || '不明'}</span>
+            <span>•</span>
+            <span>{new Date(task.created_at).toLocaleDateString('ja-JP')}</span>
+          </div>
+        </div>
+
+        {/* Edit Button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit();
+          }}
+          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-amber-100 rounded-lg transition-colors flex-shrink-0"
+        >
+          <Pencil className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// タスク行
 function TaskRow({ 
   task, 
   showPatient,
@@ -410,7 +406,7 @@ function TaskRow({
   onComplete: (id: number) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const config = TASK_TYPE_CONFIG[task.task_type];
+  const config = task.task_type ? TASK_TYPE_CONFIG[task.task_type] : { label: 'その他', icon: <MoreHorizontal className="w-4 h-4" />, color: 'text-gray-600 bg-gray-50' };
   const isUnread = !task.read_by_current_user;
   const isDone = task.status === 'done';
 
@@ -453,7 +449,7 @@ function TaskRow({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className={`font-medium ${isDone ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
-                {task.title}
+                {config.label}
               </span>
               {isUnread && !isDone && (
                 <span className="px-1.5 py-0.5 text-[10px] bg-red-100 text-red-600 rounded font-medium">
@@ -466,6 +462,11 @@ function TaskRow({
                 </span>
               )}
             </div>
+            {task.content && (
+              <p className={`text-sm mt-1 ${isDone ? 'text-gray-400' : 'text-gray-600'} line-clamp-2`}>
+                {task.content}
+              </p>
+            )}
             <div className="flex items-center gap-2 mt-1 text-sm text-gray-500 flex-wrap">
               {showPatient && (
                 <>
@@ -473,8 +474,6 @@ function TaskRow({
                   <span>•</span>
                 </>
               )}
-              <span>{config.label}</span>
-              <span>•</span>
               <span>{task.created_by?.name || '不明'}</span>
               <span>•</span>
               <span>{formatDateTime(task.created_at)}</span>

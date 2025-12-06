@@ -135,22 +135,15 @@ export function SearchableSelect({
         <div
           ref={listRef}
           className={`
-            absolute z-[100] mt-1
+            absolute z-[200] mt-1
             w-full
             bg-white border border-gray-200 rounded-lg shadow-lg
-            /* モバイル: 固定位置で下から表示 */
-            fixed sm:absolute
-            inset-x-0 bottom-0 sm:inset-auto sm:bottom-auto
-            max-h-[60vh] sm:max-h-80
-            rounded-t-2xl sm:rounded-lg
+            max-h-80
+            rounded-lg
             flex flex-col
+            overflow-hidden
           `}
         >
-          {/* モバイル: ドラッグハンドル */}
-          <div className="sm:hidden flex justify-center pt-2 pb-1">
-            <div className="w-10 h-1 bg-gray-300 rounded-full" />
-          </div>
-          
           {/* 検索入力 */}
           <div className="p-2 border-b border-gray-100">
             <div className="relative">
@@ -198,32 +191,7 @@ export function SearchableSelect({
               ))
             )}
           </div>
-
-          {/* モバイル: 閉じるボタン */}
-          <div className="sm:hidden p-3 border-t border-gray-100">
-            <button
-              type="button"
-              onClick={() => {
-                setIsOpen(false);
-                setSearchQuery('');
-              }}
-              className="w-full py-3 bg-gray-100 rounded-lg text-gray-700 font-medium"
-            >
-              閉じる
-            </button>
-          </div>
         </div>
-      )}
-
-      {/* モバイル: バックドロップ */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black/30 z-[99] sm:hidden"
-          onClick={() => {
-            setIsOpen(false);
-            setSearchQuery('');
-          }}
-        />
       )}
     </div>
   );
