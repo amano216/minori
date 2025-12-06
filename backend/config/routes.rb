@@ -31,7 +31,17 @@ Rails.application.routes.draw do
     resources :staffs
 
     # Patient routes
-    resources :patients
+    resources :patients do
+      resources :tasks, controller: "patient_tasks", only: [:index, :create]
+    end
+
+    # Patient Task routes (案件管理)
+    resources :patient_tasks, only: [:index, :show, :update, :destroy] do
+      member do
+        post :mark_read
+        post :complete
+      end
+    end
 
     # Group routes (read-only for general users)
     resources :groups, only: [ :index ] do
