@@ -17,6 +17,6 @@ class CreatePatientTasks < ActiveRecord::Migration[8.1]
 
     add_index :patient_tasks, :status
     add_index :patient_tasks, :task_type
-    add_index :patient_tasks, [:organization_id, :status]
+    add_index :patient_tasks, [ :organization_id, :status ]
   end
 end

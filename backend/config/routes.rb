@@ -32,11 +32,11 @@ Rails.application.routes.draw do
 
     # Patient routes
     resources :patients do
-      resources :tasks, controller: "patient_tasks", only: [:index, :create]
+      resources :tasks, controller: "patient_tasks", only: [ :index, :create ]
     end
 
     # Patient Task routes (案件管理)
-    resources :patient_tasks, only: [:index, :show, :update, :destroy] do
+    resources :patient_tasks, only: [ :index, :show, :update, :destroy ] do
       member do
         post :mark_read
         post :complete

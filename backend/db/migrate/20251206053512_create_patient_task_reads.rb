@@ -8,6 +8,6 @@ class CreatePatientTaskReads < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :patient_task_reads, [:patient_task_id, :user_id], unique: true
+    add_index :patient_task_reads, [ :patient_task_id, :user_id ], unique: true
   end
 end
