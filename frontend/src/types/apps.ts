@@ -49,6 +49,7 @@ export const APPS: AppMetadata[] = [
 export const SCHEDULE_ROUTES: AppRoute[] = [
   { path: "/schedule", label: "スケジュール", icon: "Calendar" },
   { path: "/schedule/visits", label: "訪問一覧", icon: "List" },
+  { path: "/schedule/tasks", label: "案件一覧", icon: "ClipboardList" },
 ];
 
 // Patients App Routes
