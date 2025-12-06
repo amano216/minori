@@ -434,15 +434,10 @@ export function VisitDetailPanel({
             </button>
             <button
               onClick={() => setActiveTab('tasks')}
-              className={`p-2 hover:bg-gray-100 rounded-full transition-colors relative ${activeTab === 'tasks' ? 'text-indigo-600 bg-indigo-50' : 'text-gray-400'}`}
+              className={`p-2 hover:bg-gray-100 rounded-full transition-colors ${activeTab === 'tasks' ? 'text-indigo-600 bg-indigo-50' : 'text-gray-400'}`}
               title="案件を表示"
             >
               <ClipboardList className="w-5 h-5" />
-              {visit.patient.unread_task_count && visit.patient.unread_task_count > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-3.5 px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                  {visit.patient.unread_task_count > 9 ? '9+' : visit.patient.unread_task_count}
-                </span>
-              )}
             </button>
             <button
               onClick={() => setActiveTab('history')}

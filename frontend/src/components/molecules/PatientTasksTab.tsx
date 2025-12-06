@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Plus, Check, Clock, FileText, AlertCircle, MessageSquare, Pill, ClipboardList, MoreHorizontal, Megaphone, Pencil } from 'lucide-react';
 import { 
   fetchPatientTasks, 
-  markPatientTaskRead, 
   completePatientTask,
   type PatientTask, 
   type TaskType,
@@ -68,15 +67,6 @@ export function PatientTasksTab({ patientId, patientName }: PatientTasksTabProps
     loadTasks();
   }, [patientId, filter]);
 
-  const handleMarkRead = async (taskId: number) => {
-    try {
-      await markPatientTaskRead(taskId);
-      await loadTasks();
-    } catch (err) {
-      console.error('Failed to mark as read:', err);
-    }
-  };
-
   const handleComplete = async (taskId: number) => {
     try {
       await completePatientTask(taskId);
@@ -139,7 +129,6 @@ export function PatientTasksTab({ patientId, patientName }: PatientTasksTabProps
                 key={board.id} 
                 board={board}
                 onEdit={() => handleEdit(board)}
-                onMarkRead={handleMarkRead}
               />
             ))}
           </div>
@@ -195,7 +184,6 @@ export function PatientTasksTab({ patientId, patientName }: PatientTasksTabProps
               <TaskItem 
                 key={task.id} 
                 task={task} 
-                onMarkRead={handleMarkRead}
                 onComplete={handleComplete}
               />
             ))}
@@ -222,33 +210,12 @@ export function PatientTasksTab({ patientId, patientName }: PatientTasksTabProps
 function BoardItem({ 
   board, 
   onEdit,
-  onMarkRead,
 }: { 
   board: PatientTask; 
   onEdit: () => void;
-  onMarkRead: (id: number) => void;
 }) {
-  const isUnread = !board.read_by_current_user;
-
-  const handleClick = () => {
-    if (isUnread) {
-      onMarkRead(board.id);
-    }
-  };
-
   return (
-    <div 
-      className={`relative bg-amber-50 border border-amber-200 rounded-lg p-4 ${
-        isUnread ? 'ring-2 ring-amber-400' : ''
-      }`}
-      onClick={handleClick}
-    >
-      {isUnread && (
-        <span className="absolute -top-2 -right-2 px-2 py-0.5 text-[10px] bg-red-500 text-white rounded-full font-medium">
-          NEW
-        </span>
-      )}
-      
+    <div className="relative bg-amber-50 border border-amber-200 rounded-lg p-4">
       <div className="flex items-start gap-3">
         <div className="p-2 bg-amber-100 rounded-lg">
           <Megaphone className="w-5 h-5 text-amber-600" />
@@ -282,16 +249,13 @@ function BoardItem({
 // タスクアイテム
 function TaskItem({ 
   task, 
-  onMarkRead, 
   onComplete 
 }: { 
   task: PatientTask; 
-  onMarkRead: (id: number) => void;
   onComplete: (id: number) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const config = task.task_type ? TASK_TYPE_CONFIG[task.task_type] : { label: 'その他', icon: <MoreHorizontal className="w-4 h-4" />, color: 'text-gray-600 bg-gray-50' };
-  const isUnread = !task.read_by_current_user;
   const isDone = task.status === 'done';
 
   const formatDate = (dateStr: string) => {
@@ -299,22 +263,15 @@ function TaskItem({
     return `${date.getMonth() + 1}/${date.getDate()}`;
   };
 
-  const handleClick = () => {
-    setExpanded(!expanded);
-    if (isUnread) {
-      onMarkRead(task.id);
-    }
-  };
-
   return (
     <div 
       className={`border rounded-lg overflow-hidden transition-all ${
         isDone ? 'bg-gray-50 border-gray-200' : 'bg-white border-gray-200 hover:border-indigo-300'
-      } ${isUnread && !isDone ? 'border-l-4 border-l-red-500' : ''}`}
+      }`}
     >
       <div 
         className="p-3 cursor-pointer"
-        onClick={handleClick}
+        onClick={() => setExpanded(!expanded)}
       >
         <div className="flex items-start gap-3">
           {/* Type Icon */}
@@ -328,11 +285,6 @@ function TaskItem({
               <span className={`font-medium text-sm ${isDone ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
                 {config.label}
               </span>
-              {isUnread && !isDone && (
-                <span className="px-1.5 py-0.5 text-[10px] bg-red-100 text-red-600 rounded font-medium">
-                  未読
-                </span>
-              )}
             </div>
             {task.content && (
               <p className={`text-sm mt-1 ${isDone ? 'text-gray-400' : 'text-gray-600'} line-clamp-2`}>
@@ -354,12 +306,8 @@ function TaskItem({
           </div>
 
           {/* Status */}
-          {isDone ? (
+          {isDone && (
             <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-          ) : (
-            <div className="text-xs text-gray-400">
-              {task.read_count}/{task.total_staff_count}
-            </div>
           )}
         </div>
       </div>
