@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X, Clock, User, FileText, MapPin, Calendar, Edit, Trash2, CheckCircle, XCircle, RefreshCw, Save, ExternalLink, History } from 'lucide-react';
+import { X, Clock, User, FileText, MapPin, Calendar, Edit, Trash2, CheckCircle, XCircle, RefreshCw, Save, ExternalLink, History, ClipboardList } from 'lucide-react';
 import { Button } from '../atoms/Button';
 import { Badge } from '../atoms/Badge';
 import { HistoryPanel } from '../molecules/HistoryPanel';
+import { PatientTasksTab } from '../molecules/PatientTasksTab';
 import { fetchVisits, fetchPlanningLanes, type Staff, type Visit, type Group, type PlanningLane } from '../../api/client';
 
 interface VisitDetailPanelProps {
@@ -192,7 +193,7 @@ export function VisitDetailPanel({
   onDelete,
 }: VisitDetailPanelProps) {
   const [isVisible, setIsVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState<'details' | 'calendar' | 'history'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'calendar' | 'tasks' | 'history'>('details');
   const [isReassigning, setIsReassigning] = useState(false);
   const [selectedStaffId, setSelectedStaffId] = useState<number | ''>('');
   const [updating, setUpdating] = useState(false);
@@ -432,6 +433,18 @@ export function VisitDetailPanel({
               <Calendar className="w-5 h-5" />
             </button>
             <button
+              onClick={() => setActiveTab('tasks')}
+              className={`p-2 hover:bg-gray-100 rounded-full transition-colors relative ${activeTab === 'tasks' ? 'text-indigo-600 bg-indigo-50' : 'text-gray-400'}`}
+              title="案件を表示"
+            >
+              <ClipboardList className="w-5 h-5" />
+              {visit.patient.unread_task_count && visit.patient.unread_task_count > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-3.5 px-1 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                  {visit.patient.unread_task_count > 9 ? '9+' : visit.patient.unread_task_count}
+                </span>
+              )}
+            </button>
+            <button
               onClick={() => setActiveTab('history')}
               className={`p-2 hover:bg-gray-100 rounded-full transition-colors ${activeTab === 'history' ? 'text-indigo-600 bg-indigo-50' : 'text-gray-400'}`}
               title="変更履歴を表示"
@@ -616,6 +629,11 @@ export function VisitDetailPanel({
               </div>
               <PatientCalendar patientId={visit.patient_id} />
             </div>
+          ) : activeTab === 'tasks' ? (
+            <PatientTasksTab 
+              patientId={visit.patient_id} 
+              patientName={visit.patient.name}
+            />
           ) : (
             <HistoryPanel
               itemType="Visit"
