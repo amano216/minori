@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_12_06_053512) do
+ActiveRecord::Schema[8.1].define(version: 2025_12_06_094500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -100,6 +100,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_06_053512) do
   end
 
   create_table "patient_tasks", force: :cascade do |t|
+    t.string "category", default: "task", null: false
     t.datetime "completed_at"
     t.bigint "completed_by_id"
     t.text "content"
@@ -109,9 +110,10 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_06_053512) do
     t.bigint "organization_id", null: false
     t.bigint "patient_id", null: false
     t.string "status", default: "open", null: false
-    t.string "task_type", default: "handover", null: false
-    t.string "title", null: false
+    t.string "task_type", default: "handover"
+    t.string "title"
     t.datetime "updated_at", null: false
+    t.index ["category"], name: "index_patient_tasks_on_category"
     t.index ["completed_by_id"], name: "index_patient_tasks_on_completed_by_id"
     t.index ["created_by_id"], name: "index_patient_tasks_on_created_by_id"
     t.index ["organization_id", "status"], name: "index_patient_tasks_on_organization_id_and_status"
